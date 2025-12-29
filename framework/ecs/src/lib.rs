@@ -14,12 +14,11 @@ pub fn add(left: u64, right: u64) -> u64 { left + right }
 
 #[cfg(test)]
 mod tests {
-    use tuples::indexes::{Here, There};
 
     use super::*;
     use crate::{
         entity::EntityId,
-        locked_view::{LockedViewComponentsIterExt, LockedViewComponentsMutExt, LockedViewComponentsQueryExt},
+        locked_view::{LockedViewComponentsMutExt, LockedViewComponentsQueryExt},
         traits::component_set_accessor::MutComponentSetMutAccessor,
         world::World,
     };
@@ -41,12 +40,19 @@ mod tests {
         view.mut_components_mut().add(EntityId::new(12, 0), 300i32);
 
         // for y in x {}
-        let y = view.query::<(&u32, (&i32, ()))>();
-        for (id, (a, (b, ()))) in y {
+        for (id, (mut a, b)) in view.query::<(&mut u32, &i32)>() {
             println!("{:?}", id);
             println!("{}", *a);
             println!("{}", *b);
+            *a += 1;
+
+            for (id, (a, b)) in view.query::<(&u32, &i32)>() {
+                println!("{:?}", id);
+                println!("{}", *a);
+                println!("{}", *b);
+            }
         }
+
         // let y = <locked_view::LockedView<(&mut i32, &mut u32)> as locked_view::LockedViewComponentsQueryExt<
         //     (&mut i32, &mut u32),
         //     (There<Here>, ()),

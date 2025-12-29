@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 use itertools::EitherOrBoth;
 use tuples::{
     indexes::{Here, There},
-    traits::{as_cons_tuple::AsConsTuple, cons_tuple::ConsTuple, has::ConsHas, has_one_of::ConsHasOne},
+    traits::{as_cons_tuple::AsConsTuple, cons_tuple::ConsTuple, flat::Flat, has::ConsHas, has_one_of::ConsHasOne},
 };
 
 use crate::{
@@ -138,15 +138,16 @@ impl<Elements: LockedViewElements, Idx> LockedViewComponentsMutExt<Elements, Idx
 
 // TEMP
 pub trait LockedViewComponentsIterExt<Elements: LockedViewElements, Idx, QueryIdx> {
-    fn iter<'a, Q: QueryElement<'a, Elements, Idx, QueryIdx>>(&'a self)
-    -> impl Iterator<Item = (EntityId, Q::BorrowedComponent)>;
+    fn iter<'a, Q: LockedViewQueryElement<'a, Elements, Idx, QueryIdx>>(
+        &'a self,
+    ) -> impl Iterator<Item = (EntityId, Q::BorrowedComponent)>;
 }
 
 impl<Elements, Idx, QueryIdx> LockedViewComponentsIterExt<Elements, Idx, QueryIdx> for LockedView<Elements>
 where
     Elements: LockedViewElements,
 {
-    fn iter<'a, Q: QueryElement<'a, Elements, Idx, QueryIdx>>(
+    fn iter<'a, Q: LockedViewQueryElement<'a, Elements, Idx, QueryIdx>>(
         &'a self,
     ) -> impl Iterator<Item = (EntityId, Q::BorrowedComponent)> {
         Q::iter_locked_view(self)
@@ -155,16 +156,16 @@ where
 // ======
 
 // Extension trait used to query a view
-pub trait LockedViewComponentsQueryExt<Elements: LockedViewElements, Idxs, QueryIdxs>
+pub trait LockedViewComponentsQueryExt<Elements, Idxs, QueryIdxs>
 where
+    Elements: LockedViewElements,
     Idxs: ConsTuple,
     QueryIdxs: ConsTuple<Length = Idxs::Length>,
 {
     /// Queries this view for sets of components that match the query
-    fn query<'a, Q>(&'a self) -> impl Iterator<Item = (EntityId, Q::ConsRow)>
+    fn query<'a, Q>(&'a self) -> impl Iterator<Item = (EntityId, Q::Row)>
     where
-        Q: ConsTuple<Length = Idxs::Length>,
-        Q: ConsQuery<'a, Elements, Idxs, QueryIdxs>;
+        Q: LockedViewQuery<'a, Elements, Idxs, QueryIdxs>;
 }
 
 impl<Elements, Idxs, QueryIdxs> LockedViewComponentsQueryExt<Elements, Idxs, QueryIdxs> for LockedView<Elements>
@@ -173,17 +174,43 @@ where
     QueryIdxs: ConsTuple<Length = Idxs::Length>,
     Elements: LockedViewElements,
 {
-    fn query<'a, Q>(&'a self) -> impl Iterator<Item = (EntityId, Q::ConsRow)>
+    fn query<'a, Q>(&'a self) -> impl Iterator<Item = (EntityId, Q::Row)>
     where
-        Q: ConsTuple<Length = Idxs::Length>,
-        Q: ConsQuery<'a, Elements, Idxs, QueryIdxs>,
+        Q: LockedViewQuery<'a, Elements, Idxs, QueryIdxs>,
     {
         Q::iter_locked_view(self)
     }
 }
 
+/// Trait for what can be used as a query over a locked view
+pub trait LockedViewQuery<'a, Elements, Idxs, QueryIdxs>
+where
+    Elements: LockedViewElements,
+{
+    type Row;
+
+    fn iter_locked_view(view: &'a LockedView<Elements>) -> impl Iterator<Item = (EntityId, Self::Row)>;
+}
+
+impl<'a, Elements, Idxs, QueryIdxs, Tuple> LockedViewQuery<'a, Elements, Idxs, QueryIdxs> for Tuple
+where
+    Elements: LockedViewElements,
+    Self: AsConsTuple,
+    <Self as AsConsTuple>::As: ConsTuple,
+    Idxs: ConsTuple<Length = <<Self as AsConsTuple>::As as ConsTuple>::Length>,
+    QueryIdxs: ConsTuple<Length = <<Self as AsConsTuple>::As as ConsTuple>::Length>,
+    <Self as AsConsTuple>::As: LockedViewConsQuery<'a, Elements, Idxs, QueryIdxs>,
+{
+    type Row = <<<Self as AsConsTuple>::As as LockedViewConsQuery<'a, Elements, Idxs, QueryIdxs>>::ConsRow as Flat>::Flattened;
+
+    fn iter_locked_view(view: &'a LockedView<Elements>) -> impl Iterator<Item = (EntityId, Self::Row)> {
+        <<Self as AsConsTuple>::As as LockedViewConsQuery<'a, Elements, Idxs, QueryIdxs>>::iter_locked_view(view)
+            .map(|(entity_id, components)| (entity_id, components.flatten()))
+    }
+}
+
 /// An element used in a query tuple for a locked view query
-pub trait QueryElement<'a, Elements: LockedViewElements, Idx, QueryIdx>: ComponentTupleElement {
+pub trait LockedViewQueryElement<'a, Elements: LockedViewElements, Idx, QueryIdx>: ComponentTupleElement {
     /// The accessors that can be used to iterate over components for this elements
     type Accessors;
 
@@ -194,7 +221,8 @@ pub trait QueryElement<'a, Elements: LockedViewElements, Idx, QueryIdx>: Compone
     fn iter_locked_view(view: &'a LockedView<Elements>) -> impl Iterator<Item = (EntityId, Self::BorrowedComponent)> + 'a;
 }
 
-impl<'a, Elements: LockedViewElements + 'a, Idx, QueryIdx, T: Component> QueryElement<'a, Elements, Idx, QueryIdx> for &'a T
+impl<'a, Elements: LockedViewElements + 'a, Idx, QueryIdx, T: Component> LockedViewQueryElement<'a, Elements, Idx, QueryIdx>
+    for &'a T
 where
     Idx: 'static,
     QueryIdx: 'static,
@@ -208,7 +236,7 @@ where
     }
 }
 
-impl<'a, Elements: LockedViewElements + 'a, Idx: 'static, T: Component> QueryElement<'a, Elements, Idx, Here> for &mut T
+impl<'a, Elements: LockedViewElements + 'a, Idx: 'static, T: Component> LockedViewQueryElement<'a, Elements, Idx, Here> for &mut T
 where
     Elements::ConsComponentSetGuards: ConsHas<ComponentSetWriteGuard<T>, Idx>,
 {
@@ -221,21 +249,22 @@ where
 }
 
 /// A type that can be used to execute a query
-pub trait ConsQuery<'a, Elements: LockedViewElements, Idxs, QueryIdxs>: sealed::Sealed
+pub trait LockedViewConsQuery<'a, Elements: LockedViewElements, Idxs, QueryIdxs>: sealed::Sealed
 where
     Self: ConsTuple,
     Idxs: ConsTuple<Length = Self::Length>,
     QueryIdxs: ConsTuple<Length = Self::Length>,
 {
-    type ConsRow;
+    type ConsRow: Flat;
 
     fn iter_locked_view(view: &'a LockedView<Elements>) -> impl Iterator<Item = (EntityId, Self::ConsRow)>;
 }
 
 impl<Head> sealed::Sealed for (Head, ()) {}
-impl<'a, Elements: LockedViewElements, Idx, QueryIdx, Head> ConsQuery<'a, Elements, (Idx, ()), (QueryIdx, ())> for (Head, ())
+impl<'a, Elements: LockedViewElements, Idx, QueryIdx, Head> LockedViewConsQuery<'a, Elements, (Idx, ()), (QueryIdx, ())>
+    for (Head, ())
 where
-    Head: QueryElement<'a, Elements, Idx, QueryIdx>,
+    Head: LockedViewQueryElement<'a, Elements, Idx, QueryIdx>,
 {
     type ConsRow = (Head::BorrowedComponent, ());
 
@@ -246,26 +275,26 @@ where
 
 impl<Head, Second, Tail> sealed::Sealed for (Head, (Second, Tail)) {}
 impl<'a, Elements: LockedViewElements, Idx, QueryIdx, TailIdxs, TailQueryIdxs, Head, Tail>
-    ConsQuery<'a, Elements, (Idx, TailIdxs), (QueryIdx, TailQueryIdxs)> for (Head, Tail)
+    LockedViewConsQuery<'a, Elements, (Idx, TailIdxs), (QueryIdx, TailQueryIdxs)> for (Head, Tail)
 where
     Self: sealed::Sealed,
     Self: ConsTuple<Length = There<TailIdxs::Length>>,
-    Head: QueryElement<'a, Elements, Idx, QueryIdx>,
+    Head: LockedViewQueryElement<'a, Elements, Idx, QueryIdx>,
     // Check tail
     Tail: ConsTuple,
     TailIdxs: ConsTuple<Length = Tail::Length>,
     TailQueryIdxs: ConsTuple<Length = Tail::Length>,
-    Tail: ConsQuery<'a, Elements, TailIdxs, TailQueryIdxs>,
+    Tail: LockedViewConsQuery<'a, Elements, TailIdxs, TailQueryIdxs>,
 {
     type ConsRow = (
         Head::BorrowedComponent,
-        <Tail as ConsQuery<'a, Elements, TailIdxs, TailQueryIdxs>>::ConsRow,
+        <Tail as LockedViewConsQuery<'a, Elements, TailIdxs, TailQueryIdxs>>::ConsRow,
     );
 
     fn iter_locked_view(view: &'a LockedView<Elements>) -> impl Iterator<Item = (EntityId, Self::ConsRow)> {
         let head = Head::iter_locked_view(view);
 
-        let tail = <Tail as ConsQuery<'a, Elements, TailIdxs, TailQueryIdxs>>::iter_locked_view(view);
+        let tail = <Tail as LockedViewConsQuery<'a, Elements, TailIdxs, TailQueryIdxs>>::iter_locked_view(view);
 
         itertools::merge_join_by(head, tail, |(left, _), (right, _)| left.index.cmp(&right.index)).filter_map(|eob| match eob {
             EitherOrBoth::Both((id, left), (_, right)) => Some((id, (left, right))),
