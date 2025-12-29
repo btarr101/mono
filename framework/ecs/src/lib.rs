@@ -34,15 +34,19 @@ mod tests {
     fn it_works_2() {
         let x = World::new();
         let mut view = x.lock_view::<(&mut i32, &mut u32)>();
-        view.mut_components_mut().add(EntityId::new(10, 0), 20);
+        view.mut_components_mut().add(EntityId::new(10, 0), 20u32);
         view.mut_components_mut().add(EntityId::new(10, 0), 300i32);
 
         view.mut_components_mut().add(EntityId::new(12, 0), 200u32);
         view.mut_components_mut().add(EntityId::new(12, 0), 300i32);
 
-        let x = view.iter::<&mut u32>();
         // for y in x {}
         let y = view.query::<(&u32, (&i32, ()))>();
+        for (id, (a, (b, ()))) in y {
+            println!("{:?}", id);
+            println!("{}", *a);
+            println!("{}", *b);
+        }
         // let y = <locked_view::LockedView<(&mut i32, &mut u32)> as locked_view::LockedViewComponentsQueryExt<
         //     (&mut i32, &mut u32),
         //     (There<Here>, ()),
