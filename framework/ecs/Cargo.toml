@@ -1,0 +1,13 @@
+[package]
+name = "ecs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+derived-deref = "2.1.0"
+itertools = "0.14.0"
+ouroboros = "0.18.5"
+owning_ref = "0.4.1"
+parking_lot = "0.12.5"
+static_assertions = "1.1.0"
+tuples = { version = "*", path = "../tuples" }
