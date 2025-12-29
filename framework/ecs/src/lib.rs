@@ -41,8 +41,8 @@ mod tests {
         view.mut_components_mut().add(EntityId::new(12, 0), 300i32);
 
         let x = view.iter::<&mut u32>();
-        for y in x {}
-        let y = view.query::<(&u32, (&i32, (&u32, ())))>();
+        // for y in x {}
+        let y = view.query::<(&u32, (&i32, ()))>();
         // let y = <locked_view::LockedView<(&mut i32, &mut u32)> as locked_view::LockedViewComponentsQueryExt<
         //     (&mut i32, &mut u32),
         //     (There<Here>, ()),

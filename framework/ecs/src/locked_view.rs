@@ -154,30 +154,29 @@ where
 }
 // ======
 
-/// Extension trait used to query a view
-pub trait LockedViewComponentsQueryExt<Elements: LockedViewElements, Idx, QueryIdx, TailIdxs, TailQueryIdxs>
+// Extension trait used to query a view
+pub trait LockedViewComponentsQueryExt<Elements: LockedViewElements, Idxs, QueryIdxs>
 where
-    TailIdxs: ConsTuple,
-    TailQueryIdxs: ConsTuple<Length = TailIdxs::Length>,
+    Idxs: ConsTuple,
+    QueryIdxs: ConsTuple<Length = Idxs::Length>,
 {
     /// Queries this view for sets of components that match the query
     fn query<'a, Q>(&'a self) -> impl Iterator<Item = (EntityId, Q::ConsRow)>
     where
-        Q: ConsTuple<Length = There<TailIdxs::Length>>,
-        Q: ConsQuery<'a, Elements, Idx, QueryIdx, TailIdxs, TailQueryIdxs>;
+        Q: ConsTuple<Length = Idxs::Length>,
+        Q: ConsQuery<'a, Elements, Idxs, QueryIdxs>;
 }
 
-impl<Elements, Idx, QueryIdx, TailIdxs, TailQueryIdxs>
-    LockedViewComponentsQueryExt<Elements, Idx, QueryIdx, TailIdxs, TailQueryIdxs> for LockedView<Elements>
+impl<Elements, Idxs, QueryIdxs> LockedViewComponentsQueryExt<Elements, Idxs, QueryIdxs> for LockedView<Elements>
 where
-    TailIdxs: ConsTuple,
-    TailQueryIdxs: ConsTuple<Length = TailIdxs::Length>,
+    Idxs: ConsTuple,
+    QueryIdxs: ConsTuple<Length = Idxs::Length>,
     Elements: LockedViewElements,
 {
     fn query<'a, Q>(&'a self) -> impl Iterator<Item = (EntityId, Q::ConsRow)>
     where
-        Q: ConsTuple<Length = There<TailIdxs::Length>>,
-        Q: ConsQuery<'a, Elements, Idx, QueryIdx, TailIdxs, TailQueryIdxs>,
+        Q: ConsTuple<Length = Idxs::Length>,
+        Q: ConsQuery<'a, Elements, Idxs, QueryIdxs>,
     {
         Q::iter_locked_view(self)
     }
@@ -222,18 +221,19 @@ where
 }
 
 /// A type that can be used to execute a query
-pub trait ConsQuery<'a, Elements: LockedViewElements, Idx, QueryIdx, TailIdxs, TailQueryIdxs>
+pub trait ConsQuery<'a, Elements: LockedViewElements, Idxs, QueryIdxs>: sealed::Sealed
 where
-    TailIdxs: ConsTuple,
-    TailQueryIdxs: ConsTuple<Length = TailIdxs::Length>,
-    Self: ConsTuple<Length = There<TailIdxs::Length>>,
+    Self: ConsTuple,
+    Idxs: ConsTuple<Length = Self::Length>,
+    QueryIdxs: ConsTuple<Length = Self::Length>,
 {
     type ConsRow;
 
     fn iter_locked_view(view: &'a LockedView<Elements>) -> impl Iterator<Item = (EntityId, Self::ConsRow)>;
 }
 
-impl<'a, Elements: LockedViewElements, Idx, QueryIdx, Head> ConsQuery<'a, Elements, Idx, QueryIdx, (), ()> for (Head, ())
+impl<Head> sealed::Sealed for (Head, ()) {}
+impl<'a, Elements: LockedViewElements, Idx, QueryIdx, Head> ConsQuery<'a, Elements, (Idx, ()), (QueryIdx, ())> for (Head, ())
 where
     Head: QueryElement<'a, Elements, Idx, QueryIdx>,
 {
@@ -244,41 +244,28 @@ where
     }
 }
 
-impl<'a, Elements: LockedViewElements, Idx, QueryIdx, TailIdxs, TailQueryIdxs, Head, Second, Tail>
-    ConsQuery<'a, Elements, Idx, QueryIdx, TailIdxs, TailQueryIdxs> for (Head, (Second, Tail))
+impl<Head, Second, Tail> sealed::Sealed for (Head, (Second, Tail)) {}
+impl<'a, Elements: LockedViewElements, Idx, QueryIdx, TailIdxs, TailQueryIdxs, Head, Tail>
+    ConsQuery<'a, Elements, (Idx, TailIdxs), (QueryIdx, TailQueryIdxs)> for (Head, Tail)
 where
-    TailIdxs: ConsTuple,
-    TailQueryIdxs: ConsTuple<Length = TailIdxs::Length>,
+    Self: sealed::Sealed,
     Self: ConsTuple<Length = There<TailIdxs::Length>>,
     Head: QueryElement<'a, Elements, Idx, QueryIdx>,
-    TailIdxs::Tail: ConsTuple,
-    TailQueryIdxs::Tail: ConsTuple<Length = <TailIdxs::Tail as ConsTuple>::Length>,
-    (Second, Tail): ConsQuery<'a, Elements, TailIdxs::Head, TailQueryIdxs::Head, TailIdxs::Tail, TailQueryIdxs::Tail>,
+    // Check tail
+    Tail: ConsTuple,
+    TailIdxs: ConsTuple<Length = Tail::Length>,
+    TailQueryIdxs: ConsTuple<Length = Tail::Length>,
+    Tail: ConsQuery<'a, Elements, TailIdxs, TailQueryIdxs>,
 {
-    type ConsRow =
-        (
-            Head::BorrowedComponent,
-            <(Second, Tail) as ConsQuery<
-                'a,
-                Elements,
-                TailIdxs::Head,
-                TailQueryIdxs::Head,
-                TailIdxs::Tail,
-                TailQueryIdxs::Tail,
-            >>::ConsRow,
-        );
+    type ConsRow = (
+        Head::BorrowedComponent,
+        <Tail as ConsQuery<'a, Elements, TailIdxs, TailQueryIdxs>>::ConsRow,
+    );
 
     fn iter_locked_view(view: &'a LockedView<Elements>) -> impl Iterator<Item = (EntityId, Self::ConsRow)> {
         let head = Head::iter_locked_view(view);
 
-        let tail = <(Second, Tail) as ConsQuery<
-            'a,
-            Elements,
-            TailIdxs::Head,
-            TailQueryIdxs::Head,
-            TailIdxs::Tail,
-            TailQueryIdxs::Tail,
-        >>::iter_locked_view(view);
+        let tail = <Tail as ConsQuery<'a, Elements, TailIdxs, TailQueryIdxs>>::iter_locked_view(view);
 
         itertools::merge_join_by(head, tail, |(left, _), (right, _)| left.index.cmp(&right.index)).filter_map(|eob| match eob {
             EitherOrBoth::Both((id, left), (_, right)) => Some((id, (left, right))),
