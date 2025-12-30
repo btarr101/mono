@@ -26,6 +26,9 @@ unsafe impl<T> Sync for DangerCell<T> {}
 impl<T> DangerCell<T> {
     pub fn new(data: T) -> Self { Self(data.into()) }
 
+    /// Consumes this cell and returns the inner value
+    pub fn into_inner(self) -> T { self.0.into_inner() }
+
     /// # Safety
     /// Only call if no thread thinks it has exclusive access
     pub unsafe fn get_shared(&self) -> &T { unsafe { &*self.0.as_ptr() } }

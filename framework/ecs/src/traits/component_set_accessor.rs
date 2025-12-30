@@ -100,15 +100,15 @@ pub trait MutComponentSetMutAccessor<T: Component>: ComponentSetMutAccessor<T> {
 
     /// Attempts to remove a component from this component set given an entity id,
     /// then returns if a component was removed this way
-    fn remove(&mut self, id: EntityId) -> bool;
+    fn pop(&mut self, id: EntityId) -> Option<T>;
 }
 
 impl<T: Component> MutComponentSetMutAccessor<T> for ComponentSetWriteGuard<T> {
     fn add(&mut self, id: EntityId, component: T) { self.0.add(id, component); }
-    fn remove(&mut self, id: EntityId) -> bool { self.0.remove(id) }
+    fn pop(&mut self, id: EntityId) -> Option<T> { self.0.pop(id) }
 }
 
 impl<T: Component, A: MutComponentSetMutAccessor<T>> MutComponentSetMutAccessor<T> for &mut A {
     fn add(&mut self, id: EntityId, component: T) { (**self).add(id, component); }
-    fn remove(&mut self, id: EntityId) -> bool { (**self).remove(id) }
+    fn pop(&mut self, id: EntityId) -> Option<T> { (**self).pop(id) }
 }

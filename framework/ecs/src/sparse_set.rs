@@ -64,10 +64,8 @@ impl<T> SparseSet<T> {
 
     /// Attempts to removes an element from this sparse set,
     /// then returns if an element was removed this way
-    pub fn remove(&mut self, index: usize) -> bool {
-        let Some(dense_index) = self.sparse_to_dense.get(index).cloned().flatten() else {
-            return false;
-        };
+    pub fn pop(&mut self, index: usize) -> Option<T> {
+        let dense_index = self.sparse_to_dense.get(index).cloned().flatten()?;
 
         self.sparse_to_dense[index] = None;
 
@@ -75,10 +73,10 @@ impl<T> SparseSet<T> {
 
         if dense_index < self.dense.len() {
             self.sparse_to_dense[last_dense.0] = Some(dense_index);
-            self.dense[dense_index] = last_dense;
+            std::mem::replace(&mut self.dense[dense_index], last_dense).1.into()
+        } else {
+            last_dense.1.into()
         }
-
-        true
     }
 
     /// Iterates through this sparse set

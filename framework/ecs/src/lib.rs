@@ -5,6 +5,7 @@ pub mod component_set;
 pub mod component_set_guards;
 pub mod danger_cell;
 pub mod entity;
+pub mod entity_id_allocator;
 pub mod locked_view;
 pub mod sparse_set;
 pub mod traits;
@@ -16,12 +17,7 @@ pub fn add(left: u64, right: u64) -> u64 { left + right }
 mod tests {
 
     use super::*;
-    use crate::{
-        entity::EntityId,
-        locked_view::{LockedViewComponentsMutExt, LockedViewComponentsQueryExt},
-        traits::component_set_accessor::MutComponentSetMutAccessor,
-        world::World,
-    };
+    use crate::{entity::LockedViewEntityComponentMutExt, locked_view::LockedViewComponentsQueryExt, world::World};
 
     #[test]
     fn it_works() {
@@ -33,11 +29,8 @@ mod tests {
     fn it_works_2() {
         let x = World::new();
         let mut view = x.lock_view::<(&mut i32, &mut u32)>();
-        view.mut_components_mut().add(EntityId::new(10, 0), 20u32);
-        view.mut_components_mut().add(EntityId::new(10, 0), 300i32);
-
-        view.mut_components_mut().add(EntityId::new(12, 0), 200u32);
-        view.mut_components_mut().add(EntityId::new(12, 0), 300i32);
+        view.create_entity().with(20u32).with(300i32);
+        view.create_entity().with(12u32).with(40i32);
 
         // for y in x {}
         for (id, (mut a, b)) in view.query::<(&mut u32, &i32)>() {

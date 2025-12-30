@@ -42,17 +42,15 @@ impl<T: Component> ComponentSet<T> {
     /// Adds a component to this component set
     pub fn add(&mut self, id: EntityId, component: T) { self.0.add(id.index, (id.generation, component.into())); }
 
-    /// Removes a component from this component set
-    pub fn remove(&mut self, id: EntityId) -> bool {
-        let Some((generation, _)) = self.0.get(id.index) else {
-            return false;
-        };
-
+    /// Removes a component from this component set, and if a component
+    /// was removed this way returns it
+    pub fn pop(&mut self, id: EntityId) -> Option<T> {
+        let (generation, _) = self.0.get(id.index)?;
         if *generation != id.generation {
-            return false;
+            return None;
         }
 
-        self.0.remove(id.index)
+        self.0.pop(id.index).map(|(_, cell)| cell.into_inner())
     }
 
     /// Iterates through every component in this set

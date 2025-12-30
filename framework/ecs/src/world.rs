@@ -5,13 +5,14 @@ use std::{
 };
 
 use owning_ref::OwningHandle;
-use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use parking_lot::{Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use static_assertions::assert_impl_all;
 
 use crate::{
     component_set::ComponentSet,
     component_set_guards::{ComponentSetGuard, ComponentSetReadGuard, ComponentSetWriteGuard},
-    locked_view::{LockedView, LockedViewElements},
+    entity_id_allocator::EntityIdAllocator,
+    locked_view::{LockedView, private::LockedViewElements},
     traits::{
         component::Component,
         component_set_accessor::{ComponentSetAccessor, MutComponentSetMutAccessor},
@@ -23,19 +24,14 @@ assert_impl_all!(World: Send, Sync);
 
 #[derive(Default)]
 pub struct World {
-    pub entities: Vec<Option<usize>>,
+    pub entities: Arc<Mutex<EntityIdAllocator>>,
     pub singletons: RwLock<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
     pub components: RwLock<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
 }
 
 impl World {
-    pub fn new() -> Self {
-        Self {
-            entities: Vec::new(),
-            singletons: Default::default(),
-            components: Default::default(),
-        }
-    }
+    /// Creates a new world
+    pub fn new() -> Self { Default::default() }
 
     /// Locks a view of over this world
     ///
