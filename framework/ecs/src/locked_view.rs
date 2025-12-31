@@ -4,7 +4,7 @@ use std::{
 };
 
 use itertools::EitherOrBoth;
-use parking_lot::Mutex;
+use parking_lot::RwLock;
 use tuples::{
     indexes::{Here, There},
     traits::{as_cons_tuple::AsConsTuple, cons_tuple::ConsTuple, flat::Flat, has::ConsHas, has_one_of::ConsHasOne},
@@ -29,7 +29,7 @@ pub struct LockedView<Elements>
 where
     Elements: private::LockedViewElements,
 {
-    entities: Arc<Mutex<EntityIdAllocator>>,
+    entities: Arc<RwLock<EntityIdAllocator>>,
     components: Elements::ConsComponentSetGuards,
 }
 
@@ -47,28 +47,42 @@ where
 
     /// Creates a new entity
     pub fn create_entity(&mut self) -> LockedViewEntity<'_, Elements> {
-        let id = { self.entities.lock().allocate_id() };
+        let id = { self.entities.write().allocate_id() };
         LockedViewEntity::new(id, self)
+    }
+
+    /// Gets an entity
+    pub fn get_entity(&mut self, id: EntityId) -> Option<LockedViewEntity<'_, Elements>> {
+        { self.entities.read().index_in_use(id.index) }.then_some(LockedViewEntity::new(id, self))
     }
 }
 
-/// Extension trait to gain access to components
-pub trait LockedViewComponentsExt<Elements: private::LockedViewElements, Idx, QueryIdx>: private::Sealed {
-    /// Gets an accessor to the component set in this locked view
-    fn components<T: Component>(&self) -> &impl ComponentSetAccessor<T>
+/// Extension trait go gain access to a component from this view
+pub trait LockedViewGetComponentExt<Elements: private::LockedViewElements, Idx, QueryIdx>: private::Sealed {
+    /// Gets a component associated with an entity from this view
+    fn get_component<T: Component>(&self, id: EntityId) -> Option<impl Deref<Target = T>>
     where
         Self: private::HasComponents<T, Elements, Idx, QueryIdx>;
 }
 
-/// Extension trait to gain mutable access to components
-pub trait LockedViewComponentsMutExt<Elements: private::LockedViewElements, Idx>: private::Sealed {
-    /// Gets an accessor to the component set with mutable components in this locked view
-    fn components_mut<T: Component>(&self) -> &impl ComponentSetMutAccessor<T>
+/// Extension trait go gain access to a component mutably from this view
+pub trait LockedViewGetComponentMutExt<Elements: private::LockedViewElements, Idx>: private::Sealed {
+    /// Gets a component associated with an entity mutably from this view
+    fn get_component_mut<T: Component>(&self, id: EntityId) -> Option<impl Deref<Target = T>>
     where
         Self: private::HasComponentsMut<T, Elements, Idx>;
 
-    /// Gets a fully mutable accessor to the component set in this locked view
-    fn mut_components_mut<T: Component>(&mut self) -> &mut impl MutComponentSetMutAccessor<T>
+    /// Attempts to add a component to an entity in this view
+    ///
+    /// Marked as must use, as checking the operation was successful is as simple an ensuring the option is some
+    #[must_use]
+    fn add_component<T: Component>(&mut self, id: EntityId, component: T) -> Option<impl DerefMut<Target = T>>
+    where
+        Self: private::HasComponentsMut<T, Elements, Idx>;
+
+    /// Attempts to a remove component from an entity,
+    /// if a component is removed this way returns it
+    fn pop_component<T: Component>(&mut self, id: EntityId) -> Option<T>
     where
         Self: private::HasComponentsMut<T, Elements, Idx>;
 }
@@ -84,12 +98,59 @@ where
     fn query<'a, Q>(&'a self) -> impl Iterator<Item = (EntityId, Q::Row)>
     where
         Q: private::LockedViewQuery<'a, Elements, Idxs, QueryIdxs>;
+
+    /// Queries this view for all components in this view
+    fn default_query<'a>(&'a self) -> impl Iterator<Item = (EntityId, Elements::Row)>
+    where
+        Elements: private::LockedViewQuery<'a, Elements, Idxs, QueryIdxs>;
 }
 
 pub(crate) mod private {
     use super::*;
 
     pub trait Sealed {}
+    impl<Elements: LockedViewElements> Sealed for LockedView<Elements> {}
+
+    impl<Elements, Idx, QueryIdx> LockedViewGetComponentExt<Elements, Idx, QueryIdx> for LockedView<Elements>
+    where
+        Elements: LockedViewElements,
+        Idx: 'static,
+        QueryIdx: 'static,
+    {
+        fn get_component<T: Component>(&self, entity_id: EntityId) -> Option<impl Deref<Target = T>>
+        where
+            Self: HasComponents<T, Elements, Idx, QueryIdx>,
+        {
+            self.get_accessor().get(entity_id)
+        }
+    }
+
+    impl<Elements, Idx> LockedViewGetComponentMutExt<Elements, Idx> for LockedView<Elements>
+    where
+        Elements: LockedViewElements,
+        Idx: 'static,
+    {
+        fn get_component_mut<T: Component>(&self, entity_id: EntityId) -> Option<impl Deref<Target = T>>
+        where
+            Self: private::HasComponentsMut<T, Elements, Idx>,
+        {
+            self.get_accessor().get(entity_id)
+        }
+
+        fn add_component<T: Component>(&mut self, entity_id: EntityId, component: T) -> Option<impl DerefMut<Target = T>>
+        where
+            Self: private::HasComponentsMut<T, Elements, Idx>,
+        {
+            self.get_mut_accessor().try_add(entity_id, component)
+        }
+
+        fn pop_component<T: Component>(&mut self, entity_id: EntityId) -> Option<T>
+        where
+            Self: private::HasComponentsMut<T, Elements, Idx>,
+        {
+            self.get_mut_accessor().soft_pop(entity_id)
+        }
+    }
 
     /// Elements that are used to identify a locked view.
     pub trait LockedViewElements {
@@ -108,37 +169,6 @@ pub(crate) mod private {
 
         fn lock_component_sets(world: &World) -> Self::ConsComponentSetGuards {
             Self::ConsComponentSetGuards::cons_lock_from_world(world)
-        }
-    }
-
-    impl<Elements: LockedViewElements> Sealed for LockedView<Elements> {}
-    impl<Elements: LockedViewElements, Idx: 'static, QueryIdx: 'static> LockedViewComponentsExt<Elements, Idx, QueryIdx>
-        for LockedView<Elements>
-    {
-        fn components<T: Component>(&self) -> &impl ComponentSetAccessor<T>
-        where
-            Self: HasComponents<T, Elements, Idx, QueryIdx>,
-        {
-            self.get_accessor()
-        }
-    }
-
-    impl<Elements: LockedViewElements, Idx> LockedViewComponentsMutExt<Elements, Idx> for LockedView<Elements>
-    where
-        Idx: 'static,
-    {
-        fn components_mut<T: Component>(&self) -> &impl ComponentSetMutAccessor<T>
-        where
-            Self: HasComponentsMut<T, Elements, Idx>,
-        {
-            self.get_accessor()
-        }
-
-        fn mut_components_mut<T: Component>(&mut self) -> &mut impl MutComponentSetMutAccessor<T>
-        where
-            Self: HasComponentsMut<T, Elements, Idx>,
-        {
-            self.get_mut_accessor()
         }
     }
 
@@ -207,6 +237,13 @@ pub(crate) mod private {
             Q: LockedViewQuery<'a, Elements, Idxs, QueryIdxs>,
         {
             Q::iter_locked_view(self)
+        }
+
+        fn default_query<'a>(&'a self) -> impl Iterator<Item = (EntityId, <Elements>::Row)>
+        where
+            Elements: private::LockedViewQuery<'a, Elements, Idxs, QueryIdxs>,
+        {
+            Elements::iter_locked_view(self)
         }
     }
 

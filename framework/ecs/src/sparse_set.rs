@@ -37,14 +37,16 @@ impl<T> SparseSet<T> {
         }
     }
 
-    /// Adds an element to this sparse set
-    pub fn add(&mut self, index: usize, element: T) {
+    /// Adds an element to this sparse set, then returns a reference
+    /// to it
+    pub fn add(&mut self, index: usize, element: T) -> &mut T {
         let dense_index = self.dense.len();
         self.dense.push((index, element));
         if index >= self.sparse_to_dense.len() {
             self.sparse_to_dense.resize(index + 1, None);
         }
         self.sparse_to_dense[index] = Some(dense_index);
+        &mut self.dense[dense_index].1
     }
 
     /// Gets a reference to an element from this sparse set

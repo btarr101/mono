@@ -40,6 +40,10 @@ impl<T> DangerCell<T> {
     /// # Safety
     /// Only call if this thread has exclusive access
     pub unsafe fn get_mut(&self) -> Option<RefMut<'_, T>> { self.0.try_borrow_mut().ok() }
+
+    /// # Safety
+    /// Only call if this thread has exclusive access
+    pub unsafe fn get_mut_exclusive(&mut self) -> &mut T { self.0.get_mut() }
 }
 
 impl<T> From<T> for DangerCell<T> {

@@ -95,20 +95,35 @@ impl<T: Component, A: ComponentSetMutAccessor<T>> ComponentSetMutAccessor<T> for
 
 /// Trait used to access a full component set mutably
 pub trait MutComponentSetMutAccessor<T: Component>: ComponentSetMutAccessor<T> {
-    /// Adds a comonent to this component set given an entity id
-    fn add(&mut self, id: EntityId, component: T);
+    /// Adds a component to this component set given an entity id, then returns an
+    /// immediate reference to it
+    fn add(&mut self, id: EntityId, component: T) -> &mut T;
+
+    /// Attempts to add a component given an entity id, but if the generation doesn't
+    /// match up does not.
+    ///
+    /// If added, returns an immediate reference
+    fn try_add(&mut self, id: EntityId, component: T) -> Option<&mut T>;
+
+    /// Attempts to remove a component from this component set, and ignores
+    /// generation
+    fn pop(&mut self, id: EntityId) -> Option<T>;
 
     /// Attempts to remove a component from this component set given an entity id,
     /// then returns if a component was removed this way
-    fn pop(&mut self, id: EntityId) -> Option<T>;
+    fn soft_pop(&mut self, id: EntityId) -> Option<T>;
 }
 
 impl<T: Component> MutComponentSetMutAccessor<T> for ComponentSetWriteGuard<T> {
-    fn add(&mut self, id: EntityId, component: T) { self.0.add(id, component); }
-    fn pop(&mut self, id: EntityId) -> Option<T> { self.0.pop(id) }
+    fn add(&mut self, id: EntityId, component: T) -> &mut T { self.0.add(id, component) }
+    fn try_add(&mut self, id: EntityId, component: T) -> Option<&mut T> { self.0.try_add(id, component) }
+    fn pop(&mut self, id: EntityId) -> Option<T> { self.0.pop(id.index).and_then(|(_, component)| component) }
+    fn soft_pop(&mut self, id: EntityId) -> Option<T> { self.0.soft_pop(id) }
 }
 
 impl<T: Component, A: MutComponentSetMutAccessor<T>> MutComponentSetMutAccessor<T> for &mut A {
-    fn add(&mut self, id: EntityId, component: T) { (**self).add(id, component); }
+    fn add(&mut self, id: EntityId, component: T) -> &mut T { (**self).add(id, component) }
+    fn try_add(&mut self, id: EntityId, component: T) -> Option<&mut T> { (**self).try_add(id, component) }
     fn pop(&mut self, id: EntityId) -> Option<T> { (**self).pop(id) }
+    fn soft_pop(&mut self, id: EntityId) -> Option<T> { (**self).soft_pop(id) }
 }

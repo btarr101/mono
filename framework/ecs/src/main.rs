@@ -1,0 +1,44 @@
+use ecs::{
+    entity::LockedViewEntityComponentMutExt,
+    locked_view::{LockedViewComponentsQueryExt, LockedViewGetComponentMutExt},
+    world::World,
+};
+
+fn main() {
+    let world = World::new();
+
+    let id = {
+        let mut view = world.lock_view::<(&mut i32, &mut u32, &mut isize)>();
+        let id = view.create_entity().with(20u32).with(300i32).id();
+        view.create_entity().with(12u32).with(40i32);
+
+        for (id, (mut a, b)) in view.query::<(&mut u32, &i32)>() {
+            println!("{:?}", id);
+            println!("{}", *a);
+            println!("{}", *b);
+            *a += 1;
+
+            for (id, (a, b)) in view.query::<(&u32, &i32)>() {
+                println!("{:?}", id);
+                println!("{}", *a);
+                println!("{}", *b);
+
+                let component = view.get_component_mut::<isize>(id);
+                println!("{:?}", component.as_deref());
+            }
+        }
+
+        id
+    };
+
+    println!("DESTROYING");
+    if let Some(entity) = world.get_entity(id) {
+        entity.destroy();
+    }
+
+    for (id, (a, b)) in world.lock_view::<(&i32, &u32)>().default_query() {
+        println!("{:?}", id);
+        println!("{}", *a);
+        println!("{}", *b);
+    }
+}

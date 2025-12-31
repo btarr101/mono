@@ -6,6 +6,7 @@ use crate::{
         private::{HasComponents, HasComponentsMut, LockedViewElements},
     },
     traits::component::Component,
+    world::World,
 };
 
 /// An identifier for an entity (and each of its components)
@@ -13,6 +14,23 @@ use crate::{
 pub struct EntityId {
     pub(crate) index: usize,
     pub(crate) generation: usize,
+}
+
+pub struct Entity<'a> {
+    id: EntityId,
+    world: &'a World,
+}
+
+impl<'a> Entity<'a> {
+    pub(crate) fn new(id: EntityId, world: &'a World) -> Self { Self { id, world } }
+
+    /// Destroys this entity and all components associated with it
+    pub fn destroy(self) {
+        self.world.entities.write().free_id(self.id);
+
+        // TODO: Need a trait
+        todo!("destroy the components")
+    }
 }
 
 /// Access to an entity that is contained within a locked view
@@ -29,6 +47,9 @@ pub struct LockedViewEntity<'a, Elements: LockedViewElements> {
 
 impl<'a, Elements: LockedViewElements> LockedViewEntity<'a, Elements> {
     pub(crate) fn new(id: EntityId, locked_view: &'a mut LockedView<Elements>) -> Self { Self { id, locked_view } }
+
+    /// Gets the id of this entity
+    pub fn id(&self) -> EntityId { self.id }
 }
 
 /// Extension trait for a locked view entity to access a component immutably
@@ -51,7 +72,7 @@ where
         LockedView<Elements>: HasComponentsMut<T, Elements, Idx>;
 
     /// Adds a component to this entity
-    fn add<T: Component>(&mut self, component: T)
+    fn add<T: Component>(&mut self, component: T) -> impl DerefMut<Target = T>
     where
         LockedView<Elements>: HasComponentsMut<T, Elements, Idx>;
 
@@ -74,10 +95,7 @@ where
 
 mod private {
     use super::*;
-    use crate::{
-        locked_view::{LockedViewComponentsExt, LockedViewComponentsMutExt},
-        traits::component_set_accessor::{ComponentSetAccessor, ComponentSetMutAccessor, MutComponentSetMutAccessor},
-    };
+    use crate::traits::component_set_accessor::{ComponentSetAccessor, ComponentSetMutAccessor, MutComponentSetMutAccessor};
 
     impl EntityId {
         /// Creates a new entity id
@@ -94,7 +112,7 @@ mod private {
         where
             LockedView<Elements>: HasComponents<T, Elements, Idx, QueryIdx>,
         {
-            self.locked_view.components().get(self.id)
+            self.locked_view.get_accessor().get(self.id)
         }
     }
 
@@ -107,21 +125,21 @@ mod private {
         where
             LockedView<Elements>: HasComponentsMut<T, Elements, Idx>,
         {
-            self.locked_view.components_mut().get_mut(self.id)
+            self.locked_view.get_accessor().get_mut(self.id)
         }
 
-        fn add<T: Component>(&mut self, component: T)
+        fn add<T: Component>(&mut self, component: T) -> impl DerefMut<Target = T>
         where
             LockedView<Elements>: HasComponentsMut<T, Elements, Idx>,
         {
-            self.locked_view.mut_components_mut().add(self.id, component);
+            self.locked_view.get_mut_accessor().add(self.id, component)
         }
 
         fn pop<T: Component>(&mut self) -> Option<T>
         where
             LockedView<Elements>: HasComponentsMut<T, Elements, Idx>,
         {
-            self.locked_view.mut_components_mut().pop(self.id)
+            self.locked_view.get_mut_accessor().soft_pop(self.id)
         }
     }
 }
