@@ -6,10 +6,15 @@ use ecs::{
 
 fn main() {
     let world = World::new();
+    let entity = world
+        .create_entity()
+        .lock_components_and_with(20u32)
+        .lock_components_and_with(13isize)
+        .lock_components_and_with(200i32);
 
-    let id = {
+    {
         let mut view = world.lock_view::<(&mut i32, &mut u32, &mut isize)>();
-        let id = view.create_entity().with(20u32).with(300i32).id();
+        view.create_entity().with(20u32).with(300i32);
         view.create_entity().with(12u32).with(40i32);
 
         for (id, (mut a, b)) in view.query::<(&mut u32, &i32)>() {
@@ -27,14 +32,9 @@ fn main() {
                 println!("{:?}", component.as_deref());
             }
         }
-
-        id
-    };
-
-    println!("DESTROYING");
-    if let Some(entity) = world.get_entity(id) {
-        entity.destroy();
     }
+
+    entity.lock_all_components_and_destroy();
 
     for (id, (a, b)) in world.lock_view::<(&i32, &u32)>().default_query() {
         println!("{:?}", id);

@@ -6,9 +6,7 @@ edition = "2024"
 [dependencies]
 derived-deref = "2.1.0"
 itertools = "0.14.0"
-ouroboros = "0.18.5"
-owning_ref = "0.4.1"
 parking_lot = "0.12.5"
+safer_owning_ref = "0.5.0"
 static_assertions = "1.1.0"
-thiserror = "2.0.17"
 tuples = { version = "*", path = "../tuples" }

@@ -17,11 +17,11 @@ pub struct ComponentSetWriteGuard<T: Component>(
 
 /// Trait for a component set to be created from a world
 pub trait ComponentSetGuard {
-    fn from_world(world: &World) -> Self;
+    fn lock_from_world(world: &World) -> Self;
 }
 
 impl<T: Component> ComponentSetGuard for ComponentSetReadGuard<T> {
-    fn from_world(world: &World) -> Self {
+    fn lock_from_world(world: &World) -> Self {
         ComponentSetReadGuard(OwningHandle::new_with_fn(world.component_row_lock::<T>(), |lock| {
             unsafe { &*lock }.read()
         }))
@@ -29,7 +29,7 @@ impl<T: Component> ComponentSetGuard for ComponentSetReadGuard<T> {
 }
 
 impl<T: Component> ComponentSetGuard for ComponentSetWriteGuard<T> {
-    fn from_world(world: &World) -> Self {
+    fn lock_from_world(world: &World) -> Self {
         ComponentSetWriteGuard(OwningHandle::new_with_fn(world.component_row_lock::<T>(), |lock| {
             unsafe { &*lock }.write()
         }))

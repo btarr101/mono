@@ -1,11 +1,12 @@
 use std::ops::{Deref, DerefMut};
 
 use crate::{
+    component_set_guards::{ComponentSetGuard, ComponentSetWriteGuard},
     locked_view::{
         LockedView,
         private::{HasComponents, HasComponentsMut, LockedViewElements},
     },
-    traits::component::Component,
+    traits::{component::Component, component_set_accessor::MutComponentSetMutAccessor},
     world::World,
 };
 
@@ -24,12 +25,54 @@ pub struct Entity<'a> {
 impl<'a> Entity<'a> {
     pub(crate) fn new(id: EntityId, world: &'a World) -> Self { Self { id, world } }
 
-    /// Destroys this entity and all components associated with it
-    pub fn destroy(self) {
-        self.world.entities.write().free_id(self.id);
+    /// Adds a component to this enity
+    ///
+    /// Requires locking the component set for write access
+    pub fn lock_components_and_add<T: Component>(&mut self, component: T) {
+        ComponentSetWriteGuard::lock_from_world(self.world).add(self.id, component);
+    }
 
-        // TODO: Need a trait
-        todo!("destroy the components")
+    /// Attempts to remove a component, and returns the component if it
+    /// was removed this way
+    ///
+    /// Requires locking the component set for write access
+    pub fn lock_components_and_pop<T: Component>(&mut self) -> Option<T> {
+        ComponentSetWriteGuard::lock_from_world(self.world).soft_pop(self.id)
+    }
+
+    /// Builder variant of `lock_components_and_add`
+    pub fn lock_components_and_with<T: Component>(mut self, component: T) -> Self {
+        self.lock_components_and_add(component);
+        self
+    }
+
+    /// Builder variant of `lock_components_and_pop`
+    pub fn lock_components_and_without<T: Component>(mut self) -> Self {
+        self.lock_components_and_pop::<T>();
+        self
+    }
+
+    /// Destroys this entity and all components associated with it
+    ///
+    /// Does so by locking every component set, removing the component, then moving onto the next one.
+    /// Thus if any component sets are currently locked and this is called on the same thread there will be a deadlock.
+    pub fn lock_all_components_and_destroy(self) {
+        // First, clear out components. If we fail to use an old entity id boo hoo. If we reallocate an entity id
+        // with already existing components we are in trouble
+        {
+            // Grab all locks and collect first, that way guards have something to reference
+            // (if we were less lazy we could bundle with OwningRef)
+            let locks = self.world.components.read().values().cloned().collect::<Vec<_>>();
+
+            // Ensure we lock every single component set before moving to actually delete the components, that way this operation is kept
+            // atomic
+            let component_sets = locks.iter().map(|lock| lock.write()).collect::<Vec<_>>();
+            component_sets
+                .into_iter()
+                .for_each(|mut component_set| component_set.remove(self.id.index));
+        }
+
+        self.world.entities.write().free_id(self.id);
     }
 }
 

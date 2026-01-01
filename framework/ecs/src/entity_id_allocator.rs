@@ -32,5 +32,5 @@ impl EntityIdAllocator {
     }
 
     /// Checks if the index portion of an entity id is currently being used
-    pub fn index_in_use(&self, index: usize) -> bool { index >= self.next_index || self.freed_indexes.contains(&index) }
+    pub fn index_in_use(&self, index: usize) -> bool { !(index >= self.next_index || self.freed_indexes.contains(&index)) }
 }

@@ -1,10 +1,19 @@
-use std::cell::{Ref, RefMut};
+use std::{
+    any::Any,
+    cell::{Ref, RefMut},
+};
 
 use crate::{danger_cell::DangerCell, entity::EntityId, sparse_set::SparseSet, traits::component::Component};
 
 /// Internal data structure for storring components
 #[derive(Default)]
 pub struct ComponentSet<T: Component>(SparseSet<(usize, Option<DangerCell<T>>)>);
+
+pub trait AnyComponentSet: Any + Send + Sync {
+    /// Removes a component from this component set
+    /// given it's index
+    fn remove(&mut self, index: usize);
+}
 
 impl<T: Component> ComponentSet<T> {
     /// Creates a new component set
@@ -141,4 +150,8 @@ impl<T: Component> ComponentSet<T> {
                 .into()
         })
     }
+}
+
+impl<T: Component> AnyComponentSet for ComponentSet<T> {
+    fn remove(&mut self, index: usize) { self.pop(index); }
 }

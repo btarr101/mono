@@ -29,6 +29,7 @@ macro_rules! impl_prepend_tuple {
 
 		impl<$first $(,$rest)*> private::Sealed for ($first, $($rest,)*) {}
 		impl<$first $(,$rest)*> CanPrepend for ($first, $($rest,)*) {
+			// This is the hack, attempting to prepend past this point does nothing
 			type Prepended<Head> = Self;
 
 			fn prepend<Head>(self, _: Head) -> Self::Prepended<Head> {

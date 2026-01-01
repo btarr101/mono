@@ -1,24 +1,16 @@
-use std::{
-    any::{Any, TypeId},
-    collections::HashMap,
-    sync::Arc,
-};
+use std::{any::Any, sync::Arc};
 
 use owning_ref::OwningHandle;
-use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use parking_lot::{MappedRwLockWriteGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use static_assertions::assert_impl_all;
 
 use crate::{
-    component_set::ComponentSet,
-    component_set_guards::{ComponentSetGuard, ComponentSetReadGuard, ComponentSetWriteGuard},
+    component_set::{AnyComponentSet, ComponentSet},
     entity::{Entity, EntityId},
     entity_id_allocator::EntityIdAllocator,
     locked_view::{LockedView, private::LockedViewElements},
-    traits::{
-        component::Component,
-        component_set_accessor::{ComponentSetAccessor, MutComponentSetMutAccessor},
-        singleton::Singleton,
-    },
+    sorted_hasmap::SortedTypeArcMap,
+    traits::{component::Component, singleton::Singleton},
 };
 
 assert_impl_all!(World: Send, Sync);
@@ -26,13 +18,19 @@ assert_impl_all!(World: Send, Sync);
 #[derive(Default)]
 pub struct World {
     pub entities: Arc<RwLock<EntityIdAllocator>>,
-    pub singletons: RwLock<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
-    pub components: RwLock<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
+    pub singletons: RwLock<SortedTypeArcMap<dyn Any + Send + Sync>>,
+    pub components: RwLock<SortedTypeArcMap<dyn AnyComponentSetRwLock>>,
 }
 
 impl World {
     /// Creates a new world
     pub fn new() -> Self { Default::default() }
+
+    /// Creates a new entity in this world
+    pub fn create_entity(&self) -> Entity<'_> {
+        let id = { self.entities.write().allocate_id() };
+        Entity::new(id, self)
+    }
 
     /// Gets an entity from this world
     pub fn get_entity(&self, id: EntityId) -> Option<Entity<'_>> {
@@ -46,14 +44,6 @@ impl World {
     /// singletons.
     pub fn lock_view<Elements: LockedViewElements>(&self) -> LockedView<Elements> { LockedView::new(self) }
 
-    /// Lock a set of components immutably for reading
-    pub fn lock_components<T: Component>(&self) -> impl ComponentSetAccessor<T> { ComponentSetReadGuard::from_world(self) }
-
-    /// Lock a set of components mutably for writing
-    pub fn lock_components_mut<T: Component>(&self) -> impl MutComponentSetMutAccessor<T> {
-        ComponentSetWriteGuard::from_world(self)
-    }
-
     /// Lock a singleton immutably for reading
     pub fn lock_singleton<T: Singleton>(&self) -> OwningHandle<Arc<RwLock<Option<T>>>, RwLockReadGuard<'static, Option<T>>> {
         OwningHandle::new_with_fn(self.singleton_lock::<T>(), |lock| unsafe { &*lock }.read())
@@ -65,39 +55,50 @@ impl World {
     }
 
     pub(crate) fn component_row_lock<T: Component>(&self) -> Arc<RwLock<ComponentSet<T>>> {
-        let key = TypeId::of::<T>();
-
         let guard = self.components.read();
-        match guard.get(&key) {
+        match guard.get::<T>() {
             Some(arc) => arc.clone(),
             None => {
                 drop(guard);
 
                 let mut guard = self.components.write();
                 guard
-                    .entry(key)
+                    .entry::<T>()
                     .or_insert_with(|| Arc::new(RwLock::new(ComponentSet::<T>::new())))
                     .clone()
             }
         }
+        .as_any()
         .downcast()
         .expect("downcast")
     }
 
     fn singleton_lock<T: Singleton>(&self) -> Arc<RwLock<Option<T>>> {
-        let key = TypeId::of::<T>();
-
         let guard = self.singletons.read();
-        match guard.get(&key) {
+        match guard.get::<T>() {
             Some(arc) => arc.clone(),
             None => {
                 drop(guard);
 
                 let mut guard = self.singletons.write();
-                guard.entry(key).or_insert_with(|| Arc::new(RwLock::new(None::<T>))).clone()
+                guard.entry::<T>().or_insert_with(|| Arc::new(RwLock::new(None::<T>))).clone()
             }
         }
         .downcast()
         .expect("downcast")
     }
+}
+
+/// Util trait to allow removing a component from a rwlocked component set,
+/// and from converting that set to any for downcasting
+pub trait AnyComponentSetRwLock: Send + Sync {
+    fn write(&self) -> MappedRwLockWriteGuard<'_, dyn AnyComponentSet>;
+    fn as_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync>;
+}
+
+impl<T: AnyComponentSet> AnyComponentSetRwLock for RwLock<T> {
+    fn write(&self) -> MappedRwLockWriteGuard<'_, dyn AnyComponentSet> {
+        RwLockWriteGuard::map(self.write(), |t| t as &mut dyn AnyComponentSet)
+    }
+    fn as_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync> { self }
 }

@@ -62,6 +62,7 @@ impl<T> SparseSet<T> {
     }
 
     /// Checks if this sparse set has an element
+    #[expect(unused)]
     pub fn has(&self, index: usize) -> bool { self.sparse_to_dense.get(index).cloned().flatten().is_some() }
 
     /// Attempts to removes an element from this sparse set,
@@ -94,20 +95,24 @@ impl<T> SparseSet<T> {
     }
 
     /// Iterates through this sparse set mutably
+    #[expect(unused)]
     pub fn iter_mut(&mut self) -> impl Iterator<Item = (usize, &mut T)> {
         self.dense.iter_mut().map(|(index, element)| (*index, element))
     }
 
     /// Clears this spsarse set
+    #[expect(unused)]
     pub fn clear(&mut self) {
         self.sparse_to_dense.clear();
         self.dense.clear();
     }
 
     /// Checks if this sparse set is empty
+    #[expect(unused)]
     pub fn is_empty(&self) -> bool { self.dense.is_empty() }
 
     /// Gets an element or the default
+    #[expect(unused)]
     pub fn get_or_default(&mut self, index: usize) -> &T
     where
         T: Default,
@@ -121,6 +126,7 @@ impl<T> SparseSet<T> {
     }
 
     /// Gets an element or the default mutably
+    #[expect(unused)]
     pub fn get_or_default_mut(&mut self, index: usize) -> &mut T
     where
         T: Default,

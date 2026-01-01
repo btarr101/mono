@@ -28,7 +28,7 @@ where
     Head: ComponentSetGuard,
     Tail: ConsComponentSetGuards,
 {
-    fn cons_lock_from_world(world: &World) -> Self { (Head::from_world(world), Tail::cons_lock_from_world(world)) }
+    fn cons_lock_from_world(world: &World) -> Self { (Head::lock_from_world(world), Tail::cons_lock_from_world(world)) }
 }
 impl<Head, Tail> ConsAsComponentSetGuards for (Head, Tail)
 where
