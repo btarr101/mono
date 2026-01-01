@@ -17,6 +17,10 @@ pub struct EntityId {
     pub(crate) generation: usize,
 }
 
+/// An entity that references an ecs world
+/// 
+/// Note, this entity as no methods to get an immutable or mutable reference
+/// type to one of its components.
 pub struct Entity<'a> {
     id: EntityId,
     world: &'a World,

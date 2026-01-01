@@ -1,5 +1,9 @@
-use std::{any::Any, sync::Arc};
+use std::{
+    any::{Any, TypeId},
+    sync::Arc,
+};
 
+use indexmap::IndexMap;
 use owning_ref::OwningHandle;
 use parking_lot::{MappedRwLockWriteGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use static_assertions::assert_impl_all;
@@ -9,7 +13,6 @@ use crate::{
     entity::{Entity, EntityId},
     entity_id_allocator::EntityIdAllocator,
     locked_view::{LockedView, private::LockedViewElements},
-    sorted_hasmap::SortedTypeArcMap,
     traits::{component::Component, singleton::Singleton},
 };
 
@@ -18,8 +21,8 @@ assert_impl_all!(World: Send, Sync);
 #[derive(Default)]
 pub struct World {
     pub entities: Arc<RwLock<EntityIdAllocator>>,
-    pub singletons: RwLock<SortedTypeArcMap<dyn Any + Send + Sync>>,
-    pub components: RwLock<SortedTypeArcMap<dyn AnyComponentSetRwLock>>,
+    pub singletons: RwLock<IndexMap<TypeId, Arc<dyn Any + Send + Sync>>>,
+    pub components: RwLock<IndexMap<TypeId, Arc<dyn AnyComponentSetRwLock>>>,
 }
 
 impl World {
@@ -55,15 +58,16 @@ impl World {
     }
 
     pub(crate) fn component_row_lock<T: Component>(&self) -> Arc<RwLock<ComponentSet<T>>> {
+        let key = TypeId::of::<T>();
         let guard = self.components.read();
-        match guard.get::<T>() {
+        match guard.get(&key) {
             Some(arc) => arc.clone(),
             None => {
                 drop(guard);
 
                 let mut guard = self.components.write();
                 guard
-                    .entry::<T>()
+                    .entry(key)
                     .or_insert_with(|| Arc::new(RwLock::new(ComponentSet::<T>::new())))
                     .clone()
             }
@@ -74,14 +78,15 @@ impl World {
     }
 
     fn singleton_lock<T: Singleton>(&self) -> Arc<RwLock<Option<T>>> {
+        let key = TypeId::of::<T>();
         let guard = self.singletons.read();
-        match guard.get::<T>() {
+        match guard.get(&key) {
             Some(arc) => arc.clone(),
             None => {
                 drop(guard);
 
                 let mut guard = self.singletons.write();
-                guard.entry::<T>().or_insert_with(|| Arc::new(RwLock::new(None::<T>))).clone()
+                guard.entry(key).or_insert_with(|| Arc::new(RwLock::new(None::<T>))).clone()
             }
         }
         .downcast()

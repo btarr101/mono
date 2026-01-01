@@ -106,7 +106,10 @@ where
 }
 
 pub(crate) mod private {
+    use smallvec::SmallVec;
+
     use super::*;
+    use crate::component_set_guards::ConsMaybeLockedGuardsExt;
 
     pub trait Sealed {}
     impl<Elements: LockedViewElements> Sealed for LockedView<Elements> {}
@@ -168,7 +171,20 @@ pub(crate) mod private {
         type ConsComponentSetGuards = <<Self as AsConsTuple>::As as ConsAsComponentSetGuards>::As;
 
         fn lock_component_sets(world: &World) -> Self::ConsComponentSetGuards {
-            Self::ConsComponentSetGuards::cons_lock_from_world(world)
+            // First, get all the locks in "maybe locked" form. These will be ordered the same as Elements
+            let mut maybe_locks = Self::ConsComponentSetGuards::get_maybe_locks(world);
+
+            // Collect dyn references to all of the maybe locks in a Vec (todo: use smallvec to keep this on the stack)
+            let mut dyn_maybe_locks = maybe_locks.dyn_muts().collect::<SmallVec<[_; 8]>>();
+
+            // !! Important !!
+            // We sort the dyn locks by the type id of the component. That way we have a stable lock order to prevent deadlocks,
+            // then lock them
+            dyn_maybe_locks.sort_by_key(|dyn_lock| dyn_lock.component_type_id());
+            dyn_maybe_locks.into_iter().for_each(|dyn_lock| dyn_lock.lock());
+
+            // Finally we convert the locks back to there locked guards
+            maybe_locks.to_locked_guards()
         }
     }
 
