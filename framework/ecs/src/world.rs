@@ -1,9 +1,9 @@
 use std::{
-    any::{Any, TypeId},
+    any::Any,
+    ops::{Deref, DerefMut},
     sync::Arc,
 };
 
-use indexmap::IndexMap;
 use owning_ref::OwningHandle;
 use parking_lot::{MappedRwLockWriteGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use static_assertions::assert_impl_all;
@@ -13,6 +13,8 @@ use crate::{
     entity::{Entity, EntityId},
     entity_id_allocator::EntityIdAllocator,
     locked_view::{LockedView, private::LockedViewElements},
+    singleton_guard::SingletonContainerWriteGuard,
+    sorted_type_arcmap::SortedTypeArcMap,
     traits::{component::Component, singleton::Singleton},
 };
 
@@ -20,9 +22,9 @@ assert_impl_all!(World: Send, Sync);
 
 #[derive(Default)]
 pub struct World {
-    pub entities: Arc<RwLock<EntityIdAllocator>>,
-    pub singletons: RwLock<IndexMap<TypeId, Arc<dyn Any + Send + Sync>>>,
-    pub components: RwLock<IndexMap<TypeId, Arc<dyn AnyComponentSetRwLock>>>,
+    pub(crate) entities: Arc<RwLock<EntityIdAllocator>>,
+    pub(crate) singletons: RwLock<SortedTypeArcMap<dyn Any + Send + Sync>>,
+    pub(crate) components: RwLock<SortedTypeArcMap<dyn AnyComponentSetRwLock>>,
 }
 
 impl World {
@@ -48,26 +50,33 @@ impl World {
     pub fn lock_view<Elements: LockedViewElements>(&self) -> LockedView<Elements> { LockedView::new(self) }
 
     /// Lock a singleton immutably for reading
-    pub fn lock_singleton<T: Singleton>(&self) -> OwningHandle<Arc<RwLock<Option<T>>>, RwLockReadGuard<'static, Option<T>>> {
-        OwningHandle::new_with_fn(self.singleton_lock::<T>(), |lock| unsafe { &*lock }.read())
+    pub fn lock_singleton<T: Singleton>(&self) -> Option<impl Deref<Target = T>> {
+        OwningHandle::try_new(self.singleton_lock::<T>(), |lock| {
+            RwLockReadGuard::try_map(unsafe { &*lock }.read(), |singleton| singleton.as_ref())
+        })
+        .ok()
     }
 
-    /// Lock a singleton mutably for writing
-    pub fn lock_singleton_mut<T: Singleton>(&self) -> OwningHandle<Arc<RwLock<Option<T>>>, RwLockWriteGuard<'static, Option<T>>> {
-        OwningHandle::new_with_fn(self.singleton_lock::<T>(), |lock| unsafe { &*lock }.write())
+    /// Locks a singleton mutably for writing
+    ///
+    /// Note unlike 'lock_singleton', this returns a lock around an option. Not
+    /// an option around a lock. This is to allow inserting a new singleton.
+    pub fn lock_singleton_mut<T: Singleton>(&self) -> impl DerefMut<Target = Option<T>> {
+        SingletonContainerWriteGuard(OwningHandle::new_with_fn(self.singleton_lock::<T>(), |lock| {
+            unsafe { &*lock }.write()
+        }))
     }
 
     pub(crate) fn component_row_lock<T: Component>(&self) -> Arc<RwLock<ComponentSet<T>>> {
-        let key = TypeId::of::<T>();
         let guard = self.components.read();
-        match guard.get(&key) {
+        match guard.get::<T>() {
             Some(arc) => arc.clone(),
             None => {
                 drop(guard);
 
                 let mut guard = self.components.write();
                 guard
-                    .entry(key)
+                    .entry::<T>()
                     .or_insert_with(|| Arc::new(RwLock::new(ComponentSet::<T>::new())))
                     .clone()
             }
@@ -78,15 +87,14 @@ impl World {
     }
 
     fn singleton_lock<T: Singleton>(&self) -> Arc<RwLock<Option<T>>> {
-        let key = TypeId::of::<T>();
         let guard = self.singletons.read();
-        match guard.get(&key) {
+        match guard.get::<T>() {
             Some(arc) => arc.clone(),
             None => {
                 drop(guard);
 
                 let mut guard = self.singletons.write();
-                guard.entry(key).or_insert_with(|| Arc::new(RwLock::new(None::<T>))).clone()
+                guard.entry::<T>().or_insert_with(|| Arc::new(Option::<T>::None)).clone()
             }
         }
         .downcast()
@@ -96,7 +104,7 @@ impl World {
 
 /// Util trait to allow removing a component from a rwlocked component set,
 /// and from converting that set to any for downcasting
-pub trait AnyComponentSetRwLock: Send + Sync {
+pub(crate) trait AnyComponentSetRwLock: Send + Sync {
     fn write(&self) -> MappedRwLockWriteGuard<'_, dyn AnyComponentSet>;
     fn as_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync>;
 }

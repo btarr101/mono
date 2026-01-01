@@ -18,13 +18,17 @@ fn main() {
         view.create_entity().with(12u32).with(40i32);
 
         for (id, (mut a, b)) in view.query::<(&mut u32, &i32)>() {
+            println!("== TOP LEVEL ==");
             println!("{:?}", id);
+            println!("===============");
             println!("{}", *a);
             println!("{}", *b);
             *a += 1;
 
             for (id, (a, b)) in view.query::<(&u32, &i32)>() {
+                println!("== INNER ==");
                 println!("{:?}", id);
+                println!("===============");
                 println!("{}", *a);
                 println!("{}", *b);
 
@@ -37,6 +41,7 @@ fn main() {
     entity.lock_all_components_and_destroy();
 
     for (id, (a, b)) in world.lock_view::<(&i32, &u32)>().default_query() {
+        println!("== TOP LEVEL ENTITY DESTROYED ==");
         println!("{:?}", id);
         println!("{}", *a);
         println!("{}", *b);

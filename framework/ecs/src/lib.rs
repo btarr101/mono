@@ -7,6 +7,8 @@ pub(crate) mod danger_cell;
 pub mod entity;
 pub(crate) mod entity_id_allocator;
 pub mod locked_view;
+pub(crate) mod singleton_guard;
+pub(crate) mod sorted_type_arcmap;
 pub(crate) mod sparse_set;
 pub mod traits;
 pub mod world;
