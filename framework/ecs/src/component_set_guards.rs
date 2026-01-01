@@ -32,24 +32,6 @@ pub trait ComponentSetGuard: Sized {
     }
 }
 
-impl<T: Component> ComponentSetGuard for ComponentSetReadGuard<T> {
-    type Component = T;
-
-    fn get_lock_from_world(world: &World) -> Arc<RwLock<ComponentSet<T>>> { world.component_row_lock::<T>() }
-    fn lock(lock: Arc<RwLock<ComponentSet<T>>>) -> Self {
-        ComponentSetReadGuard(OwningHandle::new_with_fn(lock, |lock| unsafe { &*lock }.read()))
-    }
-}
-
-impl<T: Component> ComponentSetGuard for ComponentSetWriteGuard<T> {
-    type Component = T;
-
-    fn get_lock_from_world(world: &World) -> Arc<RwLock<ComponentSet<T>>> { world.component_row_lock::<T>() }
-    fn lock(lock: Arc<RwLock<ComponentSet<T>>>) -> Self {
-        ComponentSetWriteGuard(OwningHandle::new_with_fn(lock, |lock| unsafe { &*lock }.write()))
-    }
-}
-
 /// Enum to represent if a component set is maybe locked or unlocked
 pub enum MaybeLockedComponentSet<G: ComponentSetGuard> {
     Unlocked(Arc<RwLock<ComponentSet<G::Component>>>),
@@ -80,13 +62,31 @@ pub trait ConsMaybeLockedGuardsExt {
     /// This is needed for erasing the type, sorting, then iterating and locking
     fn dyn_muts(&mut self) -> impl Iterator<Item = &mut dyn DynMaybeLockedComponentSetExt>;
 
-    /// Type of the locked guards that this maybe locked guards encapsulates
+    /// Type of the locked guards that this maybe locked guards
     type LockedGuards;
 
     /// Converts back from maybe locked to the locked guards
     ///
     /// Note that if any maybe locked guard isn't locked, this WILL panic
     fn to_locked_guards(self) -> Self::LockedGuards;
+}
+
+impl<T: Component> ComponentSetGuard for ComponentSetReadGuard<T> {
+    type Component = T;
+
+    fn get_lock_from_world(world: &World) -> Arc<RwLock<ComponentSet<T>>> { world.component_row_lock::<T>() }
+    fn lock(lock: Arc<RwLock<ComponentSet<T>>>) -> Self {
+        ComponentSetReadGuard(OwningHandle::new_with_fn(lock, |lock| unsafe { &*lock }.read()))
+    }
+}
+
+impl<T: Component> ComponentSetGuard for ComponentSetWriteGuard<T> {
+    type Component = T;
+
+    fn get_lock_from_world(world: &World) -> Arc<RwLock<ComponentSet<T>>> { world.component_row_lock::<T>() }
+    fn lock(lock: Arc<RwLock<ComponentSet<T>>>) -> Self {
+        ComponentSetWriteGuard(OwningHandle::new_with_fn(lock, |lock| unsafe { &*lock }.write()))
+    }
 }
 
 impl<G: ComponentSetGuard> MaybeLockedComponentSetExt for MaybeLockedComponentSet<G> {
