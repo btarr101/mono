@@ -2,7 +2,7 @@ use pastey::paste;
 
 use crate::impl_tuple_trait;
 
-/// Trait for prepending elements to any tuple
+/// Trait for prepending ComponentElements to any tuple
 pub trait CanPrepend: private::Sealed {
     type Prepended<Head>: CanPrepend;
 

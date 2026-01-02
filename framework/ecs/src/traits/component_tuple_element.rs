@@ -1,23 +1,23 @@
 use crate::{
-    component_set_guards::{ComponentSetGuard, ComponentSetReadGuard, ComponentSetWriteGuard},
-    traits::component::Component,
+    component_set_guards::{ComponentSetReadGuard, ComponentSetWriteGuard},
+    traits::{component::Component, guard::Guard},
 };
 
-mod sealed {
+mod private {
     pub trait Sealed {}
 }
 
 /// An element used as a specifier in a locked view
-pub trait ComponentTupleElement: sealed::Sealed {
+pub trait ComponentTupleElement: private::Sealed {
     type Component: Component;
-    type Guard: ComponentSetGuard;
+    type Guard: Guard<Element = Self::Component>;
 }
-impl<T: Component> sealed::Sealed for &T {}
+impl<T: Component> private::Sealed for &T {}
 impl<T: Component> ComponentTupleElement for &T {
     type Component = T;
     type Guard = ComponentSetReadGuard<T>;
 }
-impl<T: Component> sealed::Sealed for &mut T {}
+impl<T: Component> private::Sealed for &mut T {}
 impl<T: Component> ComponentTupleElement for &mut T {
     type Component = T;
     type Guard = ComponentSetWriteGuard<T>;

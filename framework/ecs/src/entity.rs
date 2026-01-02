@@ -1,12 +1,15 @@
-use std::ops::{Deref, DerefMut};
+use std::{
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+};
 
 use crate::{
-    component_set_guards::{ComponentSetGuard, ComponentSetWriteGuard},
+    component_set_guards::ComponentSetWriteGuard,
     locked_view::{
         LockedView,
         private::{HasComponents, HasComponentsMut, LockedViewElements},
     },
-    traits::{component::Component, component_set_accessor::MutComponentSetMutAccessor},
+    traits::{component::Component, component_set_accessor::MutComponentSetMutAccessor, guard::Guard},
     world::World,
 };
 
@@ -18,7 +21,7 @@ pub struct EntityId {
 }
 
 /// An entity that references an ecs world
-/// 
+///
 /// Note, this entity as no methods to get an immutable or mutable reference
 /// type to one of its components.
 pub struct Entity<'a> {
@@ -45,7 +48,7 @@ impl<'a> Entity<'a> {
     }
 
     /// Builder variant of `lock_components_and_add`
-    pub fn lock_components_and_with<T: Component>(mut self, component: T) -> Self {
+    pub fn require_components_and_with<T: Component>(mut self, component: T) -> Self {
         self.lock_components_and_add(component);
         self
     }
@@ -60,7 +63,7 @@ impl<'a> Entity<'a> {
     ///
     /// Does so by locking every component set, removing the component, then moving onto the next one.
     /// Thus if any component sets are currently locked and this is called on the same thread there will be a deadlock.
-    pub fn lock_all_components_and_destroy(self) {
+    pub fn require_all_components_and_destroy(self) {
         // First, clear out components. If we fail to use an old entity id boo hoo. If we reallocate an entity id
         // with already existing components we are in trouble
         {
@@ -87,47 +90,66 @@ impl<'a> Entity<'a> {
 /// then this view has, you have 2 options:
 /// - Lock all the needed components, but this may results in overlocking
 /// - Command buffer system, where you buffer creating entities and then create them in another locked view
-pub struct LockedViewEntity<'a, Elements: LockedViewElements> {
+pub struct LockedViewEntity<'a, LockedViewRef>
+where
+    LockedViewRef: private::LockedViewRef<'a>,
+{
     id: EntityId,
-    locked_view: &'a mut LockedView<Elements>,
+    locked_view: LockedViewRef,
+    _phantom: PhantomData<&'a ()>,
 }
 
-impl<'a, Elements: LockedViewElements> LockedViewEntity<'a, Elements> {
-    pub(crate) fn new(id: EntityId, locked_view: &'a mut LockedView<Elements>) -> Self { Self { id, locked_view } }
+impl<'a, LockedViewRef> LockedViewEntity<'a, LockedViewRef>
+where
+    LockedViewRef: private::LockedViewRef<'a>,
+{
+    pub(crate) fn new(id: EntityId, locked_view: LockedViewRef) -> Self {
+        Self {
+            id,
+            locked_view,
+            _phantom: PhantomData::<&'a ()>,
+        }
+    }
 
     /// Gets the id of this entity
     pub fn id(&self) -> EntityId { self.id }
 }
 
 /// Extension trait for a locked view entity to access a component immutably
-pub trait LockedViewEntityComponentExt<Elements: LockedViewElements, Idx, QueryIdx> {
+pub trait LockedViewEntityComponentExt<C, S, Idx, QueryIdx>
+where
+    C: LockedViewElements,
+    S: LockedViewElements,
+{
     /// Accesses a component on this entity immutably - if it exists
     fn component<T: Component>(&self) -> Option<impl Deref<Target = T>>
     where
-        LockedView<Elements>: HasComponents<T, Elements, Idx, QueryIdx>;
+        LockedView<C, S>: HasComponents<T, C, Idx, QueryIdx>;
+
+    /// Accesses a component on this entity mutably - if it exists
+    fn component_mut<T: Component>(&self) -> Option<impl DerefMut<Target = T>>
+    where
+        LockedView<C, S>: HasComponentsMut<T, C, Idx>;
 }
 
 /// Extension trait for a locked view entity to access a component mutably,
 /// or to add or remove a component
-pub trait LockedViewEntityComponentMutExt<Elements: LockedViewElements, Idx>
+pub trait LockedViewEntityComponentMutExt<C, S, Idx>
 where
     Self: Sized,
+    C: LockedViewElements,
+    S: LockedViewElements,
 {
-    /// Accesses a component on this entity mutably - if it exists
-    fn component_mut<T: Component>(&self) -> Option<impl DerefMut<Target = T>>
-    where
-        LockedView<Elements>: HasComponentsMut<T, Elements, Idx>;
-
     /// Adds a component to this entity
     fn add<T: Component>(&mut self, component: T) -> impl DerefMut<Target = T>
     where
-        LockedView<Elements>: HasComponentsMut<T, Elements, Idx>;
+        LockedView<C, S>: HasComponentsMut<T, C, Idx>;
 
     /// Builder variant of `add_component`
     fn with<T: Component>(mut self, component: T) -> Self
     where
         Self: Sized,
-        LockedView<Elements>: HasComponentsMut<T, Elements, Idx>,
+        LockedView<C, S>: HasComponentsMut<T, C, Idx>,
     {
         self.add(component);
         self
@@ -137,56 +159,96 @@ where
     /// if the component was removed
     fn pop<T: Component>(&mut self) -> Option<T>
     where
-        LockedView<Elements>: HasComponentsMut<T, Elements, Idx>;
+        LockedView<C, S>: HasComponentsMut<T, C, Idx>;
 }
 
 mod private {
     use super::*;
     use crate::traits::component_set_accessor::{ComponentSetAccessor, ComponentSetMutAccessor, MutComponentSetMutAccessor};
 
+    pub trait LockedViewRef<'a> {
+        type ComponentElements: LockedViewElements;
+        type SingletonElements: LockedViewElements;
+
+        fn as_ref(&self) -> &LockedView<Self::ComponentElements, Self::SingletonElements>;
+    }
+
+    pub trait LockedViewMut<'a>: LockedViewRef<'a> {
+        fn as_mut(&mut self) -> &mut LockedView<Self::ComponentElements, Self::SingletonElements>;
+    }
+
+    impl<'a, C, S, T> LockedViewRef<'a> for T
+    where
+        C: LockedViewElements,
+        S: LockedViewElements,
+        T: Deref<Target = LockedView<C, S>>,
+    {
+        type ComponentElements = C;
+        type SingletonElements = S;
+
+        fn as_ref(&self) -> &LockedView<C, S> { self }
+    }
+
+    impl<'a, C, S, T> LockedViewMut<'a> for T
+    where
+        C: LockedViewElements,
+        S: LockedViewElements,
+        T: DerefMut<Target = LockedView<C, S>>,
+    {
+        fn as_mut(&mut self) -> &mut LockedView<C, S> { &mut *self }
+    }
+
     impl EntityId {
         /// Creates a new entity id
         pub(crate) fn new(index: usize, generation: usize) -> Self { Self { index, generation } }
     }
 
-    impl<'a, Elements, Idx, QueryIdx> LockedViewEntityComponentExt<Elements, Idx, QueryIdx> for LockedViewEntity<'a, Elements>
+    impl<'a, LockedViewRef, Idx, QueryIdx>
+        LockedViewEntityComponentExt<LockedViewRef::ComponentElements, LockedViewRef::SingletonElements, Idx, QueryIdx>
+        for LockedViewEntity<'a, LockedViewRef>
     where
-        Elements: LockedViewElements,
+        LockedViewRef: private::LockedViewRef<'a>,
         Idx: 'static,
         QueryIdx: 'static,
     {
         fn component<T: Component>(&self) -> Option<impl Deref<Target = T>>
         where
-            LockedView<Elements>: HasComponents<T, Elements, Idx, QueryIdx>,
+            LockedView<LockedViewRef::ComponentElements, LockedViewRef::SingletonElements>:
+                HasComponents<T, LockedViewRef::ComponentElements, Idx, QueryIdx>,
         {
-            self.locked_view.get_accessor().get(self.id)
+            self.locked_view.as_ref().get_accessor().get(self.id)
+        }
+
+        fn component_mut<T: Component>(&self) -> Option<impl DerefMut<Target = T>>
+        where
+            LockedView<LockedViewRef::ComponentElements, LockedViewRef::SingletonElements>:
+                HasComponentsMut<T, LockedViewRef::ComponentElements, Idx>,
+        {
+            self.locked_view.as_ref().get_accessor().get_mut(self.id)
         }
     }
 
-    impl<'a, Elements, Idx> LockedViewEntityComponentMutExt<Elements, Idx> for LockedViewEntity<'a, Elements>
+    impl<'a, LockedViewRef, Idx>
+        LockedViewEntityComponentMutExt<LockedViewRef::ComponentElements, LockedViewRef::SingletonElements, Idx>
+        for LockedViewEntity<'a, LockedViewRef>
     where
-        Elements: LockedViewElements,
+        LockedViewRef: private::LockedViewMut<'a>,
         Idx: 'static,
     {
-        fn component_mut<T: Component>(&self) -> Option<impl DerefMut<Target = T>>
-        where
-            LockedView<Elements>: HasComponentsMut<T, Elements, Idx>,
-        {
-            self.locked_view.get_accessor().get_mut(self.id)
-        }
-
         fn add<T: Component>(&mut self, component: T) -> impl DerefMut<Target = T>
         where
-            LockedView<Elements>: HasComponentsMut<T, Elements, Idx>,
+            LockedView<LockedViewRef::ComponentElements, LockedViewRef::SingletonElements>:
+                HasComponentsMut<T, LockedViewRef::ComponentElements, Idx>,
         {
-            self.locked_view.get_mut_accessor().add(self.id, component)
+            self.locked_view.as_mut().get_mut_accessor().add(self.id, component)
         }
 
         fn pop<T: Component>(&mut self) -> Option<T>
         where
-            LockedView<Elements>: HasComponentsMut<T, Elements, Idx>,
+            LockedView<LockedViewRef::ComponentElements, LockedViewRef::SingletonElements>:
+                HasComponentsMut<T, LockedViewRef::ComponentElements, Idx>,
         {
-            self.locked_view.get_mut_accessor().soft_pop(self.id)
+            self.locked_view.as_mut().get_mut_accessor().soft_pop(self.id)
         }
     }
 }

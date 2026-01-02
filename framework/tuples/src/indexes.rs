@@ -8,14 +8,14 @@ pub struct Here;
 /// a cons like tuple representing the latter element.
 pub struct There<T: Index>(PhantomData<T>);
 
-pub trait Index: sealed::Sealed {}
+pub trait Index: private::Sealed {}
 
-mod sealed {
+mod private {
     pub trait Sealed {}
 }
 
-impl sealed::Sealed for Here {}
+impl private::Sealed for Here {}
 impl Index for Here {}
 
-impl<T: Index> sealed::Sealed for There<T> {}
+impl<T: Index> private::Sealed for There<T> {}
 impl<T: Index> Index for There<T> {}

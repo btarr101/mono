@@ -1,6 +1,9 @@
 pub(crate) mod component_set_accessor;
 pub(crate) mod component_tuple_element;
-pub(crate) mod cons_component_set_guards;
+pub(crate) mod cons_guards;
+pub(crate) mod cons_singleton_container_guards;
+pub(crate) mod guard;
+pub(crate) mod singleton_tuple_element;
 
 pub mod singleton {
     pub trait Singleton: 'static + Send + Sync {}

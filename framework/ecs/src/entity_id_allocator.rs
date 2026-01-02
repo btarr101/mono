@@ -11,6 +11,7 @@ pub struct EntityIdAllocator {
 
 impl EntityIdAllocator {
     /// Creates a new allocator
+    #[expect(unused)]
     pub fn new() -> Self { Self::default() }
 
     /// Allocates an entity id

@@ -6,12 +6,12 @@ use crate::{
     traits::component::Component,
 };
 
-mod sealed {
+mod private {
     pub trait Sealed<T> {}
 }
 
 /// Trait used to access a component set immutably
-pub trait ComponentSetAccessor<T: Component>: sealed::Sealed<T> {
+pub trait ComponentSetAccessor<T: Component>: private::Sealed<T> {
     type BorrowedComponent<'a>: Deref<Target = T> + 'a
     where
         Self: 'a;
@@ -23,7 +23,7 @@ pub trait ComponentSetAccessor<T: Component>: sealed::Sealed<T> {
     fn iter(&self) -> impl Iterator<Item = (EntityId, Self::BorrowedComponent<'_>)>;
 }
 
-impl<T: Component> sealed::Sealed<T> for ComponentSetReadGuard<T> {}
+impl<T: Component> private::Sealed<T> for ComponentSetReadGuard<T> {}
 impl<T: Component> ComponentSetAccessor<T> for ComponentSetReadGuard<T> {
     type BorrowedComponent<'a>
         = impl Deref<Target = T> + 'a
@@ -34,7 +34,7 @@ impl<T: Component> ComponentSetAccessor<T> for ComponentSetReadGuard<T> {
     fn iter(&self) -> impl Iterator<Item = (EntityId, Self::BorrowedComponent<'_>)> { unsafe { self.0.iter_shared() } }
 }
 
-impl<T: Component> sealed::Sealed<T> for ComponentSetWriteGuard<T> {}
+impl<T: Component> private::Sealed<T> for ComponentSetWriteGuard<T> {}
 impl<T: Component> ComponentSetAccessor<T> for ComponentSetWriteGuard<T> {
     type BorrowedComponent<'a>
         = impl Deref<Target = T> + 'a
@@ -45,7 +45,7 @@ impl<T: Component> ComponentSetAccessor<T> for ComponentSetWriteGuard<T> {
     fn iter(&self) -> impl Iterator<Item = (EntityId, Self::BorrowedComponent<'_>)> { unsafe { self.0.iter_exclusive() } }
 }
 
-impl<T: Component, A: ComponentSetAccessor<T>> sealed::Sealed<T> for &A {}
+impl<T: Component, A: ComponentSetAccessor<T>> private::Sealed<T> for &A {}
 impl<T: Component, A: ComponentSetAccessor<T>> ComponentSetAccessor<T> for &A {
     type BorrowedComponent<'a>
         = impl Deref<Target = T> + 'a
@@ -56,7 +56,7 @@ impl<T: Component, A: ComponentSetAccessor<T>> ComponentSetAccessor<T> for &A {
     fn iter(&self) -> impl Iterator<Item = (EntityId, Self::BorrowedComponent<'_>)> { (**self).iter() }
 }
 
-impl<T: Component, A: ComponentSetAccessor<T>> sealed::Sealed<T> for &mut A {}
+impl<T: Component, A: ComponentSetAccessor<T>> private::Sealed<T> for &mut A {}
 impl<T: Component, A: ComponentSetAccessor<T>> ComponentSetAccessor<T> for &mut A {
     type BorrowedComponent<'a>
         = impl Deref<Target = T> + 'a

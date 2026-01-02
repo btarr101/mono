@@ -5,6 +5,8 @@ use std::{
     sync::Arc,
 };
 
+use indexmap::map::Entry;
+
 /// Naming things is really hard...
 ///
 /// Essentially, the reason this exists is because we want to

@@ -1,4 +1,4 @@
-use crate::traits::has::ConsHas;
+use crate::traits::{cons_tuple::ConsTuple, has::ConsHas};
 
 /// Trait used to determine if a tuple of types is a superset of another tuple with types
 pub trait ConsSuperSet<Subset, Idxs> {
@@ -6,7 +6,7 @@ pub trait ConsSuperSet<Subset, Idxs> {
     fn cons_subset(self) -> Subset;
 }
 
-impl<T> ConsSuperSet<(), ()> for T {
+impl<T: ConsTuple> ConsSuperSet<(), ()> for T {
     fn cons_subset(self) {}
 }
 
