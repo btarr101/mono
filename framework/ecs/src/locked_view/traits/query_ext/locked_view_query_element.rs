@@ -5,7 +5,10 @@ use tuples::{index::Here, traits::has::ConsHas};
 use crate::{
     entity::EntityId,
     locked_view::{
-        LockedView, has_components::HasComponents, locked_view_elements::LockedViewElements, types::ConsComponentSetGuards,
+        LockedView,
+        has_components::{HasComponents, HasComponentsMut},
+        locked_view_elements::LockedViewElements,
+        types::ConsComponentSetGuards,
     },
     traits::{
         component::Component,
@@ -54,6 +57,6 @@ where
     type BorrowedComponent = impl DerefMut<Target = T>;
 
     fn iter_locked_view(view: &'a LockedView<C, S>) -> impl Iterator<Item = (EntityId, Self::BorrowedComponent)> + 'a {
-        unsafe { view.components.cons_get_ref().iter_mut() }
+        unsafe { view.get_accessor().iter_mut() }
     }
 }
