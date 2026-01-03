@@ -54,6 +54,6 @@ where
     type BorrowedComponent = impl DerefMut<Target = T>;
 
     fn iter_locked_view(view: &'a LockedView<C, S>) -> impl Iterator<Item = (EntityId, Self::BorrowedComponent)> + 'a {
-        view.components.cons_get_ref().iter_mut()
+        unsafe { view.components.cons_get_ref().iter_mut() }
     }
 }
