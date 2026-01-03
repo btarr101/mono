@@ -58,33 +58,3 @@ where
         { self.entities.read().index_in_use(id.index) }.then_some(LockedViewEntity::new(id, self))
     }
 }
-
-pub(crate) mod private {
-    use super::*;
-
-    // GOING TO TAKE A PAUSE ON THIS, NEED TO PUT THE SINGLETON INTO A DANGER CELL!!!
-    // TODO: For 2morrow
-    // pub trait HasSingleton<T: Singleton, S: LockedViewElements, Idx, QueryIdx>: Sealed {
-    //     type Accessor<'a>: Deref<Target = Option<T>> + 'a
-    //     where
-    //         Self: 'a;
-
-    //     fn get_singleton(&self) -> &Self::Accessor<'_>;
-    // }
-
-    // impl<T, C: LockedViewElements, S: LockedViewElements, Idx, QueryIdx> HasSingleton<T, S, Idx, QueryIdx> for LockedView<C, S>
-    // where
-    //     Idx: 'static,
-    //     QueryIdx: 'static,
-    //     T: Singleton,
-    //     S::Guards: ConsHasOne<Guards<T>, QueryIdx, Idx>,
-    //     for<'a> <S::Guards as ConsHasOne<Guards<T>, QueryIdx, Idx>>::Has: Deref<Target = Option<T>> + 'a,
-    // {
-    //     type Accessor<'a>
-    //         = impl Deref<Target = Option<T>>
-    //     where
-    //         Self: 'a;
-
-    //     fn get_singleton(&self) -> &Self::Accessor<'_> { self.singletons.cons_get_one_ref() }
-    // }
-}
