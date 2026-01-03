@@ -6,12 +6,18 @@ use std::{
 use owning_ref::OwningHandle;
 use parking_lot::{MappedRwLockReadGuard, MappedRwLockWriteGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use crate::{traits::singleton::Singleton, util::wrap::Wrap, world::World};
+use crate::{traits::singleton::Singleton, util::wrap::Wrap};
 
 /// Guard that sits in front of a singleton (gives read only access)
 pub struct SingletonContainerReadGuard<T: Singleton>(
     pub(crate) OwningHandle<Arc<RwLock<Option<T>>>, MappedRwLockReadGuard<'static, T>>,
 );
+
+impl<T: Singleton> Deref for SingletonContainerReadGuard<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target { &self.0 }
+}
 
 impl<T: Singleton> SingletonContainerReadGuard<T> {
     /// Creates this read guard from the world
@@ -29,6 +35,12 @@ pub struct OptionalSingletonContainerReadGuard<T: Singleton>(
     pub(crate) OwningHandle<Arc<RwLock<Option<T>>>, RwLockReadGuard<'static, Option<T>>>,
 );
 
+impl<T: Singleton> Deref for OptionalSingletonContainerReadGuard<T> {
+    type Target = Option<T>;
+
+    fn deref(&self) -> &Self::Target { &self.0 }
+}
+
 impl<T: Singleton> OptionalSingletonContainerReadGuard<T> {
     /// Creates this read guard from the world
     pub(crate) fn from_lock(lock: Arc<RwLock<Option<T>>>) -> Self {
@@ -40,6 +52,16 @@ impl<T: Singleton> OptionalSingletonContainerReadGuard<T> {
 pub struct SingletonContainerWriteGuard<T: Singleton>(
     pub(crate) OwningHandle<Arc<RwLock<Option<T>>>, MappedRwLockWriteGuard<'static, T>>,
 );
+
+impl<T: Singleton> Deref for SingletonContainerWriteGuard<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+impl<T: Singleton> DerefMut for SingletonContainerWriteGuard<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
+}
 
 impl<T: Singleton> SingletonContainerWriteGuard<T> {
     /// Creates this write guard from the world
@@ -57,26 +79,20 @@ pub struct OptionalSingletonContainerWriteGuard<T: Singleton>(
     pub(crate) OwningHandle<Arc<RwLock<Option<T>>>, RwLockWriteGuard<'static, Option<T>>>,
 );
 
+impl<T: Singleton> Deref for OptionalSingletonContainerWriteGuard<T> {
+    type Target = Option<T>;
+
+    fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+impl<T: Singleton> DerefMut for OptionalSingletonContainerWriteGuard<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
+}
+
 impl<T: Singleton> OptionalSingletonContainerWriteGuard<T> {
     /// Creates this read guard from the world
     pub(crate) fn from_lock(lock: Arc<RwLock<Option<T>>>) -> Self {
         Self(OwningHandle::new_with_fn(lock, |lock| unsafe { &*lock }.write()))
-    }
-}
-
-pub trait SingletonContainerGuard: Sized {
-    type Singleton: Singleton;
-
-    /// Gets the lock from an ecs world for getting this singleton set guard
-    fn get_lock_from_world(world: &World) -> Arc<RwLock<Option<Self::Singleton>>>;
-
-    /// Given the appropriate lock, creates the guard
-    fn lock(lock: Arc<RwLock<Option<Self::Singleton>>>) -> Self;
-
-    /// Locks this component set from the world
-    fn lock_from_world(world: &World) -> Self {
-        let lock = Self::get_lock_from_world(world);
-        Self::lock(lock)
     }
 }
 
@@ -146,50 +162,4 @@ impl<T: Singleton> OccupiedSingletonContainerEntry<T> {
             })
         }))
     }
-}
-
-impl<T: Singleton> Deref for SingletonContainerReadGuard<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target { &self.0 }
-}
-
-impl<T: Singleton> Deref for OptionalSingletonContainerReadGuard<T> {
-    type Target = Option<T>;
-
-    fn deref(&self) -> &Self::Target { &self.0 }
-}
-
-impl<T: Singleton> SingletonContainerGuard for OptionalSingletonContainerReadGuard<T> {
-    type Singleton = T;
-
-    fn get_lock_from_world(world: &World) -> Arc<RwLock<Option<Self::Singleton>>> { world.singleton_lock() }
-    fn lock(lock: Arc<RwLock<Option<Self::Singleton>>>) -> Self { Self::from_lock(lock) }
-}
-
-impl<T: Singleton> Deref for SingletonContainerWriteGuard<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target { &self.0 }
-}
-
-impl<T: Singleton> DerefMut for SingletonContainerWriteGuard<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
-}
-
-impl<T: Singleton> Deref for OptionalSingletonContainerWriteGuard<T> {
-    type Target = Option<T>;
-
-    fn deref(&self) -> &Self::Target { &self.0 }
-}
-
-impl<T: Singleton> DerefMut for OptionalSingletonContainerWriteGuard<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
-}
-
-impl<T: Singleton> SingletonContainerGuard for OptionalSingletonContainerWriteGuard<T> {
-    type Singleton = T;
-
-    fn get_lock_from_world(world: &World) -> Arc<RwLock<Option<Self::Singleton>>> { world.singleton_lock() }
-    fn lock(lock: Arc<RwLock<Option<Self::Singleton>>>) -> Self { Self::from_lock(lock) }
 }

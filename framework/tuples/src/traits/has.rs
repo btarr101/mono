@@ -1,6 +1,6 @@
 use crate::{
-    indexes::{Here, Index, There},
-    traits::{as_cons_tuple::AsConsTuple, flat::Flat},
+    index::{Here, Index, There},
+    traits::{as_cons_tuple::AsConsTuple, flat::ToFlat},
 };
 
 /// Trait for if a tuple contains an element.
@@ -21,11 +21,11 @@ impl<Tuple, T, Idx> Has<T, Idx> for Tuple
 where
     Tuple: AsConsTuple,
     Tuple::As: ConsHas<T, Idx>,
-    <Tuple::As as ConsHas<T, Idx>>::Plucked: Flat,
+    <Tuple::As as ConsHas<T, Idx>>::Plucked: ToFlat,
     for<'a> Tuple::AsRefs<'a>: ConsHas<&'a T, Idx>,
     for<'a> Tuple::AsMuts<'a>: ConsHas<&'a mut T, Idx>,
 {
-    type Plucked = <<Tuple::As as ConsHas<T, Idx>>::Plucked as Flat>::Flattened;
+    type Plucked = <<Tuple::As as ConsHas<T, Idx>>::Plucked as ToFlat>::Flattened;
 
     fn get(self) -> T { self.to_cons_tuple().cons_get() }
     fn plucked(self) -> (T, Self::Plucked) {

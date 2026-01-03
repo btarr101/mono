@@ -5,8 +5,6 @@ use std::{
     sync::Arc,
 };
 
-use indexmap::map::Entry;
-
 /// Naming things is really hard...
 ///
 /// Essentially, the reason this exists is because we want to
@@ -63,6 +61,8 @@ pub enum SortedTypeArcMapEntry<'a, T, V: ?Sized> {
 }
 
 impl<'a, T: 'static, V: ?Sized> SortedTypeArcMapEntry<'a, T, V> {
+    /// If the entry is occupied, returns it, otherwise inserts the a new value
+    /// and then returns that
     pub fn or_insert_with<F>(self, call: F) -> &'a Arc<V>
     where
         F: FnOnce() -> Arc<V>,

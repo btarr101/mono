@@ -1,20 +1,20 @@
-use crate::traits::prepend::CanPrepend;
+use crate::traits::can_prepend::CanPrepend;
 
-pub trait Flat {
+pub trait ToFlat {
     type Flattened: CanPrepend;
 
     fn flatten(self) -> Self::Flattened;
 }
 
-impl Flat for () {
+impl ToFlat for () {
     type Flattened = ();
 
     fn flatten(self) -> Self::Flattened {}
 }
 
-impl<Head, Tail> Flat for (Head, Tail)
+impl<Head, Tail> ToFlat for (Head, Tail)
 where
-    Tail: Flat,
+    Tail: ToFlat,
 {
     type Flattened = <Tail::Flattened as CanPrepend>::Prepended<Head>;
 

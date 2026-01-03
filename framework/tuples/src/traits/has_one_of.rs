@@ -1,5 +1,5 @@
 use crate::{
-    indexes::{Here, Index, There},
+    index::{Here, Index, There},
     traits::has::ConsHas,
 };
 

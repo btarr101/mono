@@ -1,4 +1,4 @@
-use crate::indexes::{Here, Index, There};
+use crate::index::{Here, Index, There};
 
 mod private {
     pub trait Sealed {}

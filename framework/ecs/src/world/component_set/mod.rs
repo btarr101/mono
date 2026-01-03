@@ -3,7 +3,13 @@ use std::{
     cell::{Ref, RefMut},
 };
 
-use crate::{danger_cell::DangerCell, entity::EntityId, sparse_set::SparseSet, traits::component::Component};
+use crate::{
+    entity::EntityId,
+    traits::component::Component,
+    util::{danger_cell::DangerCell, sparse_set::SparseSet},
+};
+
+pub(crate) mod component_set_guards;
 
 /// Internal data structure for storring components
 #[derive(Default)]

@@ -1,15 +1,9 @@
-use ecs::{
-    entity::LockedViewEntityComponentMutExt,
-    locked_view::{LockedViewComponentsQueryExt, LockedViewGetComponentMutExt},
-    world::World,
-};
+use ecs::{entity::LockedViewEntityComponentMutExt, locked_view::traits::*, world::World};
 
 fn main() {
     let world = World::new();
     let singleton = world.lock_singleton_entry().insert("FOOBAR".to_string()).read();
-    let singleton2 = world.lock_singleton::<String>().unwrap();
 
-    println!("{:?}", *singleton2);
     let entity = world
         .create_entity()
         .require_components_and_with(20u32)
@@ -17,9 +11,13 @@ fn main() {
         .require_components_and_with(200i32);
 
     {
-        let mut view = world.lock_view::<(&mut i32, &mut u32, &mut isize), ()>();
-        let ent = view.create_entity().with(20u32).with(300i32).id();
+        let mut view = world.lock_view::<(&mut i32, &mut u32, &mut isize), (&String,)>();
+
+        view.create_entity().with(20u32).with(300i32);
         view.create_entity().with(12u32).with(40i32);
+
+        let s = view.get_singleton::<String>();
+        println!("{:?}", s.as_deref());
 
         for (id, (mut a, b)) in view.query::<(&mut u32, &i32)>() {
             println!("== TOP LEVEL ==");

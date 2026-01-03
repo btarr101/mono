@@ -4,14 +4,20 @@ use parking_lot::{MappedRwLockWriteGuard, RwLock, RwLockWriteGuard};
 use static_assertions::assert_impl_all;
 
 use crate::{
-    component_set::{AnyComponentSet, ComponentSet},
     entity::{Entity, EntityId},
-    entity_id_allocator::EntityIdAllocator,
-    locked_view::{LockedView, private::LockedViewElements},
-    singleton_guards::{SingletonContainerEntry, SingletonContainerReadGuard, SingletonContainerWriteGuard},
-    sorted_type_arcmap::SortedTypeArcMap,
+    locked_view::{LockedView, locked_view_elements::LockedViewElements},
     traits::{component::Component, singleton::Singleton},
+    util::sorted_type_arcmap::SortedTypeArcMap,
+    world::{
+        component_set::{AnyComponentSet, ComponentSet},
+        entity_id_allocator::EntityIdAllocator,
+        singleton_guards::{SingletonContainerEntry, SingletonContainerReadGuard, SingletonContainerWriteGuard},
+    },
 };
+
+pub(crate) mod component_set;
+pub(crate) mod entity_id_allocator;
+pub(crate) mod singleton_guards;
 
 assert_impl_all!(World: Send, Sync);
 

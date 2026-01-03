@@ -4,13 +4,13 @@ use std::{
 };
 
 use crate::{
-    component_set_guards::ComponentSetWriteGuard,
     locked_view::{
         LockedView,
-        private::{HasComponents, HasComponentsMut, LockedViewElements},
+        has_components::{HasComponents, HasComponentsMut},
+        locked_view_elements::LockedViewElements,
     },
     traits::{component::Component, component_set_accessor::MutComponentSetMutAccessor, guard::Guard},
-    world::World,
+    world::{World, component_set::component_set_guards::ComponentSetWriteGuard},
 };
 
 /// An identifier for an entity (and each of its components)
@@ -216,7 +216,7 @@ mod private {
             LockedView<LockedViewRef::ComponentElements, LockedViewRef::SingletonElements>:
                 HasComponents<T, LockedViewRef::ComponentElements, Idx, QueryIdx>,
         {
-            self.locked_view.as_ref().get_accessor().get(self.id)
+            unsafe { self.locked_view.as_ref().get_accessor().get(self.id) }
         }
 
         fn component_mut<T: Component>(&self) -> Option<impl DerefMut<Target = T>>
@@ -224,7 +224,7 @@ mod private {
             LockedView<LockedViewRef::ComponentElements, LockedViewRef::SingletonElements>:
                 HasComponentsMut<T, LockedViewRef::ComponentElements, Idx>,
         {
-            self.locked_view.as_ref().get_accessor().get_mut(self.id)
+            unsafe { self.locked_view.as_ref().get_accessor().get_mut(self.id) }
         }
     }
 

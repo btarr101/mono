@@ -1,6 +1,6 @@
 use crate::{
-    singleton_guards::{OptionalSingletonContainerReadGuard, OptionalSingletonContainerWriteGuard, SingletonContainerGuard},
-    traits::singleton::Singleton,
+    traits::{guard::Guard, singleton::Singleton},
+    world::singleton_guards::{OptionalSingletonContainerReadGuard, OptionalSingletonContainerWriteGuard},
 };
 
 mod private {
@@ -10,7 +10,7 @@ mod private {
 /// An element used as a specifier in a locked view
 pub trait SingletonTupleElement: private::Sealed {
     type Singleton: Singleton;
-    type Guard: SingletonContainerGuard<Singleton = Self::Singleton>;
+    type Guard: Guard<Element = Self::Singleton>;
 }
 impl<T: Singleton> private::Sealed for &T {}
 impl<T: Singleton> SingletonTupleElement for &T {
