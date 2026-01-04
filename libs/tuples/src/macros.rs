@@ -1,3 +1,4 @@
+/// Applies a tuple-implementing macro over supported arities.
 #[macro_export]
 macro_rules! impl_tuple_trait {
     ($macro:ident) => {

@@ -1,22 +1,30 @@
 use crate::impl_tuple_trait;
 
-/// Trait for a tuple that can be converted to a cons style tuple.
+/// Converts a tuple into a right-nested cons-style representation.
+///
+/// # Invariants
+/// - The relative ordering of tuple elements is preserved.
+/// - The resulting type is structurally equivalent to the source tuple.
+/// - Conversions perform no allocation and have no side effects.
 pub trait AsConsTuple: private::Sealed {
+    /// Owned cons-style representation.
     type As;
+    /// Shared-reference cons-style representation.
     type AsRefs<'a>: 'a
     where
         Self: 'a;
+    /// Mutable-reference cons-style representation.
     type AsMuts<'a>: 'a
     where
         Self: 'a;
 
-    /// Converts this tuple into a cons-style tuple
+    /// Returns the owned cons-style representation.
     fn to_cons_tuple(self) -> Self::As;
 
-    /// Converts this tuple into a cons-style tuple of refs
+    /// Returns a cons-style representation of shared references.
     fn to_cons_ref_tuple(&self) -> Self::AsRefs<'_>;
 
-    /// Converts this tuple into a cons-style tuple of mutable refs
+    /// Returns a cons-style representation of mutable references.
     fn to_cons_mut_tuple(&mut self) -> Self::AsMuts<'_>;
 }
 

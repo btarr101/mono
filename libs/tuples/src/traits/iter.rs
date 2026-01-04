@@ -1,4 +1,8 @@
-/// Trait for iterating a homogenous cons tuple
+/// Iterates over a homogeneous cons-style tuple.
+///
+/// # Invariants
+/// - All elements have type `V`.
+/// - Iteration order matches tuple order.
 pub trait ConsIter<V> {
     /// Converts this into an iterator
     fn into_iter(self) -> impl Iterator<Item = V>;

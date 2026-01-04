@@ -2,10 +2,16 @@ use pastey::paste;
 
 use crate::impl_tuple_trait;
 
-/// Trait for prepending ComponentElements to any tuple
+/// Prepends a type to the front of a tuple.
+///
+/// # Invariants
+/// - Prepending preserves existing element order.
+/// - For fixed-size tuples, prepending beyond the supported arity is a no-op.
 pub trait CanPrepend: private::Sealed {
+    /// Resulting tuple after prepending `Head`.
     type Prepended<Head>: CanPrepend;
 
+    /// Returns a new tuple with `Head` prepended.
     fn prepend<Head>(self, head: Head) -> Self::Prepended<Head>;
 }
 

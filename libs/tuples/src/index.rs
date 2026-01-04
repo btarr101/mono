@@ -1,22 +1,13 @@
-use std::marker::PhantomData;
+//! Type-level indices for tuple navigation.
 
-mod private {
-    pub trait Sealed {}
-}
+/// Marker trait for type-level tuple indices.
+pub trait Index {}
 
-/// Trait for an index
-pub trait Index: private::Sealed {}
-
-/// Never intended to be constructed. Type for an index into
-/// a cons like tuple representing the first element.
+/// Index representing the first element.
 pub struct Here;
 
-impl private::Sealed for Here {}
+/// Index representing a subsequent element.
+pub struct There<T: Index>(std::marker::PhantomData<T>);
+
 impl Index for Here {}
-
-/// Never intended to be constructed. Type for an index into
-/// a cons like tuple representing the latter element.
-pub struct There<T: Index>(PhantomData<T>);
-
-impl<T: Index> private::Sealed for There<T> {}
 impl<T: Index> Index for There<T> {}

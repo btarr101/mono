@@ -1,8 +1,15 @@
 use crate::traits::can_prepend::CanPrepend;
 
+/// Flattens a nested cons-style tuple into a standard tuple.
+///
+/// # Invariants
+/// - Element order is preserved.
+/// - The flattened type contains no nested tuples.
 pub trait ToFlat {
+    /// Resulting flat tuple type.
     type Flattened: CanPrepend;
 
+    /// Returns the flattened tuple.
     fn flatten(self) -> Self::Flattened;
 }
 

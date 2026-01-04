@@ -3,8 +3,13 @@ use crate::{
     traits::{as_cons_tuple::AsConsTuple, flat::ToFlat},
 };
 
-/// Trait for if a tuple contains an element.
+/// Provides indexed access to an element within a tuple.
+///
+/// # Invariants
+/// - `Idx` uniquely identifies an element position.
+/// - Access preserves the relative order of remaining elements.
 pub trait Has<T, Idx> {
+    /// Tuple remainder after element removal.
     type Plucked;
 
     /// Deconstructs the original tuple and gets the element
@@ -36,8 +41,9 @@ where
     fn get_mut(&mut self) -> &mut T { self.to_cons_mut_tuple().cons_get() }
 }
 
-/// Trait for if a cons style tuple contains an element.
+/// Indexed access over a cons-style tuple representation.
 pub trait ConsHas<T, Idx> {
+    /// Remaining tail after element removal.
     type Plucked;
 
     /// Deconstructs the cons tuple and gets the element

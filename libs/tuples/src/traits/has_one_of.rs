@@ -3,8 +3,13 @@ use crate::{
     traits::has::ConsHas,
 };
 
-/// Trait to find one element out of a query in this tuple
+/// Selects a single matching element from a cons-style tuple.
+///
+/// # Invariants
+/// - Exactly one element satisfies the query.
+/// - Selection order follows tuple order.
 pub trait ConsHasOne<Query, QueryIdx, Idx = Here> {
+    /// Selected element type.
     type Has;
 
     /// Gets the first element out of the query

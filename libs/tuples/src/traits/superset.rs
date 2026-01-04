@@ -1,6 +1,10 @@
 use crate::traits::{cons_tuple::ConsTuple, has::ConsHas};
 
-/// Trait used to determine if a tuple of types is a superset of another tuple with types
+/// Extracts a cons-style subset from a superset tuple.
+///
+/// # Invariants
+/// - All elements of `Subset` exist in `Self`.
+/// - Relative order of extracted elements is preserved.
 pub trait ConsSuperSet<Subset, Idxs> {
     /// Gets the cons tuple subset of this tuple
     fn cons_subset(self) -> Subset;
