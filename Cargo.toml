@@ -1,5 +1,5 @@
 [workspace]
 resolver = "2"
-members = ["framework/ecs", "framework/tuples"]
+members = ["libs/ecs", "libs/tuples", "apps/pong"]
 
-default-members = ["framework/ecs"]
+default-members = ["libs/ecs"]
