@@ -114,7 +114,7 @@ where
     C: LockedViewElements,
     S: LockedViewElements,
 {
-    type Row: Clone;
+    type Row;
 
     fn build_row(view: &'a LockedView<C, S>) -> Option<Self::Row>;
 }
@@ -128,8 +128,6 @@ where
     Idxs: ConsTuple<Length = <<Self as AsConsTuple>::As as ConsTuple>::Length>,
     QueryIdxs: ConsTuple<Length = <<Self as AsConsTuple>::As as ConsTuple>::Length>,
     <Self as AsConsTuple>::As: LockedViewConsSingletonsQuery<'a, C, S, Idxs, QueryIdxs>,
-    <<<Self as AsConsTuple>::As as LockedViewConsSingletonsQuery<'a, C, S, Idxs, QueryIdxs>>::ConsRow as ToFlat>::Flattened:
-        Clone,
 {
     type Row =
         <<<Self as AsConsTuple>::As as LockedViewConsSingletonsQuery<'a, C, S, Idxs, QueryIdxs>>::ConsRow as ToFlat>::Flattened;

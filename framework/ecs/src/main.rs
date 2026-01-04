@@ -1,10 +1,5 @@
 use ecs::{entity::LockedViewEntityComponentMutExt, locked_view::traits::*, world::World};
 
-struct A<B: Iterator<Item = usize>> {
-    nums: B,
-    data: String,
-}
-
 fn main() {
     let world = World::new();
     world.lock_singleton_entry().or_insert("FOOBAR".to_string()).read();
@@ -33,8 +28,10 @@ fn main() {
         // >>::build_cons_row(&view);
 
         // TODO: Solve the clone issue
+
+        if let Some(foo) = view.query_singletons::<(&String,)>() {}
         // Likely with OwningHandle creating an owned iterator
-        for x in view.query::<(&mut u32, &i32), (&mut String,)>() {
+        for (id, (comp1, comp2)) in view.query_components::<(&mut u32, &i32)>() {
             // println!("== TOP LEVEL ==");
             // println!("{:?}", id);
             // println!("===============");

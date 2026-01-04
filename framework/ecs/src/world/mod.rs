@@ -68,6 +68,12 @@ impl World {
     /// singletons.
     pub fn lock_view<C: LockedViewElements, S: LockedViewElements>(&self) -> LockedView<C, S> { LockedView::new(self) }
 
+    /// Locks a view over this world (but only components)
+    pub fn lock_components_view<C: LockedViewElements>(&self) -> LockedView<C, ()> { LockedView::new(self) }
+
+    /// Locks a view over this world (but only singletons)
+    pub fn lock_singletons_view<S: LockedViewElements>(&self) -> LockedView<(), S> { LockedView::new(self) }
+
     /// Gets the lock to a particular component set
     pub(crate) fn component_set_lock<T: Component>(&self) -> Arc<RwLock<ComponentSet<T>>> {
         let guard = self.components.read();
