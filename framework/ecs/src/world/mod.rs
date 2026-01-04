@@ -11,13 +11,16 @@ use crate::{
     world::{
         component_set::{AnyComponentSet, ComponentSet},
         entity_id_allocator::EntityIdAllocator,
-        singleton_guards::{SingletonContainerEntry, SingletonContainerReadGuard, SingletonContainerWriteGuard},
+        singleton_container::{
+            SingletonContainer,
+            singleton_guards::{SingletonContainerEntry, SingletonContainerReadGuard, SingletonContainerWriteGuard},
+        },
     },
 };
 
 pub(crate) mod component_set;
 pub(crate) mod entity_id_allocator;
-pub(crate) mod singleton_guards;
+pub(crate) mod singleton_container;
 
 assert_impl_all!(World: Send, Sync);
 
@@ -45,17 +48,17 @@ impl World {
 
     /// Lock a singleton immutably for reading
     pub fn lock_singleton<T: Singleton>(&self) -> Option<SingletonContainerReadGuard<T>> {
-        SingletonContainerReadGuard::try_from_lock(self.singleton_lock())
+        SingletonContainerReadGuard::try_from_lock(self.singleton_container_lock())
     }
 
     /// Locks a singleton mutably for writing
     pub fn lock_singleton_mut<T: Singleton>(&self) -> Option<SingletonContainerWriteGuard<T>> {
-        SingletonContainerWriteGuard::try_from_lock(self.singleton_lock())
+        SingletonContainerWriteGuard::try_from_lock(self.singleton_container_lock())
     }
 
     /// Locks an entry to a singleton
     pub fn lock_singleton_entry<T: Singleton>(&self) -> SingletonContainerEntry<T> {
-        SingletonContainerEntry::from_lock(self.singleton_lock())
+        SingletonContainerEntry::from_lock(self.singleton_container_lock())
     }
 
     /// Locks a view of over this world
@@ -86,7 +89,7 @@ impl World {
     }
 
     /// Gets the lock to a singleton container
-    pub(crate) fn singleton_lock<T: Singleton>(&self) -> Arc<RwLock<Option<T>>> {
+    pub(crate) fn singleton_container_lock<T: Singleton>(&self) -> Arc<RwLock<SingletonContainer<T>>> {
         let guard = self.singletons.read();
         match guard.get::<T>() {
             Some(arc) => arc.clone(),
@@ -96,7 +99,7 @@ impl World {
                 let mut guard = self.singletons.write();
                 guard
                     .entry::<T>()
-                    .or_insert_with(|| Arc::new(RwLock::new(Option::<T>::None)))
+                    .or_insert_with(|| Arc::new(RwLock::new(SingletonContainer::<T>::new())))
                     .clone()
             }
         }

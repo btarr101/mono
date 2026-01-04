@@ -36,7 +36,7 @@ impl<'a> Entity<'a> {
     ///
     /// Requires locking the component set for write access
     pub fn lock_components_and_add<T: Component>(&mut self, component: T) {
-        ComponentSetWriteGuard::lock_from_world(self.world).add(self.id, component);
+        unsafe { ComponentSetWriteGuard::lock_from_world(self.world).add(self.id, component) };
     }
 
     /// Attempts to remove a component, and returns the component if it
@@ -240,7 +240,7 @@ mod private {
             LockedView<LockedViewRef::ComponentElements, LockedViewRef::SingletonElements>:
                 HasComponentsMut<T, LockedViewRef::ComponentElements, Idx>,
         {
-            self.locked_view.as_mut().get_mut_accessor().add(self.id, component)
+            unsafe { self.locked_view.as_mut().get_mut_accessor().add(self.id, component) }
         }
 
         fn pop<T: Component>(&mut self) -> Option<T>

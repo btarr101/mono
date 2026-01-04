@@ -1,6 +1,6 @@
 use crate::{
     traits::{guard::Guard, singleton::Singleton},
-    world::singleton_guards::{OptionalSingletonContainerReadGuard, OptionalSingletonContainerWriteGuard},
+    world::singleton_container::singleton_guards::{OptionalSingletonContainerReadGuard, OptionalSingletonContainerWriteGuard},
 };
 
 mod private {

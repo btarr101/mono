@@ -11,7 +11,10 @@ use crate::{
             ComponentSet,
             component_set_guards::{ComponentSetReadGuard, ComponentSetWriteGuard},
         },
-        singleton_guards::{OptionalSingletonContainerReadGuard, OptionalSingletonContainerWriteGuard},
+        singleton_container::{
+            SingletonContainer,
+            singleton_guards::{OptionalSingletonContainerReadGuard, OptionalSingletonContainerWriteGuard},
+        },
     },
 };
 
@@ -51,18 +54,18 @@ impl<T: Component> Guard for ComponentSetWriteGuard<T> {
 }
 
 impl<T: Singleton> Guard for OptionalSingletonContainerReadGuard<T> {
-    type Lock = Arc<RwLock<Option<T>>>;
+    type Lock = Arc<RwLock<SingletonContainer<T>>>;
     type Element = T;
 
-    fn get_lock_from_world(world: &World) -> Self::Lock { world.singleton_lock() }
+    fn get_lock_from_world(world: &World) -> Self::Lock { world.singleton_container_lock() }
     fn lock(lock: Self::Lock) -> Self { Self::from_lock(lock) }
 }
 
 impl<T: Singleton> Guard for OptionalSingletonContainerWriteGuard<T> {
-    type Lock = Arc<RwLock<Option<T>>>;
+    type Lock = Arc<RwLock<SingletonContainer<T>>>;
     type Element = T;
 
-    fn get_lock_from_world(world: &World) -> Self::Lock { world.singleton_lock() }
+    fn get_lock_from_world(world: &World) -> Self::Lock { world.singleton_container_lock() }
     fn lock(lock: Self::Lock) -> Self { Self::from_lock(lock) }
 }
 

@@ -1,7 +1,7 @@
 use tuples::traits::{has::ConsHas, has_one_of::ConsHasOne};
 
 use crate::{
-    locked_view::{LockedView, locked_view_elements::LockedViewElements, types::ConsComponentSetGuards},
+    locked_view::{locked_view_elements::LockedViewElements, types::ConsComponentSetGuards, LockedView},
     traits::{
         component::Component,
         component_set_accessor::{ComponentSetAccessor, ComponentSetMutAccessor, MutComponentSetMutAccessor},

@@ -5,4 +5,5 @@ pub mod flat;
 pub mod has;
 pub mod has_one_of;
 pub mod iter;
+pub mod pair;
 pub mod superset;

@@ -49,7 +49,7 @@ pub trait LockedViewGetComponentMutExt<C: LockedViewElements, Idx>: private::Sea
     where
         Self: HasComponentsMut<T, C, Idx>;
 
-    /// Attempts to add a component to an entity in this view
+    /// Attempts to add a component to an entity in this view, then returns an immediate reference to it
     ///
     /// Marked as must use, as checking the operation was successful is as simple an ensuring the option is some
     #[must_use]
@@ -81,7 +81,7 @@ where
     where
         Self: HasComponentsMut<T, C, Idx>,
     {
-        self.get_mut_accessor().try_add(entity_id, component)
+        unsafe { self.get_mut_accessor().try_add(entity_id, component) }
     }
 
     fn pop_component<T: Component>(&mut self, entity_id: EntityId) -> Option<T>

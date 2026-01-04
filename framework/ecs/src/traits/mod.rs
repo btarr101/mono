@@ -2,6 +2,7 @@ pub(crate) mod component_set_accessor;
 pub(crate) mod component_tuple_element;
 pub(crate) mod cons_guards;
 pub(crate) mod guard;
+pub(crate) mod singleton_container_accessor;
 pub(crate) mod singleton_tuple_element;
 
 pub mod singleton {

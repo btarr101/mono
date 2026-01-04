@@ -59,7 +59,10 @@ impl<T: Component> ComponentSet<T> {
     /// Adds a component to this component set and returns an immediate reference
     ///
     /// Disregards if the current generation of the entity id matches up or not
-    pub fn add(&mut self, id: EntityId, component: T) -> &mut T {
+    ///
+    /// # Safety
+    /// Only call if this thread has exclusive access
+    pub unsafe fn add(&mut self, id: EntityId, component: T) -> &mut T {
         let cell = self
             .0
             .add(id.index, (id.generation, Some(component.into())))
@@ -73,10 +76,13 @@ impl<T: Component> ComponentSet<T> {
     /// Attempts to add a component to this component set
     ///
     /// If a component was added this way returns an immediate reference to it
-    pub fn try_add(&mut self, id: EntityId, component: T) -> Option<&mut T> {
+    ///
+    /// # Safety
+    /// Only call if this thread has exclusive access
+    pub unsafe fn try_add(&mut self, id: EntityId, component: T) -> Option<&mut T> {
         let current_generation = self.0.get(id.index).map(|(generation, _)| *generation)?;
 
-        (current_generation == id.generation).then(|| self.add(id, component))
+        (current_generation == id.generation).then(|| unsafe { self.add(id, component) })
     }
 
     /// Removes a component from this component set by index. If there was a genration,
