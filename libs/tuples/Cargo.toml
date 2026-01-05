@@ -2,6 +2,10 @@
 name = "tuples"
 version = "0.1.0"
 edition = "2024"
+description = "Type-level tuple utilities for compile-time structural reasoning."
+readme = "README.md"
+keywords = ["tuple", "type-level", "metaprogramming", "compile-time", "zero-cost"]
+categories = ["data-structures", "rust-patterns"]
 
 [dependencies]
 pastey = "0.2.1"
