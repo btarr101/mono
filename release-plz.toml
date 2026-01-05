@@ -2,7 +2,7 @@
 release = false
 
 [[package]]
-name = "clockwork_tuples"
+name = "clockwork-tuples"
 release = true
 
 [changelog]
