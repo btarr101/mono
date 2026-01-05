@@ -1,7 +1,8 @@
+//! Generation-aware entity identifier allocator.
+
 use crate::entity::EntityId;
 
-/// An allocator for entity ids (which are generation indexes)
-/// ```
+/// Allocates monotonically increasing entity identifiers with generation tracking.
 #[derive(Default)]
 pub struct EntityIdAllocator {
     freed_indexes: Vec<usize>,

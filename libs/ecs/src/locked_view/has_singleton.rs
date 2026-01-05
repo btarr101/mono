@@ -1,3 +1,8 @@
+//! Singleton access traits for locked views.
+//!
+//! These traits provide compile-time guarantees for accessing singleton
+//! containers through a `LockedView`.
+
 use tuples::traits::{has::ConsHas, has_one_of::ConsHasOne};
 
 use crate::{

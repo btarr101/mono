@@ -1,3 +1,10 @@
+//! World state and storage for entities, components, and singletons.
+//!
+//! This module defines the `World` type, which owns entity identifiers and
+//! provides synchronized access to component sets and singleton values.
+//! All mutation is coordinated through locking to uphold aliasing and
+//! borrowing invariants across systems.
+
 use std::{any::Any, sync::Arc};
 
 use parking_lot::{MappedRwLockWriteGuard, RwLock, RwLockWriteGuard};
@@ -24,6 +31,7 @@ pub(crate) mod singleton_container;
 
 assert_impl_all!(World: Send, Sync);
 
+/// Central ECS storage for entities, components, and singletons.
 #[derive(Default)]
 pub struct World {
     pub(crate) entities: Arc<RwLock<EntityIdAllocator>>,
@@ -114,8 +122,7 @@ impl World {
     }
 }
 
-/// Util trait to allow removing a component from a rwlocked component set,
-/// and from converting that set to any for downcasting
+/// Trait that type-erases component set locks for heterogeneous storage.
 pub(crate) trait AnyComponentSetRwLock: Send + Sync {
     fn write(&self) -> MappedRwLockWriteGuard<'_, dyn AnyComponentSet>;
     fn as_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync>;

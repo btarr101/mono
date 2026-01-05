@@ -1,3 +1,5 @@
+//! Component access extensions for `LockedView`.
+
 use std::ops::{Deref, DerefMut};
 
 use crate::{
@@ -17,9 +19,9 @@ mod private {
     pub trait Sealed {}
 }
 
-/// Extension trait go gain access to a component from this view
+/// Provides read-only component access through a `LockedView`.
 pub trait LockedViewGetComponentExt<C: LockedViewElements, Idx, QueryIdx>: private::Sealed {
-    /// Gets a component associated with an entity from this view
+    /// Returns the component associated with `id` if it is locked by the view.
     fn get_component<T: Component>(&self, id: EntityId) -> Option<impl Deref<Target = T>>
     where
         Self: HasComponents<T, C, Idx, QueryIdx>;
@@ -38,27 +40,28 @@ where
     where
         Self: HasComponents<T, C, Idx, QueryIdx>,
     {
+        // SAFETY: `HasComponents` ensures the accessor references the locked
+        // component set for the queried entity.
         unsafe { self.get_accessor().get(entity_id) }
     }
 }
 
-/// Extension trait go gain access to a component mutably from this view
+/// Provides mutable component access through a `LockedView`.
 pub trait LockedViewGetComponentMutExt<C: LockedViewElements, Idx>: private::Sealed {
-    /// Gets a component associated with an entity mutably from this view
+    /// Returns a mutable reference to the component associated with `id` if present.
     fn get_component_mut<T: Component>(&self, id: EntityId) -> Option<impl DerefMut<Target = T>>
     where
         Self: HasComponentsMut<T, C, Idx>;
 
-    /// Attempts to add a component to an entity in this view, then returns an immediate reference to it
+    /// Attempts to insert a component for `id` and returns a mutable reference on success.
     ///
-    /// Marked as must use, as checking the operation was successful is as simple an ensuring the option is some
+    /// Callers must handle the `None` case to detect when the component was not inserted.
     #[must_use]
     fn add_component<T: Component>(&mut self, id: EntityId, component: T) -> Option<impl DerefMut<Target = T>>
     where
         Self: HasComponentsMut<T, C, Idx>;
 
-    /// Attempts to a remove component from an entity,
-    /// if a component is removed this way returns it
+    /// Removes the component associated with `id`, returning it if present.
     fn pop_component<T: Component>(&mut self, id: EntityId) -> Option<T>
     where
         Self: HasComponentsMut<T, C, Idx>;
@@ -74,6 +77,8 @@ where
     where
         Self: HasComponentsMut<T, C, Idx>,
     {
+        // SAFETY: `HasComponentsMut` ensures mutable access is unique for the
+        // component set referenced by this view.
         unsafe { self.get_accessor().get_mut(entity_id) }
     }
 
@@ -81,6 +86,8 @@ where
     where
         Self: HasComponentsMut<T, C, Idx>,
     {
+        // SAFETY: The mutable accessor owns the component set lock, so inserting
+        // a component maintains aliasing guarantees.
         unsafe { self.get_mut_accessor().try_add(entity_id, component) }
     }
 

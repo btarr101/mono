@@ -1,10 +1,12 @@
+//! Interior-mutable cell with opt-in runtime borrow checking.
+
 use std::cell::{Ref, RefCell, RefMut};
 
 use static_assertions::assert_impl_all;
 
 assert_impl_all!(DangerCell<u32>: Send, Sync);
 
-/// A very dangerous blow your foot off cell type
+/// Interior-mutable cell that relies on caller-enforced exclusivity rules.
 ///
 /// # Motive
 /// When a thread has read only access to the underlying data, that means
@@ -31,19 +33,31 @@ impl<T> DangerCell<T> {
 
     /// # Safety
     /// Only call if no thread thinks it has exclusive access
-    pub unsafe fn get_shared(&self) -> &T { unsafe { &*self.0.as_ptr() } }
+    pub unsafe fn get_shared(&self) -> &T {
+        // SAFETY: Caller ensures no mutable references exist simultaneously.
+        unsafe { &*self.0.as_ptr() }
+    }
 
     /// # Safety
     /// Only call if this thread has exclusive access
-    pub unsafe fn get(&self) -> Option<Ref<'_, T>> { self.0.try_borrow().ok() }
+    pub unsafe fn get(&self) -> Option<Ref<'_, T>> {
+        // SAFETY: Caller promises exclusive access, so runtime borrow failures become logic errors.
+        self.0.try_borrow().ok()
+    }
 
     /// # Safety
     /// Only call if this thread has exclusive access
-    pub unsafe fn get_mut(&self) -> Option<RefMut<'_, T>> { self.0.try_borrow_mut().ok() }
+    pub unsafe fn get_mut(&self) -> Option<RefMut<'_, T>> {
+        // SAFETY: Caller promises exclusive access, so runtime borrow failures become logic errors.
+        self.0.try_borrow_mut().ok()
+    }
 
     /// # Safety
     /// Only call if this thread has exclusive access
-    pub unsafe fn get_mut_exclusive(&mut self) -> &mut T { self.0.get_mut() }
+    pub unsafe fn get_mut_exclusive(&mut self) -> &mut T {
+        // SAFETY: Caller holds &mut self, guaranteeing exclusivity.
+        self.0.get_mut()
+    }
 }
 
 impl<T> From<T> for DangerCell<T> {

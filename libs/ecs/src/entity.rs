@@ -1,3 +1,8 @@
+//! Entities and entity-scoped access APIs.
+//!
+//! This module defines entity identifiers, entity handles, and extensions
+//! for accessing components through locked views.
+
 use std::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
@@ -13,17 +18,17 @@ use crate::{
     world::{World, component_set::component_set_guards::ComponentSetWriteGuard},
 };
 
-/// An identifier for an entity (and each of its components)
+/// Stable identifier for an entity and its components within a `World`.
 #[derive(Clone, Copy, Debug)]
 pub struct EntityId {
     pub(crate) index: usize,
     pub(crate) generation: usize,
 }
 
-/// An entity that references an ecs world
+/// Handle for interacting with an entity inside a `World`.
 ///
-/// Note, this entity as no methods to get an immutable or mutable reference
-/// type to one of its components.
+/// Instances are short-lived and borrow the world so that component access is
+/// routed through locking APIs.
 pub struct Entity<'a> {
     id: EntityId,
     world: &'a World,
@@ -83,13 +88,11 @@ impl<'a> Entity<'a> {
     }
 }
 
-/// Access to an entity that is contained within a locked view
+/// Entity handle scoped to a particular locked view.
 ///
-/// The entity may have components outside of the view, but it is impossible
-/// to read or write to them. If you need to create entities with more components
-/// then this view has, you have 2 options:
-/// - Lock all the needed components, but this may results in overlocking
-/// - Command buffer system, where you buffer creating entities and then create them in another locked view
+/// Access is restricted to the component and singleton sets specified by the
+/// view. Additional components must be accessed via broader locks or deferred
+/// commands.
 pub struct LockedViewEntity<'a, LockedViewRef>
 where
     LockedViewRef: private::LockedViewRef<'a>,
@@ -115,7 +118,7 @@ where
     pub fn id(&self) -> EntityId { self.id }
 }
 
-/// Extension trait for a locked view entity to access a component immutably
+/// Provides read-only component access for entities inside a locked view.
 pub trait LockedViewEntityComponentExt<C, S, Idx, QueryIdx>
 where
     C: LockedViewElements,
@@ -132,8 +135,7 @@ where
         LockedView<C, S>: HasComponentsMut<T, C, Idx>;
 }
 
-/// Extension trait for a locked view entity to access a component mutably,
-/// or to add or remove a component
+/// Provides mutable component access and mutation helpers within a locked view.
 pub trait LockedViewEntityComponentMutExt<C, S, Idx>
 where
     Self: Sized,
@@ -216,6 +218,8 @@ mod private {
             LockedView<LockedViewRef::ComponentElements, LockedViewRef::SingletonElements>:
                 HasComponents<T, LockedViewRef::ComponentElements, Idx, QueryIdx>,
         {
+            // SAFETY: The accessor originates from the locked view and enforces
+            // read-only borrowing of the component set.
             unsafe { self.locked_view.as_ref().get_accessor().get(self.id) }
         }
 
@@ -224,6 +228,8 @@ mod private {
             LockedView<LockedViewRef::ComponentElements, LockedViewRef::SingletonElements>:
                 HasComponentsMut<T, LockedViewRef::ComponentElements, Idx>,
         {
+            // SAFETY: The accessor enforces aliasing rules for the component set
+            // locked mutably by this view.
             unsafe { self.locked_view.as_ref().get_accessor().get_mut(self.id) }
         }
     }
@@ -240,6 +246,8 @@ mod private {
             LockedView<LockedViewRef::ComponentElements, LockedViewRef::SingletonElements>:
                 HasComponentsMut<T, LockedViewRef::ComponentElements, Idx>,
         {
+            // SAFETY: The mutable accessor owns the component set lock, making
+            // addition safe for this entity.
             unsafe { self.locked_view.as_mut().get_mut_accessor().add(self.id, component) }
         }
 
@@ -248,6 +256,8 @@ mod private {
             LockedView<LockedViewRef::ComponentElements, LockedViewRef::SingletonElements>:
                 HasComponentsMut<T, LockedViewRef::ComponentElements, Idx>,
         {
+            // SAFETY: Accessor enforces exclusive access, so removing the
+            // component maintains invariants.
             self.locked_view.as_mut().get_mut_accessor().soft_pop(self.id)
         }
     }

@@ -1,5 +1,7 @@
+//! Lightweight newtype that preserves `Deref` semantics.
+
 use derived_deref::{Deref, DerefMut};
 
-/// I honestly myself don't even know why I need this...
+/// Newtype that forwards `Deref`/`DerefMut` to the wrapped value.
 #[derive(Deref, DerefMut)]
 pub struct Wrap<T>(pub T);

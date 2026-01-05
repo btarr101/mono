@@ -1,7 +1,12 @@
+//! Component access traits for locked views.
+//!
+//! These traits describe compile-time guarantees for accessing component
+//! sets through a `LockedView`.
+
 use tuples::traits::{has::ConsHas, has_one_of::ConsHasOne};
 
 use crate::{
-    locked_view::{locked_view_elements::LockedViewElements, types::ConsComponentSetGuards, LockedView},
+    locked_view::{LockedView, locked_view_elements::LockedViewElements, types::ConsComponentSetGuards},
     traits::{
         component::Component,
         component_set_accessor::{ComponentSetAccessor, ComponentSetMutAccessor, MutComponentSetMutAccessor},

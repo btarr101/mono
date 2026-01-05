@@ -1,3 +1,5 @@
+//! Internal helpers for executing locked view queries.
+
 use itertools::EitherOrBoth;
 use tuples::{
     index::There,
@@ -17,7 +19,7 @@ mod private {
     pub trait Sealed {}
 }
 
-/// Trait for what can be used as a query components over a locked view
+/// Describes tuples that can be used to query components from a `LockedView`.
 pub trait LockedViewComponentsQuery<'a, C, S, Idxs, QueryIdxs>
 where
     C: LockedViewElements,
@@ -47,7 +49,7 @@ where
     }
 }
 
-/// A type that can be used to execute a component query
+/// Executes component queries using cons tuples and type-level indices.
 pub trait LockedViewConsComponentsQuery<'a, C, S, Idxs, QueryIdxs>: private::Sealed
 where
     C: LockedViewElements,
@@ -108,7 +110,7 @@ where
     }
 }
 
-/// Trait for what can be used as a query singletons over a locked view
+/// Describes tuples that can be used to query singletons from a `LockedView`.
 pub trait LockedViewSingletonsQuery<'a, C, S, Idxs, QueryIdxs>
 where
     C: LockedViewElements,
@@ -138,7 +140,7 @@ where
     }
 }
 
-/// A type that can be used to execute a query for singletons
+/// Executes singleton queries using cons tuples and type-level indices.
 pub trait LockedViewConsSingletonsQuery<'a, C, S, Idxs, QueryIdxs>: private::Sealed
 where
     C: LockedViewElements,

@@ -1,3 +1,9 @@
+//! Component storage for entities.
+//!
+//! This module provides the sparse-set based storage used to hold
+//! components for each `EntityId` along with helper traits for type-erased
+//! mutation.
+
 use std::{
     any::Any,
     cell::{Ref, RefMut},
@@ -11,13 +17,13 @@ use crate::{
 
 pub(crate) mod component_set_guards;
 
-/// Internal data structure for storring components
+/// Sparse-set backed storage for components of a specific type.
 #[derive(Default)]
 pub struct ComponentSet<T: Component>(SparseSet<(usize, Option<DangerCell<T>>)>);
 
+/// Type-erased interface for removing components from storage.
 pub trait AnyComponentSet: Any + Send + Sync {
-    /// Removes a component from this component set
-    /// given it's index
+    /// Removes a component identified by its sparse-set index.
     fn remove(&mut self, index: usize);
 }
 
@@ -31,7 +37,10 @@ impl<T: Component> ComponentSet<T> {
     /// Only call if no thread thinks it has exclusive access
     pub unsafe fn get_shared(&self, id: EntityId) -> Option<&T> {
         let (generation, component) = self.0.get(id.index)?;
-        (*generation == id.generation).then_some(unsafe { component.as_ref()?.get_shared() })
+        (*generation == id.generation).then_some({
+            // SAFETY: Caller guarantees no exclusive access and the generation matches.
+            unsafe { component.as_ref()?.get_shared() }
+        })
     }
 
     /// Gets a component from this set given the entity id
@@ -41,7 +50,10 @@ impl<T: Component> ComponentSet<T> {
     pub unsafe fn get_exclusive(&self, id: EntityId) -> Option<Ref<'_, T>> {
         let (generation, component) = self.0.get(id.index)?;
         (*generation == id.generation)
-            .then_some(unsafe { component.as_ref()?.get() })
+            .then_some({
+                // SAFETY: Caller guarantees exclusive access; matching generation ensures component validity.
+                unsafe { component.as_ref()?.get() }
+            })
             .flatten()
     }
 
@@ -52,7 +64,10 @@ impl<T: Component> ComponentSet<T> {
     pub unsafe fn get_mut_exclusive(&self, id: EntityId) -> Option<RefMut<'_, T>> {
         let (generation, component) = self.0.get(id.index)?;
         (*generation == id.generation)
-            .then_some(unsafe { component.as_ref()?.get_mut() })
+            .then_some({
+                // SAFETY: Exclusive access permits mutable borrow when the generation matches.
+                unsafe { component.as_ref()?.get_mut() }
+            })
             .flatten()
     }
 
@@ -70,6 +85,7 @@ impl<T: Component> ComponentSet<T> {
             .as_mut()
             .expect("component");
 
+        // SAFETY: The component set holds exclusive access while inserting.
         unsafe { cell.get_mut_exclusive() }
     }
 
@@ -82,7 +98,10 @@ impl<T: Component> ComponentSet<T> {
     pub unsafe fn try_add(&mut self, id: EntityId, component: T) -> Option<&mut T> {
         let current_generation = self.0.get(id.index).map(|(generation, _)| *generation)?;
 
-        (current_generation == id.generation).then(|| unsafe { self.add(id, component) })
+        (current_generation == id.generation).then(|| {
+            // SAFETY: Matching generation plus exclusive access allows deferring to `add`.
+            unsafe { self.add(id, component) }
+        })
     }
 
     /// Removes a component from this component set by index. If there was a genration,
@@ -123,7 +142,10 @@ impl<T: Component> ComponentSet<T> {
                     index,
                     generation: *generation,
                 },
-                unsafe { component.as_ref()?.get_shared() },
+                {
+                    // SAFETY: Caller promises no exclusive access; borrow remains shared.
+                    unsafe { component.as_ref()?.get_shared() }
+                },
             )
                 .into()
         })
@@ -140,7 +162,10 @@ impl<T: Component> ComponentSet<T> {
                     index,
                     generation: *generation,
                 },
-                unsafe { component.as_ref()?.get() }?,
+                {
+                    // SAFETY: Exclusive access ensures mutable interior borrows are unique.
+                    unsafe { component.as_ref()?.get() }?
+                },
             )
                 .into()
         })
@@ -157,7 +182,10 @@ impl<T: Component> ComponentSet<T> {
                     index,
                     generation: *generation,
                 },
-                unsafe { component.as_ref()?.get_mut() }?,
+                {
+                    // SAFETY: Exclusive access allows mutable iteration over stored components.
+                    unsafe { component.as_ref()?.get_mut() }?
+                },
             )
                 .into()
         })

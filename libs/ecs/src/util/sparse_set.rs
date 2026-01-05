@@ -1,3 +1,5 @@
+//! Dense storage with sparse indexing helpers.
+
 use std::fmt::Debug;
 
 /// Collection that stores sparsely populated indices densely in memory.

@@ -1,3 +1,5 @@
+//! Guard types for accessing singleton containers.
+
 use std::{
     ops::{Deref, DerefMut},
     sync::Arc,
@@ -8,7 +10,7 @@ use parking_lot::{MappedRwLockReadGuard, MappedRwLockWriteGuard, RwLock, RwLockR
 
 use crate::{traits::singleton::Singleton, util::wrap::Wrap, world::singleton_container::SingletonContainer};
 
-/// Guard that sits in front of a singleton (gives read only access)
+/// Read-only guard providing access to a singleton value.
 pub struct SingletonContainerReadGuard<T: Singleton>(
     pub(crate) OwningHandle<Arc<RwLock<SingletonContainer<T>>>, MappedRwLockReadGuard<'static, T>>,
 );
@@ -23,16 +25,23 @@ impl<T: Singleton> SingletonContainerReadGuard<T> {
     /// Creates this read guard from the world
     pub(crate) fn try_from_lock(lock: Arc<RwLock<SingletonContainer<T>>>) -> Option<Self> {
         OwningHandle::try_new(lock, |lock| {
-            RwLockReadGuard::try_map(unsafe { &*lock }.read(), |container| unsafe {
-                container.get_shared().as_ref()
-            })
+            RwLockReadGuard::try_map(
+                {
+                    // SAFETY: `OwningHandle` guarantees `lock` remains valid for the guard lifetime.
+                    unsafe { &*lock }.read()
+                },
+                |container| {
+                    // SAFETY: Shared guard ensures only immutable access to the singleton value.
+                    unsafe { container.get_shared().as_ref() }
+                },
+            )
         })
         .ok()
         .map(Self)
     }
 }
 
-/// Guard that sits in front of a singleton and the option it is enclosed in
+/// Read-only guard over the container storing an optional singleton.
 pub struct OptionalSingletonContainerReadGuard<T: Singleton>(
     pub(crate) OwningHandle<Arc<RwLock<SingletonContainer<T>>>, RwLockReadGuard<'static, SingletonContainer<T>>>,
 );
@@ -40,11 +49,14 @@ pub struct OptionalSingletonContainerReadGuard<T: Singleton>(
 impl<T: Singleton> OptionalSingletonContainerReadGuard<T> {
     /// Creates this read guard from the world
     pub(crate) fn from_lock(lock: Arc<RwLock<SingletonContainer<T>>>) -> Self {
-        Self(OwningHandle::new_with_fn(lock, |lock| unsafe { &*lock }.read()))
+        Self(OwningHandle::new_with_fn(lock, |lock| {
+            // SAFETY: `OwningHandle` upholds the lifetime of the raw pointer.
+            unsafe { &*lock }.read()
+        }))
     }
 }
 
-/// Guard that sits in front of a singleton (gives write)
+/// Exclusive guard providing mutable access to a singleton value.
 pub struct SingletonContainerWriteGuard<T: Singleton>(
     pub(crate) OwningHandle<Arc<RwLock<SingletonContainer<T>>>, MappedRwLockWriteGuard<'static, T>>,
 );
@@ -63,16 +75,23 @@ impl<T: Singleton> SingletonContainerWriteGuard<T> {
     /// Creates this write guard from the world
     pub(crate) fn try_from_lock(lock: Arc<RwLock<SingletonContainer<T>>>) -> Option<Self> {
         OwningHandle::try_new(lock, |lock| {
-            RwLockWriteGuard::try_map(unsafe { &*lock }.write(), |container| unsafe {
-                container.mut_get_mut_exclusive().as_mut()
-            })
+            RwLockWriteGuard::try_map(
+                {
+                    // SAFETY: `OwningHandle` keeps the pointer alive for the guard duration.
+                    unsafe { &*lock }.write()
+                },
+                |container| {
+                    // SAFETY: Exclusive guard allows mutable access to the singleton slot.
+                    unsafe { container.mut_get_mut_exclusive().as_mut() }
+                },
+            )
         })
         .ok()
         .map(Self)
     }
 }
 
-/// Guard that sits in front of a singleton and the option it is enclosed in
+/// Exclusive guard over the container storing an optional singleton.
 pub struct OptionalSingletonContainerWriteGuard<T: Singleton>(
     pub(crate) OwningHandle<Arc<RwLock<SingletonContainer<T>>>, RwLockWriteGuard<'static, SingletonContainer<T>>>,
 );
@@ -80,11 +99,14 @@ pub struct OptionalSingletonContainerWriteGuard<T: Singleton>(
 impl<T: Singleton> OptionalSingletonContainerWriteGuard<T> {
     /// Creates this read guard from the world
     pub(crate) fn from_lock(lock: Arc<RwLock<SingletonContainer<T>>>) -> Self {
-        Self(OwningHandle::new_with_fn(lock, |lock| unsafe { &*lock }.write()))
+        Self(OwningHandle::new_with_fn(lock, |lock| {
+            // SAFETY: Ownership of the raw pointer is tied to the OwningHandle instance.
+            unsafe { &*lock }.write()
+        }))
     }
 }
 
-/// Gets an entry to a singleton in the world
+/// Lazy-initialization entry for a singleton slot within the world.
 pub struct SingletonContainerEntry<T: Singleton>(
     #[expect(clippy::type_complexity)]
     pub(crate)  OwningHandle<Arc<RwLock<SingletonContainer<T>>>, Wrap<Option<RwLockWriteGuard<'static, SingletonContainer<T>>>>>,
@@ -93,16 +115,21 @@ pub struct SingletonContainerEntry<T: Singleton>(
 impl<T: Singleton> SingletonContainerEntry<T> {
     /// Creates this singleton container entry from the world
     pub(crate) fn from_lock(lock: Arc<RwLock<SingletonContainer<T>>>) -> Self {
-        Self(OwningHandle::new_with_fn(lock, |lock| Wrap(Some(unsafe { &*lock }.write()))))
+        Self(OwningHandle::new_with_fn(lock, |lock| {
+            // SAFETY: The raw pointer remains valid for the lifetime of the owning handle.
+            Wrap(Some(unsafe { &*lock }.write()))
+        }))
     }
 
     /// Inserts a new singleton into the entry, then returns an occupied entry
     pub fn insert(mut self, singleton: T) -> OccupiedSingletonContainerEntry<T> {
         // Here we insert the value into the guard, then we forget it so the data remains locked while we build our new lock guard.
         let mut guard = self.0.take().expect("some");
+        // SAFETY: The guard holds exclusive access to the singleton slot.
         unsafe { guard.insert(singleton) };
         std::mem::forget(guard);
 
+        // SAFETY: We intentionally leaked the previous guard to keep the lock alive for the new handle.
         unsafe { self.into_occupied_entry() }
     }
 
@@ -111,9 +138,11 @@ impl<T: Singleton> SingletonContainerEntry<T> {
     pub fn or_insert(mut self, default: T) -> OccupiedSingletonContainerEntry<T> {
         // Here we insert the value into the guard, then we forget it so the data remains locked while we build our new lock guard.
         let mut guard = self.0.take().expect("some");
+        // SAFETY: The guard holds exclusive access to the singleton slot while inserting.
         unsafe { guard.mut_get_mut_exclusive().get_or_insert(default) };
         std::mem::forget(guard);
 
+        // SAFETY: The leaked guard preserves the logical lock for the new handle.
         unsafe { self.into_occupied_entry() }
     }
 
@@ -124,9 +153,11 @@ impl<T: Singleton> SingletonContainerEntry<T> {
     {
         // Here we insert the value into the guard, then we forget it so the data remains locked while we build our new lock guard.
         let mut guard = self.0.take().expect("some");
+        // SAFETY: Exclusive access allows initializing the singleton lazily.
         unsafe { guard.mut_get_mut_exclusive().get_or_insert_with(default) };
         std::mem::forget(guard);
 
+        // SAFETY: The leaked guard preserves the logical lock for the new handle.
         unsafe { self.into_occupied_entry() }
     }
 
@@ -137,9 +168,11 @@ impl<T: Singleton> SingletonContainerEntry<T> {
     {
         // Here we insert the value into the guard, then we forget it so the data remains locked while we build our new lock guard.
         let mut guard = self.0.take().expect("some");
+        // SAFETY: Exclusive access allows default-initializing the singleton slot.
         unsafe { guard.mut_get_mut_exclusive().get_or_insert_default() };
         std::mem::forget(guard);
 
+        // SAFETY: The leaked guard preserves the logical lock for the new handle.
         unsafe { self.into_occupied_entry() }
     }
 
@@ -148,14 +181,20 @@ impl<T: Singleton> SingletonContainerEntry<T> {
             // We can call `make_write_guard_unchecked` because we ensure that we still logically hold a write lock by
             // making the previous write guard forget to clean up
             Wrap(Some(RwLockWriteGuard::map(
-                unsafe { (&*lock).make_write_guard_unchecked() },
-                |guard| unsafe { guard.mut_get_mut_exclusive() }.as_mut().expect("some"),
+                {
+                    // SAFETY: The forgotten guard ensures the lock remains held, permitting unchecked creation.
+                    unsafe { (&*lock).make_write_guard_unchecked() }
+                },
+                |guard| {
+                    // SAFETY: We still hold exclusive access when projecting into the singleton slot.
+                    unsafe { guard.mut_get_mut_exclusive() }.as_mut().expect("some")
+                },
             )))
         }))
     }
 }
 
-/// Gets an entry to a singleton in the world
+/// Entry that already owns an initialized singleton.
 pub struct OccupiedSingletonContainerEntry<T: Singleton>(
     #[expect(clippy::type_complexity)]
     pub(crate)  OwningHandle<Arc<RwLock<SingletonContainer<T>>>, Wrap<Option<MappedRwLockWriteGuard<'static, T>>>>,
@@ -168,14 +207,24 @@ impl<T: Singleton> OccupiedSingletonContainerEntry<T> {
         std::mem::forget(self.0.take().expect("some"));
 
         // Build a new rwlockwrite guard, downgrade it, then forget it
-        let guard = unsafe { self.0.as_owner().make_write_guard_unchecked() };
+        let guard = {
+            // SAFETY: The previous write guard was forgotten, so we still logically hold the lock.
+            unsafe { self.0.as_owner().make_write_guard_unchecked() }
+        };
         std::mem::forget(RwLockWriteGuard::downgrade(guard));
 
         SingletonContainerReadGuard(OwningHandle::new_with_fn(self.0.into_owner(), |lock| {
             // We can make an unchecked read guard here, because above we forgot a downgraded write guard
-            RwLockReadGuard::map(unsafe { (&*lock).make_read_guard_unchecked() }, |container| {
-                unsafe { container.get_shared() }.as_ref().expect("some")
-            })
+            RwLockReadGuard::map(
+                {
+                    // SAFETY: The lock remains held, permitting unchecked guard creation.
+                    unsafe { (&*lock).make_read_guard_unchecked() }
+                },
+                |container| {
+                    // SAFETY: Shared guard exposes only immutable access to the singleton.
+                    unsafe { container.get_shared() }.as_ref().expect("some")
+                },
+            )
         }))
     }
 
@@ -186,9 +235,16 @@ impl<T: Singleton> OccupiedSingletonContainerEntry<T> {
 
         SingletonContainerWriteGuard(OwningHandle::new_with_fn(self.0.into_owner(), |lock| {
             // We can make an unchecked read guard here, because above we forgot a downgraded write guard
-            RwLockWriteGuard::map(unsafe { (&*lock).make_write_guard_unchecked() }, |container| {
-                unsafe { container.mut_get_mut_exclusive() }.as_mut().expect("some")
-            })
+            RwLockWriteGuard::map(
+                {
+                    // SAFETY: The lock remains held, permitting unchecked guard creation.
+                    unsafe { (&*lock).make_write_guard_unchecked() }
+                },
+                |container| {
+                    // SAFETY: Exclusive guard allows mutable access to the singleton slot.
+                    unsafe { container.mut_get_mut_exclusive() }.as_mut().expect("some")
+                },
+            )
         }))
     }
 }

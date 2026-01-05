@@ -1,3 +1,5 @@
+//! Query element helpers for locked view iteration.
+
 use std::ops::{Deref, DerefMut};
 
 use tuples::{index::Here, traits::has::ConsHas};
@@ -25,7 +27,7 @@ use crate::{
     },
 };
 
-/// An element used in a query tuple for a locked view query
+/// Describes a query element that borrows components from a `LockedView`.
 pub trait LockedViewComponentQueryElement<'a, T: LockedViewElements, S: LockedViewElements, Idx, QueryIdx>:
     ComponentTupleElement
 {
@@ -51,6 +53,7 @@ where
     type BorrowedComponent = impl Deref<Target = T>;
 
     fn iter_locked_view(view: &'a LockedView<C, S>) -> impl Iterator<Item = (EntityId, Self::BorrowedComponent)> + 'a {
+        // SAFETY: `HasComponents` guarantees the accessor references the locked component set.
         unsafe { view.get_accessor().iter() }
     }
 }
@@ -66,11 +69,12 @@ where
     type BorrowedComponent = impl DerefMut<Target = T>;
 
     fn iter_locked_view(view: &'a LockedView<C, S>) -> impl Iterator<Item = (EntityId, Self::BorrowedComponent)> + 'a {
+        // SAFETY: Mutable access is guarded by the component set lock in the view.
         unsafe { view.get_accessor().iter_mut() }
     }
 }
 
-/// An element used in a query tuple for a locked view query
+/// Describes a query element that borrows singletons from a `LockedView`.
 pub trait LockedViewSingletonQueryElement<'a, T: LockedViewElements, S: LockedViewElements, Idx, QueryIdx>:
     SingletonTupleElement
 {
@@ -99,6 +103,7 @@ where
     type SingletonRowElement = impl Deref<Target = T>;
 
     fn get_singleton_row_element(view: &'a LockedView<C, S>) -> Option<Self::SingletonRowElement> {
+        // SAFETY: `HasSingleton` guarantees the accessor references the locked singleton container.
         unsafe { view.get_accessor().get() }
     }
 }
@@ -114,6 +119,7 @@ where
     type SingletonRowElement = impl DerefMut<Target = T>;
 
     fn get_singleton_row_element(view: &'a LockedView<C, S>) -> Option<Self::SingletonRowElement> {
+        // SAFETY: `HasSingletonMut` ensures exclusive access to the singleton container.
         unsafe { view.get_accessor().get_mut() }
     }
 }

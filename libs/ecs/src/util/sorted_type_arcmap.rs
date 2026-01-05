@@ -1,3 +1,5 @@
+//! Type-based map that maintains deterministic iteration order.
+
 use std::{
     any::TypeId,
     collections::{BTreeMap, HashMap},

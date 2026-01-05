@@ -1,3 +1,8 @@
+//! Locked views over world state.
+//!
+//! A locked view provides scoped access to a `World` with a fixed set of
+//! component and singleton locks held for the lifetime of the view.
+
 use std::sync::Arc;
 
 use parking_lot::RwLock;

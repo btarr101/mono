@@ -1,3 +1,8 @@
+//! Type-level descriptors for locked view contents.
+//!
+//! This module defines the traits used to specify which component and
+//! singleton sets are locked when constructing a `LockedView`.
+
 use smallvec::SmallVec;
 use tuples::traits::as_cons_tuple::AsConsTuple;
 
