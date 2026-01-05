@@ -228,7 +228,7 @@ impl<T: Singleton> OccupiedSingletonContainerEntry<T> {
         }))
     }
 
-    /// Keeps exlcusive access to this singleton and creates a write guard
+    /// Keeps exclusive access to this singleton and creates a write guard
     pub fn write(mut self) -> SingletonContainerWriteGuard<T> {
         // Forget the current mapped rwlock write guard
         std::mem::forget(self.0.take().expect("some"));
