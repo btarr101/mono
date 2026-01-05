@@ -3,8 +3,8 @@
 //! This module defines the traits used to specify which component and
 //! singleton sets are locked when constructing a `LockedView`.
 
+use clockwork_tuples::traits::as_cons_tuple::AsConsTuple;
 use smallvec::SmallVec;
-use tuples::traits::as_cons_tuple::AsConsTuple;
 
 use crate::{
     traits::cons_guards::{ConsAsComponentSetGuards, ConsAsSingletonContainerGuards, ConsGuards, ConsMaybeLockedGuardsExt},

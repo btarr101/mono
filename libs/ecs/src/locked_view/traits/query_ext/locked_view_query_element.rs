@@ -2,7 +2,7 @@
 
 use std::ops::{Deref, DerefMut};
 
-use tuples::{index::Here, traits::has::ConsHas};
+use clockwork_tuples::{index::Here, traits::has::ConsHas};
 
 use crate::{
     entity::EntityId,

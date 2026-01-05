@@ -15,7 +15,7 @@
 //!
 //! # Examples
 //! ```
-//! use tuples::traits::{as_cons_tuple::AsConsTuple, has::Has};
+//! use clockwork_tuples::traits::{as_cons_tuple::AsConsTuple, has::Has};
 //!
 //! fn foo() {
 //!     let tuple = ("alpha", 7u8, true);

@@ -1,6 +1,6 @@
 //! Query extension traits for `LockedView`.
 
-use tuples::traits::cons_tuple::ConsTuple;
+use clockwork_tuples::traits::cons_tuple::ConsTuple;
 
 use crate::{
     entity::EntityId,

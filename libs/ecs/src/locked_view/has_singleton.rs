@@ -3,7 +3,7 @@
 //! These traits provide compile-time guarantees for accessing singleton
 //! containers through a `LockedView`.
 
-use tuples::traits::{has::ConsHas, has_one_of::ConsHasOne};
+use clockwork_tuples::traits::{has::ConsHas, has_one_of::ConsHasOne};
 
 use crate::{
     locked_view::{LockedView, locked_view_elements::LockedViewElements, types::ConsSingletonContainerGuards},
