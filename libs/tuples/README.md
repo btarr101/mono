@@ -31,24 +31,18 @@ tuples = "0.1"
 ## Example
 
 ```rust
-use tuples::{
-    index::{Here, There},
-    traits::{as_cons_tuple::AsConsTuple, has::Has},
-};
+use tuples::traits::{as_cons_tuple::AsConsTuple, has::Has};
 
-fn third_flag(tuple: (&'static str, u8, bool)) -> bool {
-    <(&'static str, u8, bool) as Has<bool, There<There<Here>>>>::get(tuple)
-}
-
-fn main() {
-    let mut tuple = ("alpha", 7u8, true);
-
+fn foo() {
+    let tuple = ("alpha", 7u8, true);
     // Convert the tuple into a cons-style representation for structural recursion.
     let cons = tuple.to_cons_tuple();
     assert_eq!(cons.0, "alpha");
-
-    // Navigate to the boolean using type-level indices.
-    assert!(third_flag(("alpha", 7, true)));
+    assert_eq!(cons.1.0, 7u8);
+    assert!(cons.1.1.0);
+    // Navigate to the boolean
+    let val: bool = tuple.get();
+    assert!(val);
 }
 ```
 

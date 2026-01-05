@@ -8,9 +8,29 @@
 //! structure, ordering, and containment.
 //!
 //! # Guarantees
+//!
 //! - All public traits define structural properties of tuple types.
 //! - No runtime allocation is performed by this crate.
 //! - APIs are pure with respect to observable runtime state.
+//!
+//! # Examples
+//! ```
+//! use tuples::traits::{as_cons_tuple::AsConsTuple, has::Has};
+//!
+//! fn foo() {
+//!     let tuple = ("alpha", 7u8, true);
+//!
+//!     // Convert the tuple into a cons-style representation for structural recursion.
+//!     let cons = tuple.to_cons_tuple();
+//!     assert_eq!(cons.0, "alpha");
+//!     assert_eq!(cons.1.0, 7u8);
+//!     assert!(cons.1.1.0);
+//!
+//!     // Navigate to the boolean
+//!     let val: bool = tuple.get();
+//!     assert!(val);
+//! }
+//! ```
 
 pub mod index;
 pub(crate) mod macros;
