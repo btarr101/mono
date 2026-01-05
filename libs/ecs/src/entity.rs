@@ -35,7 +35,9 @@ pub struct Entity<'a> {
 }
 
 impl<'a> Entity<'a> {
-    pub(crate) fn new(id: EntityId, world: &'a World) -> Self { Self { id, world } }
+    pub(crate) fn new(id: EntityId, world: &'a World) -> Self {
+        Self { id, world }
+    }
 
     /// Adds a component to this enity
     ///
@@ -115,7 +117,9 @@ where
     }
 
     /// Gets the id of this entity
-    pub fn id(&self) -> EntityId { self.id }
+    pub fn id(&self) -> EntityId {
+        self.id
+    }
 
     /// Adds a component to this entity defered
     ///
@@ -124,7 +128,7 @@ where
     ///
     /// Note if anything happens to the entity such as it being removed, this will do nothing
     fn add_defered<T: Component>(&self, component: T) {
-        self.locked_view.as_ref().defered_updates.lock().push(
+        self.locked_view.as_ref().defered_updates.push(
             |(id, component), world| {
                 if let Some(mut entity) = world.get_entity(id) {
                     entity.require_components_and_add(component);
@@ -147,7 +151,7 @@ where
     ///
     /// Note if anything happens to the entity such as it being removed, this will do nothing
     pub fn remove_defered<T: Component>(&self) {
-        self.locked_view.as_ref().defered_updates.lock().push(
+        self.locked_view.as_ref().defered_updates.push(
             |id, world| {
                 if let Some(mut entity) = world.get_entity(id) {
                     entity.require_components_and_pop::<T>();
@@ -165,7 +169,7 @@ where
     /// Not this only takes a reference, so you can still do stuff for the entity, it just typically
     /// would not be long for this world if the defered update queue is being consumed
     pub fn destroy_defered(&self) {
-        self.locked_view.as_ref().defered_updates.lock().push(
+        self.locked_view.as_ref().defered_updates.push(
             |id, world| {
                 if let Some(entity) = world.get_entity(id) {
                     entity.require_all_components_and_destroy();
@@ -255,7 +259,9 @@ mod private {
         type ComponentElements = C;
         type SingletonElements = S;
 
-        fn as_ref(&self) -> &LockedView<C, S> { self }
+        fn as_ref(&self) -> &LockedView<C, S> {
+            self
+        }
     }
 
     impl<'a, C, S, T> LockedViewMut<'a> for T
@@ -264,12 +270,16 @@ mod private {
         S: LockedViewElements,
         T: DerefMut<Target = LockedView<C, S>>,
     {
-        fn as_mut(&mut self) -> &mut LockedView<C, S> { &mut *self }
+        fn as_mut(&mut self) -> &mut LockedView<C, S> {
+            &mut *self
+        }
     }
 
     impl EntityId {
         /// Creates a new entity id
-        pub(crate) fn new(index: usize, generation: usize) -> Self { Self { index, generation } }
+        pub(crate) fn new(index: usize, generation: usize) -> Self {
+            Self { index, generation }
+        }
     }
 
     impl<'a, LockedViewRef, Idx, QueryIdx>

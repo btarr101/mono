@@ -1,5 +1,7 @@
 use std::{marker::PhantomData, ptr};
 
+use parking_lot::Mutex;
+
 /// A heterogenous queue a defered elements that have a dependency.
 ///
 /// The data is stored as
@@ -115,7 +117,33 @@ unsafe fn callback_dispatcher<T, Dependency>(ptr: *mut u8, dependency: &Dependen
     callback(data, dependency);
 }
 
-fn pad(align: usize, start: usize) -> usize { (align - (start % align)) % align }
+fn pad(align: usize, start: usize) -> usize {
+    (align - (start % align)) % align
+}
+
+/// Double-buffered wrapper that allows pushing while consuming.
+#[derive(Default)]
+pub struct RotatingDeferedQueue<Dependency> {
+    pushing: Mutex<DeferedQueue<Dependency>>,
+    consuming: Mutex<DeferedQueue<Dependency>>,
+}
+
+impl<Dependency> RotatingDeferedQueue<Dependency> {
+    /// Pushes a new command into the active producer queue.
+    pub fn push<T>(&self, callback: fn(T, &Dependency), data: T) {
+        self.pushing.lock().push(callback, data);
+    }
+
+    /// Swaps queues so pushes can continue, then drains the consumer queue.
+    pub fn pop_all(&self, dependency: &Dependency) {
+        let mut consuming = self.consuming.lock();
+        {
+            let mut pushing = self.pushing.lock();
+            std::mem::swap(&mut *pushing, &mut *consuming);
+        }
+        consuming.pop_all(dependency);
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -126,7 +154,9 @@ mod tests {
     #[test]
     fn test_add_to_map() {
         type Map = RefCell<HashMap<&'static str, Box<dyn Debug>>>;
-        fn callback<T: Debug + 'static>(data: T, map: &Map) { map.borrow_mut().insert(type_name::<T>(), Box::new(data)); }
+        fn callback<T: Debug + 'static>(data: T, map: &Map) {
+            map.borrow_mut().insert(type_name::<T>(), Box::new(data));
+        }
         let map = Map::default();
 
         let mut queue = DeferedQueue::<Map>::new();

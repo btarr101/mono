@@ -165,8 +165,12 @@ impl<T: Component> MutComponentSetMutAccessor<T> for ComponentSetWriteGuard<T> {
         // SAFETY: Write guard owns exclusive access, matching `ComponentSet::try_add` requirements.
         unsafe { self.0.try_add(id, component) }
     }
-    fn pop(&mut self, id: EntityId) -> Option<T> { self.0.pop(id.index).and_then(|(_, component)| component) }
-    fn soft_pop(&mut self, id: EntityId) -> Option<T> { self.0.soft_pop(id) }
+    fn pop(&mut self, id: EntityId) -> Option<T> {
+        self.0.pop(id.index).and_then(|(_, component)| component)
+    }
+    fn soft_pop(&mut self, id: EntityId) -> Option<T> {
+        self.0.soft_pop(id)
+    }
 }
 
 impl<T: Component, A: MutComponentSetMutAccessor<T>> MutComponentSetMutAccessor<T> for &mut A {
@@ -178,6 +182,10 @@ impl<T: Component, A: MutComponentSetMutAccessor<T>> MutComponentSetMutAccessor<
         // SAFETY: Delegates to the underlying accessor, preserving its guarantees.
         unsafe { (**self).try_add(id, component) }
     }
-    fn pop(&mut self, id: EntityId) -> Option<T> { (**self).pop(id) }
-    fn soft_pop(&mut self, id: EntityId) -> Option<T> { (**self).soft_pop(id) }
+    fn pop(&mut self, id: EntityId) -> Option<T> {
+        (**self).pop(id)
+    }
+    fn soft_pop(&mut self, id: EntityId) -> Option<T> {
+        (**self).soft_pop(id)
+    }
 }

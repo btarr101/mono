@@ -65,7 +65,9 @@ impl<T> SparseSet<T> {
 
     /// Checks if this sparse set has an element
     #[expect(unused)]
-    pub fn has(&self, index: usize) -> bool { self.sparse_to_dense.get(index).cloned().flatten().is_some() }
+    pub fn has(&self, index: usize) -> bool {
+        self.sparse_to_dense.get(index).cloned().flatten().is_some()
+    }
 
     /// Attempts to removes an element from this sparse set,
     /// then returns if an element was removed this way
@@ -111,7 +113,9 @@ impl<T> SparseSet<T> {
 
     /// Checks if this sparse set is empty
     #[expect(unused)]
-    pub fn is_empty(&self) -> bool { self.dense.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.dense.is_empty()
+    }
 
     /// Gets an element or the default
     #[expect(unused)]

@@ -51,10 +51,14 @@ pub struct LockedViewSingletonEntry<'a, T: Singleton>(&'a mut Option<T>);
 
 impl<'a, T: Singleton> LockedViewSingletonEntry<'a, T> {
     /// Inserts a singleton value, returning a mutable reference to the stored instance.
-    pub fn insert(self, singleton: T) -> impl DerefMut<Target = T> + 'a { self.0.insert(singleton) }
+    pub fn insert(self, singleton: T) -> impl DerefMut<Target = T> + 'a {
+        self.0.insert(singleton)
+    }
 
     /// Ensures a singleton exists, returning a mutable reference to the stored instance.
-    pub fn or_insert(self, default: T) -> impl DerefMut<Target = T> + 'a { self.0.get_or_insert(default) }
+    pub fn or_insert(self, default: T) -> impl DerefMut<Target = T> + 'a {
+        self.0.get_or_insert(default)
+    }
 
     /// Lazily ensures a singleton exists using the provided constructor.
     pub fn or_insert_with<F>(self, default: F) -> impl DerefMut<Target = T> + 'a

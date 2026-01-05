@@ -25,5 +25,7 @@ where
 {
     type Flattened = <Tail::Flattened as CanPrepend>::Prepended<Head>;
 
-    fn flatten(self) -> Self::Flattened { self.1.flatten().prepend(self.0) }
+    fn flatten(self) -> Self::Flattened {
+        self.1.flatten().prepend(self.0)
+    }
 }

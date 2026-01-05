@@ -7,14 +7,14 @@
 
 use std::{any::Any, sync::Arc};
 
-use parking_lot::{MappedRwLockWriteGuard, Mutex, RwLock, RwLockWriteGuard};
+use parking_lot::{MappedRwLockWriteGuard, RwLock, RwLockWriteGuard};
 use static_assertions::assert_impl_all;
 
 use crate::{
     entity::{Entity, EntityId},
     locked_view::{LockedView, locked_view_elements::LockedViewElements},
     traits::{component::Component, singleton::Singleton},
-    util::{defered_queue::DeferedQueue, sorted_type_arcmap::SortedTypeArcMap},
+    util::{defered_queue::RotatingDeferedQueue, sorted_type_arcmap::SortedTypeArcMap},
     world::{
         component_set::{AnyComponentSet, ComponentSet},
         entity_id_allocator::EntityIdAllocator,
@@ -37,12 +37,14 @@ pub struct World {
     pub(crate) entities: Arc<RwLock<EntityIdAllocator>>,
     pub(crate) singletons: RwLock<SortedTypeArcMap<dyn Any + Send + Sync>>,
     pub(crate) components: RwLock<SortedTypeArcMap<dyn AnyComponentSetRwLock>>,
-    pub(crate) defered_updates: Arc<Mutex<DeferedQueue<World>>>,
+    pub(crate) defered_updates: Arc<RotatingDeferedQueue<World>>,
 }
 
 impl World {
     /// Creates a new world
-    pub fn new() -> Self { Default::default() }
+    pub fn new() -> Self {
+        Default::default()
+    }
 
     /// Creates a new entity in this world
     pub fn create_entity(&self) -> Entity<'_> {
@@ -75,24 +77,27 @@ impl World {
     /// Typically, you would use this function at the beginning of a system
     /// so it has guaranteed access to certain sets of components and
     /// singletons.
-    pub fn lock_view<C: LockedViewElements, S: LockedViewElements>(&self) -> LockedView<C, S> { LockedView::new(self) }
+    pub fn lock_view<C: LockedViewElements, S: LockedViewElements>(&self) -> LockedView<C, S> {
+        LockedView::new(self)
+    }
 
     /// Locks a view over this world (but only components)
-    pub fn lock_components_view<C: LockedViewElements>(&self) -> LockedView<C, ()> { LockedView::new(self) }
+    pub fn lock_components_view<C: LockedViewElements>(&self) -> LockedView<C, ()> {
+        LockedView::new(self)
+    }
 
     /// Locks a view over this world (but only singletons)
-    pub fn lock_singletons_view<S: LockedViewElements>(&self) -> LockedView<(), S> { LockedView::new(self) }
+    pub fn lock_singletons_view<S: LockedViewElements>(&self) -> LockedView<(), S> {
+        LockedView::new(self)
+    }
 
-    /// Executes all updates that were defered due to not having proper lock access at a time
+    /// Executes all updates that were defered due to not having proper lock access at a time.
     ///
-    /// TODO: This may need to be 2 defered updates calls, otherwise we could deadlock pretty easily
-    /// thread 1) we lock defered updates
-    /// thread 2) locks a component set
-    /// thread 1) attempts to also lock that component set, has to wait
-    /// thread 2) attempts to apply a defered update, cannot aquire lock
-    ///
-    /// !DEADLOCK!
-    pub fn require_all_and_execute_defered_updates(&self) { self.defered_updates.lock().pop_all(self); }
+    /// Uses a double-buffered queue so producers never block while the consumer
+    /// temporarily requires broader world locks.
+    pub fn require_all_and_execute_defered_updates(&self) {
+        self.defered_updates.pop_all(self);
+    }
 
     /// Gets the lock to a particular component set
     pub(crate) fn component_set_lock<T: Component>(&self) -> Arc<RwLock<ComponentSet<T>>> {
@@ -144,5 +149,7 @@ impl<T: AnyComponentSet> AnyComponentSetRwLock for RwLock<T> {
     fn write(&self) -> MappedRwLockWriteGuard<'_, dyn AnyComponentSet> {
         RwLockWriteGuard::map(self.write(), |t| t as &mut dyn AnyComponentSet)
     }
-    fn as_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync> { self }
+    fn as_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync> {
+        self
+    }
 }

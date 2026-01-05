@@ -13,7 +13,9 @@ pub struct EntityIdAllocator {
 impl EntityIdAllocator {
     /// Creates a new allocator
     #[expect(unused)]
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// Allocates an entity id
     pub fn allocate_id(&mut self) -> EntityId {
@@ -34,5 +36,7 @@ impl EntityIdAllocator {
     }
 
     /// Checks if the index portion of an entity id is currently being used
-    pub fn index_in_use(&self, index: usize) -> bool { !(index >= self.next_index || self.freed_indexes.contains(&index)) }
+    pub fn index_in_use(&self, index: usize) -> bool {
+        !(index >= self.next_index || self.freed_indexes.contains(&index))
+    }
 }
