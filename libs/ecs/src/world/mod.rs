@@ -94,7 +94,7 @@ impl World {
     /// Executes all updates that were defered due to not having proper lock access at a time.
     ///
     /// Uses a double-buffered queue so producers never block while the consumer
-    /// temporarily requires broader world locks.
+    /// temporarily holds additional world locks.
     pub fn require_all_and_execute_defered_updates(&self) {
         self.defered_updates.pop_all(self);
     }

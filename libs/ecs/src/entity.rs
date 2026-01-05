@@ -128,7 +128,7 @@ where
     ///
     /// Note if anything happens to the entity such as it being removed, this will do nothing
     fn add_defered<T: Component>(&self, component: T) {
-        self.locked_view.as_ref().defered_updates.push(
+        self.locked_view.as_ref().defered_updates.lock().push(
             |(id, component), world| {
                 if let Some(mut entity) = world.get_entity(id) {
                     entity.require_components_and_add(component);
@@ -151,7 +151,7 @@ where
     ///
     /// Note if anything happens to the entity such as it being removed, this will do nothing
     pub fn remove_defered<T: Component>(&self) {
-        self.locked_view.as_ref().defered_updates.push(
+        self.locked_view.as_ref().defered_updates.lock().push(
             |id, world| {
                 if let Some(mut entity) = world.get_entity(id) {
                     entity.require_components_and_pop::<T>();
@@ -169,7 +169,7 @@ where
     /// Not this only takes a reference, so you can still do stuff for the entity, it just typically
     /// would not be long for this world if the defered update queue is being consumed
     pub fn destroy_defered(&self) {
-        self.locked_view.as_ref().defered_updates.push(
+        self.locked_view.as_ref().defered_updates.lock().push(
             |id, world| {
                 if let Some(entity) = world.get_entity(id) {
                     entity.require_all_components_and_destroy();

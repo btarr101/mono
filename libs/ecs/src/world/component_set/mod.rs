@@ -29,9 +29,7 @@ pub trait AnyComponentSet: Any + Send + Sync {
 
 impl<T: Component> ComponentSet<T> {
     /// Creates a new component set
-    pub fn new() -> Self {
-        Self(SparseSet::new())
-    }
+    pub fn new() -> Self { Self(SparseSet::new()) }
 
     /// Gets a component from this set given the entity id
     ///
@@ -195,7 +193,5 @@ impl<T: Component> ComponentSet<T> {
 }
 
 impl<T: Component> AnyComponentSet for ComponentSet<T> {
-    fn remove(&mut self, index: usize) {
-        self.pop(index);
-    }
+    fn remove(&mut self, index: usize) { self.pop(index); }
 }

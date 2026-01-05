@@ -44,9 +44,7 @@ where
     where
         Self: 'a;
 
-    fn get_accessor(&self) -> &Self::Accessor<'_> {
-        self.singletons.cons_get_one_ref()
-    }
+    fn get_accessor(&self) -> &Self::Accessor<'_> { self.singletons.cons_get_one_ref() }
 }
 
 pub trait HasSingletonMut<T: Singleton, S: LockedViewElements, Idx>: private::Sealed {
@@ -76,10 +74,6 @@ where
     where
         Self: 'a;
 
-    fn get_accessor(&self) -> &Self::Accessor<'_> {
-        self.singletons.cons_get_ref()
-    }
-    fn get_mut_accessor(&mut self) -> &mut Self::MutAccessor<'_> {
-        self.singletons.cons_get_mut()
-    }
+    fn get_accessor(&self) -> &Self::Accessor<'_> { self.singletons.cons_get_ref() }
+    fn get_mut_accessor(&mut self) -> &mut Self::MutAccessor<'_> { self.singletons.cons_get_mut() }
 }

@@ -40,9 +40,7 @@ where
     where
         Self: 'a;
 
-    fn get_accessor(&self) -> &Self::Accessor<'_> {
-        self.components.cons_get_one_ref()
-    }
+    fn get_accessor(&self) -> &Self::Accessor<'_> { self.components.cons_get_one_ref() }
 }
 
 /// Utility trait to determine if the locked view has a mutable component set accessor
@@ -71,10 +69,6 @@ where
     where
         Self: 'a;
 
-    fn get_accessor(&self) -> &Self::Accessor<'_> {
-        self.components.cons_get_ref()
-    }
-    fn get_mut_accessor(&mut self) -> &mut Self::MutAccessor<'_> {
-        self.components.cons_get_mut()
-    }
+    fn get_accessor(&self) -> &Self::Accessor<'_> { self.components.cons_get_ref() }
+    fn get_mut_accessor(&mut self) -> &mut Self::MutAccessor<'_> { self.components.cons_get_mut() }
 }

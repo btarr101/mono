@@ -143,6 +143,21 @@ impl<Dependency> RotatingDeferedQueue<Dependency> {
         }
         consuming.pop_all(dependency);
     }
+
+    /// Provides a guard compatible with legacy `.lock().push(...)` call sites.
+    pub fn lock(&self) -> RotatingDeferedQueueGuard<'_, Dependency> {
+        RotatingDeferedQueueGuard { queue: self }
+    }
+}
+
+pub struct RotatingDeferedQueueGuard<'a, Dependency> {
+    queue: &'a RotatingDeferedQueue<Dependency>,
+}
+
+impl<'a, Dependency> RotatingDeferedQueueGuard<'a, Dependency> {
+    pub fn push<T>(&self, callback: fn(T, &Dependency), data: T) {
+        self.queue.push(callback, data);
+    }
 }
 
 #[cfg(test)]
