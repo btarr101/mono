@@ -1,0 +1,9 @@
+[workspace]
+release = false
+
+[[package]]
+name = "clockwork_tuples"
+release = true
+
+[changelog]
+protect_breaking_commits = true
