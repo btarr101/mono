@@ -33,6 +33,9 @@ where
         SingletonsQuery: LockedViewSingletonsQuery<'a, C, S, SingletonIdxs, SingletonQueryIdxs>;
 
     /// Iterates over all component and singleton rows captured by the view.
+    ///
+    /// TODO: Fix this for locked views that don't have any singletons or any components
+    /// We must do some kind of type filtering pattern
     fn default_query<'a>(&'a self) -> impl Iterator<Item = (EntityId, C::Row, S::Row)>
     where
         C: LockedViewComponentsQuery<'a, C, S, ComponentIdxs, ComponentQueryIdxs>,

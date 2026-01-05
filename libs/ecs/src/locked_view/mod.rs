@@ -5,11 +5,12 @@
 
 use std::sync::Arc;
 
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 
 use crate::{
     entity::{EntityId, LockedViewEntity},
     locked_view::locked_view_elements::LockedViewElements,
+    util::defered_queue::DeferedQueue,
     world::{World, entity_id_allocator::EntityIdAllocator},
 };
 
@@ -29,6 +30,7 @@ where
     entities: Arc<RwLock<EntityIdAllocator>>,
     components: C::ComponentSetGuards,
     singletons: S::SingletonContainerGuards,
+    pub(crate) defered_updates: Arc<Mutex<DeferedQueue<World>>>,
 }
 
 impl<C, S> LockedView<C, S>
@@ -42,6 +44,7 @@ where
             entities: world.entities.clone(),
             components: C::lock_component_sets_from_world(world),
             singletons: S::lock_singleton_containers_from_world(world),
+            defered_updates: world.defered_updates.clone(),
         }
     }
 

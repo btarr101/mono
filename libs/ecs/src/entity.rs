@@ -40,7 +40,7 @@ impl<'a> Entity<'a> {
     /// Adds a component to this enity
     ///
     /// Requires locking the component set for write access
-    pub fn lock_components_and_add<T: Component>(&mut self, component: T) {
+    pub fn require_components_and_add<T: Component>(&mut self, component: T) {
         unsafe { ComponentSetWriteGuard::lock_from_world(self.world).add(self.id, component) };
     }
 
@@ -48,19 +48,19 @@ impl<'a> Entity<'a> {
     /// was removed this way
     ///
     /// Requires locking the component set for write access
-    pub fn lock_components_and_pop<T: Component>(&mut self) -> Option<T> {
+    pub fn require_components_and_pop<T: Component>(&mut self) -> Option<T> {
         ComponentSetWriteGuard::lock_from_world(self.world).soft_pop(self.id)
     }
 
     /// Builder variant of `lock_components_and_add`
     pub fn require_components_and_with<T: Component>(mut self, component: T) -> Self {
-        self.lock_components_and_add(component);
+        self.require_components_and_add(component);
         self
     }
 
     /// Builder variant of `lock_components_and_pop`
-    pub fn lock_components_and_without<T: Component>(mut self) -> Self {
-        self.lock_components_and_pop::<T>();
+    pub fn require_components_and_without<T: Component>(mut self) -> Self {
+        self.require_components_and_pop::<T>();
         self
     }
 
@@ -116,6 +116,64 @@ where
 
     /// Gets the id of this entity
     pub fn id(&self) -> EntityId { self.id }
+
+    /// Adds a component to this entity defered
+    ///
+    /// By defered meaning the operation will be placed on a command queue that then needs
+    /// to be manually executed.
+    ///
+    /// Note if anything happens to the entity such as it being removed, this will do nothing
+    fn add_defered<T: Component>(&self, component: T) {
+        self.locked_view.as_ref().defered_updates.lock().push(
+            |(id, component), world| {
+                if let Some(mut entity) = world.get_entity(id) {
+                    entity.require_components_and_add(component);
+                }
+            },
+            (self.id, component),
+        );
+    }
+
+    /// Builder variant of `add_defered`
+    pub fn with_defered<T: Component>(self, component: T) -> Self {
+        self.add_defered(component);
+        self
+    }
+
+    /// Removes a component from this entity defered
+    ///
+    /// By defered meaning the operation will be placed on a command queue that then needs
+    /// to be manually executed.
+    ///
+    /// Note if anything happens to the entity such as it being removed, this will do nothing
+    pub fn remove_defered<T: Component>(&self) {
+        self.locked_view.as_ref().defered_updates.lock().push(
+            |id, world| {
+                if let Some(mut entity) = world.get_entity(id) {
+                    entity.require_components_and_pop::<T>();
+                }
+            },
+            self.id,
+        );
+    }
+
+    // Destroys this entity defered
+    ///
+    /// By defered meaning the operation will be placed on a command queue that then needs
+    /// to be manually executed.
+    ///
+    /// Not this only takes a reference, so you can still do stuff for the entity, it just typically
+    /// would not be long for this world if the defered update queue is being consumed
+    pub fn destroy_defered(&self) {
+        self.locked_view.as_ref().defered_updates.lock().push(
+            |id, world| {
+                if let Some(entity) = world.get_entity(id) {
+                    entity.require_all_components_and_destroy();
+                }
+            },
+            self.id,
+        );
+    }
 }
 
 /// Provides read-only component access for entities inside a locked view.
@@ -162,6 +220,15 @@ where
     fn pop<T: Component>(&mut self) -> Option<T>
     where
         LockedView<C, S>: HasComponentsMut<T, C, Idx>;
+
+    /// Builder version of pop, but doesn't return the component
+    fn without<T: Component>(mut self) -> Self
+    where
+        LockedView<C, S>: HasComponentsMut<T, C, Idx>,
+    {
+        self.pop();
+        self
+    }
 }
 
 mod private {
