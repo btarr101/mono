@@ -1,5 +1,44 @@
 use std::{marker::PhantomData, ptr};
 
+use parking_lot::Mutex;
+
+/// A rotating locked defered queue.
+///
+/// This means when popping, it will swap the current "public" queue with the
+/// "private" and then pop all elements off of the new private queue.
+///
+/// This is to avoid deadlocks where the defered operations are dependendent on defered queue.
+#[derive(Default)]
+pub struct RotatingLockedDeferedQueue<Dependency> {
+    public: Mutex<DeferedQueue<Dependency>>,
+    private: Mutex<DeferedQueue<Dependency>>,
+}
+
+impl<Dependency> RotatingLockedDeferedQueue<Dependency> {
+    /// Creates a new rotating defered queue
+    pub fn new() -> Self {
+        Self {
+            public: Mutex::new(DeferedQueue::new()),
+            private: Mutex::new(DeferedQueue::new()),
+        }
+    }
+
+    /// Pushes some data and a callback to handle that data onto the defered queue
+    pub fn push<T>(&self, callback: fn(T, &Dependency), data: T) { self.public.lock().push(callback, data); }
+
+    /// Pops all elements off of this rotating defered queue that are currently in the public queue
+    ///
+    /// Internally, this swaps the public and private queues, then consumes from the new private queue
+    pub fn pop_all(&self, dependency: &Dependency) {
+        let mut public = self.public.lock();
+        let mut private = self.private.lock();
+        std::mem::swap(&mut *public, &mut *private);
+        drop(public);
+
+        private.pop_all(dependency);
+    }
+}
+
 /// A heterogenous queue a defered elements that have a dependency.
 ///
 /// The data is stored as
@@ -10,7 +49,7 @@ use std::{marker::PhantomData, ptr};
 #[derive(Default)]
 pub struct DeferedQueue<Dependency> {
     buffer: Vec<u8>,
-    _phantom: PhantomData<Dependency>,
+    _phantom: PhantomData<fn() -> Dependency>,
 }
 
 impl<Dependency> DeferedQueue<Dependency> {
@@ -19,11 +58,11 @@ impl<Dependency> DeferedQueue<Dependency> {
     pub fn new() -> Self {
         Self {
             buffer: Vec::new(),
-            _phantom: PhantomData::<Dependency>,
+            _phantom: PhantomData::<fn() -> Dependency>,
         }
     }
 
-    /// Pushes some data and a callback to handle that data with the dependency onto the defered stack
+    /// Pushes some data and a callback to handle that data with the dependency onto the defered queue
     pub fn push<T>(&mut self, callback: fn(T, &Dependency), data: T) {
         let size = std::mem::size_of::<T>();
         let meta = DefferedQueueEntryMeta {
@@ -122,14 +161,31 @@ mod tests {
     use std::{any::type_name, cell::RefCell, collections::HashMap, fmt::Debug, path::PathBuf};
 
     use super::DeferedQueue;
+    use crate::util::defered_queue::RotatingLockedDeferedQueue;
+
+    type Map = RefCell<HashMap<&'static str, Box<dyn Debug>>>;
+
+    fn callback<T: Debug + 'static>(data: T, map: &Map) { map.borrow_mut().insert(type_name::<T>(), Box::new(data)); }
 
     #[test]
     fn test_add_to_map() {
-        type Map = RefCell<HashMap<&'static str, Box<dyn Debug>>>;
-        fn callback<T: Debug + 'static>(data: T, map: &Map) { map.borrow_mut().insert(type_name::<T>(), Box::new(data)); }
         let map = Map::default();
 
         let mut queue = DeferedQueue::<Map>::new();
+        queue.push(callback, 0u32);
+        queue.push(callback, PathBuf::from("fart"));
+        queue.push(callback, "foobar");
+        queue.push(callback, "bleep".to_string());
+        queue.pop_all(&map);
+
+        println!("{:?}", &map);
+    }
+
+    #[test]
+    fn test_add_to_map_rotating_defered() {
+        let map = Map::default();
+
+        let queue = RotatingLockedDeferedQueue::<Map>::new();
         queue.push(callback, 0u32);
         queue.push(callback, PathBuf::from("fart"));
         queue.push(callback, "foobar");

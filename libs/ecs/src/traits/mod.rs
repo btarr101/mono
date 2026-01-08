@@ -9,6 +9,7 @@ pub(crate) mod cons_guards;
 pub(crate) mod guard;
 pub(crate) mod singleton_container_accessor;
 pub(crate) mod singleton_tuple_element;
+pub(crate) mod spawn_tuple;
 
 pub mod singleton {
     /// Marker trait for values stored as ECS singletons.

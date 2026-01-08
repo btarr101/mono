@@ -1,4 +1,4 @@
-# tuples
+# clockwork-tuples
 
 Type-level tuple utilities for building APIs that need compile-time
 reasoning over structure, ordering, and membership. The crate exposes a

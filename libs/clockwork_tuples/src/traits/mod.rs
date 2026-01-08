@@ -11,6 +11,8 @@
 
 /// Conversion to cons-style tuples.
 pub mod as_cons_tuple;
+/// Tuple to tuple of refs.
+pub mod as_ref_tuple;
 /// Tuple element prepending.
 pub mod can_prepend;
 /// Cons-style tuple representation.

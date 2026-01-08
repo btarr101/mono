@@ -1,4 +1,8 @@
-use ecs::{entity::LockedViewEntityComponentMutExt, locked_view::traits::*, world::World};
+use ecs::{
+    entity::LockedViewEntityComponentMutExt,
+    locked_view::traits::{spawn_ext::LockedViewSpawnExt, *},
+    world::World,
+};
 
 fn main() {
     let world = World::new();
@@ -12,6 +16,7 @@ fn main() {
 
     {
         let mut view = world.lock_view::<(&mut i32, &mut u32, &mut isize), (&mut String,)>();
+        let entity = view.spawn((32u32, 64i32));
 
         view.create_entity().with(200u32).with(300i32).with(32isize);
         view.create_entity().with(12u32).with(40i32);
