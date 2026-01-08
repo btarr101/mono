@@ -1,6 +1,6 @@
 //! Generation-aware entity identifier allocator.
 
-use crate::entity::EntityId;
+use crate::entity_id::EntityId;
 
 /// Allocates monotonically increasing entity identifiers with generation tracking.
 #[derive(Default)]

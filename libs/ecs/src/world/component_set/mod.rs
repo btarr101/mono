@@ -10,7 +10,7 @@ use std::{
 };
 
 use crate::{
-    entity::EntityId,
+    entity_id::EntityId,
     traits::component::Component,
     util::{danger_cell::DangerCell, sparse_set::SparseSet},
 };
@@ -104,7 +104,7 @@ impl<T: Component> ComponentSet<T> {
         })
     }
 
-    /// Removes a component from this component set by index. If there was a genration,
+    /// Removes a component from this component set by index. If there was a generation,
     /// returns it, and then if there was a component, returns it.
     ///
     /// (essentially this should be called when the entity is removed entirely)

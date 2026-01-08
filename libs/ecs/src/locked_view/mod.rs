@@ -8,8 +8,9 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 
 use crate::{
-    entity::{EntityId, LockedViewEntity},
+    entity_id::EntityId,
     locked_view::locked_view_elements::LockedViewElements,
+    traits::component::Component,
     util::defered_queue::RotatingLockedDeferedQueue,
     world::{World, entity_id_allocator::EntityIdAllocator},
 };
@@ -49,20 +50,35 @@ where
     }
 
     /// Creates a new entity
-    pub fn create_entity(&mut self) -> LockedViewEntity<'_, &mut Self> {
-        let id = { self.entities.write().allocate_id() };
-        LockedViewEntity::new(id, self)
+    pub fn create_entity(&self) -> EntityId { self.entities.write().allocate_id() }
+
+    /// Adds a component to an entity in defered fasion
+    pub fn add_component_defered<T: Component>(&self, id: EntityId, component: T) {
+        self.defered_updates.push(
+            |(id, component), world| {
+                world.require_components_and_add(id, component);
+            },
+            (id, component),
+        );
     }
 
-    /// Gets an entity
-    ///
-    /// You can still mutate components, just cannot add or remove them
-    pub fn get_entity(&self, id: EntityId) -> Option<LockedViewEntity<'_, &Self>> {
-        { self.entities.read().index_in_use(id.index) }.then_some(LockedViewEntity::new(id, self))
+    /// Removes a component from an entity in defered fasion
+    pub fn remove_component_defered<T: Component>(&self, id: EntityId) {
+        self.defered_updates.push(
+            |id, world| {
+                world.require_components_and_pop::<T>(id);
+            },
+            id,
+        );
     }
 
-    /// Gets an entity mutably (allows removing and adding components)
-    pub fn get_entity_mut(&mut self, id: EntityId) -> Option<LockedViewEntity<'_, &mut Self>> {
-        { self.entities.read().index_in_use(id.index) }.then_some(LockedViewEntity::new(id, self))
+    /// Destroys an entity in defered fasion
+    pub fn destroy_entity_defered(&self, id: EntityId) {
+        self.defered_updates.push(
+            |id, world| {
+                world.require_all_components_and_destroy_entity(id);
+            },
+            id,
+        );
     }
 }

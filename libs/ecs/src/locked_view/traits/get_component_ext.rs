@@ -3,7 +3,7 @@
 use std::ops::{Deref, DerefMut};
 
 use crate::{
-    entity::EntityId,
+    entity_id::EntityId,
     locked_view::{
         LockedView,
         has_components::{HasComponents, HasComponentsMut},

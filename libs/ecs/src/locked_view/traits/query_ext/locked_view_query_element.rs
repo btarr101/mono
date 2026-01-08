@@ -5,7 +5,7 @@ use std::ops::{Deref, DerefMut};
 use clockwork_tuples::{index::Here, traits::has::ConsHas};
 
 use crate::{
-    entity::EntityId,
+    entity_id::EntityId,
     locked_view::{
         LockedView,
         has_components::{HasComponents, HasComponentsMut},

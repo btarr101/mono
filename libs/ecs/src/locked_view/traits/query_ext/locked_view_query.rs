@@ -1,13 +1,13 @@
 //! Internal helpers for executing locked view queries.
 
-use itertools::EitherOrBoth;
 use clockwork_tuples::{
     index::There,
     traits::{as_cons_tuple::AsConsTuple, cons_tuple::ConsTuple, flat::ToFlat},
 };
+use itertools::EitherOrBoth;
 
 use crate::{
-    entity::EntityId,
+    entity_id::EntityId,
     locked_view::{
         LockedView,
         locked_view_elements::LockedViewElements,

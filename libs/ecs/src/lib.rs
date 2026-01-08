@@ -12,7 +12,7 @@
 #![feature(impl_trait_in_assoc_type)]
 #![feature(refcell_try_map)]
 
-pub mod entity;
+pub mod entity_id;
 pub mod locked_view;
 pub mod traits;
 pub(crate) mod util;

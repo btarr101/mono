@@ -3,7 +3,7 @@
 use std::ops::{Deref, DerefMut};
 
 use crate::{
-    entity::EntityId,
+    entity_id::EntityId,
     traits::component::Component,
     world::component_set::component_set_guards::{ComponentSetReadGuard, ComponentSetWriteGuard},
 };

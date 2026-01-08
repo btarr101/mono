@@ -7,17 +7,16 @@
 
 use std::{any::Any, sync::Arc};
 
-use clockwork_tuples::traits::as_cons_tuple::AsConsTuple;
 use parking_lot::{MappedRwLockWriteGuard, RwLock, RwLockWriteGuard};
 use static_assertions::assert_impl_all;
 
 use crate::{
-    entity::{Entity, EntityId},
+    entity_id::EntityId,
     locked_view::{LockedView, locked_view_elements::LockedViewElements},
-    traits::{component::Component, singleton::Singleton},
+    traits::{component::Component, component_set_accessor::MutComponentSetMutAccessor, guard::Guard, singleton::Singleton},
     util::{defered_queue::RotatingLockedDeferedQueue, sorted_type_arcmap::SortedTypeArcMap},
     world::{
-        component_set::{AnyComponentSet, ComponentSet},
+        component_set::{AnyComponentSet, ComponentSet, component_set_guards::ComponentSetWriteGuard},
         entity_id_allocator::EntityIdAllocator,
         singleton_container::{
             SingletonContainer,
@@ -29,6 +28,7 @@ use crate::{
 pub(crate) mod component_set;
 pub(crate) mod entity_id_allocator;
 pub(crate) mod singleton_container;
+pub mod traits;
 
 assert_impl_all!(World: Send, Sync);
 
@@ -46,22 +46,48 @@ impl World {
     pub fn new() -> Self { Default::default() }
 
     /// Creates a new entity in this world
-    pub fn create_entity(&self) -> Entity<'_> {
-        let id = { self.entities.write().allocate_id() };
-        Entity::new(id, self)
+    pub fn create_entity(&self) -> EntityId { self.entities.write().allocate_id() }
+
+    /// Checks if an entity exists
+    pub fn entity_exists(&self, id: EntityId) -> bool { self.entities.read().index_in_use(id.index) }
+
+    /// Attempts to add a component to an entity, and returns if a component was added
+    ///
+    /// Requires locking the component set for write access
+    pub fn require_components_and_add<T: Component>(&self, id: EntityId, component: T) -> bool {
+        unsafe { ComponentSetWriteGuard::lock_from_world(self).try_add(id, component).is_some() }
     }
 
-    pub fn spawn<Components>(&self)
-    where
-        Components: AsConsTuple,
-        for<'a> Components::AsMuts<'a>: LockedViewElements,
-    {
-        let view = self.lock_view::<Components::AsMuts<'_>, ()>();
+    /// Attempts to remove a component, and returns the component if it was removed
+    ///
+    /// Requires locking the component set for write access
+    pub fn require_components_and_pop<T: Component>(&self, id: EntityId) -> Option<T> {
+        ComponentSetWriteGuard::lock_from_world(self).soft_pop(id)
     }
 
-    /// Gets an entity from this world
-    pub fn get_entity(&self, id: EntityId) -> Option<Entity<'_>> {
-        self.entities.read().index_in_use(id.index).then_some(Entity::new(id, self))
+    // Destroys an entity and all components associated with it
+    ///
+    /// Does so by locking every component set, removing the component, then moving onto the next one.
+    /// Thus if any component sets are currently locked and this is called on the same thread there will be a deadlock.
+    pub fn require_all_components_and_destroy_entity(&self, id: EntityId) {
+        // First, clear out components. If we fail to use an old entity id boo hoo. If we reallocate an entity id
+        // with already existing components we are in trouble
+        {
+            // Grab all locks and collect first, that way guards have something to reference
+            // (if we were less lazy we could bundle with OwningRef)
+            let locks = self.components.read().values().cloned().collect::<Vec<_>>();
+
+            // Ensure we lock every single component set before moving to actually delete the components, that way this operation is kept
+            // atomic
+            //
+            // Note this is safe and won;t cause deadlocks because iterating our backing store is in sorted order
+            let component_sets = locks.iter().map(|lock| lock.write()).collect::<Vec<_>>();
+            component_sets
+                .into_iter()
+                .for_each(|mut component_set| component_set.remove(id.index));
+        }
+
+        self.entities.write().free_id(id);
     }
 
     /// Lock a singleton immutably for reading

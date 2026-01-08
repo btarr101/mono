@@ -16,6 +16,7 @@ pub struct RotatingLockedDeferedQueue<Dependency> {
 
 impl<Dependency> RotatingLockedDeferedQueue<Dependency> {
     /// Creates a new rotating defered queue
+    #[allow(unused)]
     pub fn new() -> Self {
         Self {
             public: Mutex::new(DeferedQueue::new()),

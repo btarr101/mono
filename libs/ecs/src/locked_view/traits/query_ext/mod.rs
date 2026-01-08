@@ -3,7 +3,7 @@
 use clockwork_tuples::traits::cons_tuple::ConsTuple;
 
 use crate::{
-    entity::EntityId,
+    entity_id::EntityId,
     locked_view::{
         LockedView,
         locked_view_elements::LockedViewElements,
