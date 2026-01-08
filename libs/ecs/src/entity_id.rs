@@ -22,7 +22,5 @@ pub struct EntityId {
 
 impl EntityId {
     /// Creates a new entity id
-    pub(crate) fn new(index: usize, generation: usize) -> Self {
-        Self { index, generation }
-    }
+    pub(crate) fn new(index: usize, generation: usize) -> Self { Self { index, generation } }
 }

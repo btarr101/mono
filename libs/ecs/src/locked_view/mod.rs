@@ -110,9 +110,7 @@ where
     /// let view = world.lock_components_view::<(&Position,)>();
     /// assert!(view.get_component::<Position>(entity).is_some());
     /// ```
-    pub fn create_entity(&self) -> EntityId {
-        self.entities.write().allocate_id()
-    }
+    pub fn create_entity(&self) -> EntityId { self.entities.write().allocate_id() }
 
     /// Schedules a component insertion that executes once deferred updates run.
     ///

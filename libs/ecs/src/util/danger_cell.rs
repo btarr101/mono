@@ -26,14 +26,10 @@ pub struct DangerCell<T>(RefCell<T>);
 
 unsafe impl<T> Sync for DangerCell<T> {}
 impl<T> DangerCell<T> {
-    pub fn new(data: T) -> Self {
-        Self(data.into())
-    }
+    pub fn new(data: T) -> Self { Self(data.into()) }
 
     /// Consumes this cell and returns the inner value
-    pub fn into_inner(self) -> T {
-        self.0.into_inner()
-    }
+    pub fn into_inner(self) -> T { self.0.into_inner() }
 
     /// # Safety
     /// Only call if no thread thinks it has exclusive access
@@ -65,7 +61,5 @@ impl<T> DangerCell<T> {
 }
 
 impl<T> From<T> for DangerCell<T> {
-    fn from(data: T) -> Self {
-        Self::new(data)
-    }
+    fn from(data: T) -> Self { Self::new(data) }
 }

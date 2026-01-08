@@ -23,9 +23,7 @@ impl private::Sealed for () {}
 impl CanPrepend for () {
     type Prepended<Head> = (Head,);
 
-    fn prepend<Head>(self, head: Head) -> Self::Prepended<Head> {
-        (head,)
-    }
+    fn prepend<Head>(self, head: Head) -> Self::Prepended<Head> { (head,) }
 }
 
 macro_rules! impl_prepend_tuple {

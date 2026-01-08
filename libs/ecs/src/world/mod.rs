@@ -64,22 +64,16 @@ pub struct World {
 impl World {
     /// Creates an empty world with no entities or storage initialized.
     #[inline]
-    pub fn new() -> Self {
-        Default::default()
-    }
+    pub fn new() -> Self { Default::default() }
 
     /// Allocates a fresh [`EntityId`] without touching component storage.
     ///
     /// The returned identifier can subsequently be populated via locked views or
     /// direct component-set operations.
-    pub fn create_entity(&self) -> EntityId {
-        self.entities.write().allocate_id()
-    }
+    pub fn create_entity(&self) -> EntityId { self.entities.write().allocate_id() }
 
     /// Returns `true` when `id` still refers to a live entity.
-    pub fn entity_exists(&self, id: EntityId) -> bool {
-        self.entities.read().index_in_use(id.index)
-    }
+    pub fn entity_exists(&self, id: EntityId) -> bool { self.entities.read().index_in_use(id.index) }
 
     /// Adds `component` to `id`, locking the backing component set for writing.
     ///
@@ -165,26 +159,18 @@ impl World {
     ///
     /// Provide tuples of `&T`/`&mut T` specifiers to describe which data should
     /// be locked.
-    pub fn lock_view<C: LockedViewElements, S: LockedViewElements>(&self) -> LockedView<C, S> {
-        LockedView::new(self)
-    }
+    pub fn lock_view<C: LockedViewElements, S: LockedViewElements>(&self) -> LockedView<C, S> { LockedView::new(self) }
 
     /// Locks a view scoped to components only.
-    pub fn lock_components_view<C: LockedViewElements>(&self) -> LockedView<C, ()> {
-        LockedView::new(self)
-    }
+    pub fn lock_components_view<C: LockedViewElements>(&self) -> LockedView<C, ()> { LockedView::new(self) }
 
     /// Locks a view scoped to singletons only.
-    pub fn lock_singletons_view<S: LockedViewElements>(&self) -> LockedView<(), S> {
-        LockedView::new(self)
-    }
+    pub fn lock_singletons_view<S: LockedViewElements>(&self) -> LockedView<(), S> { LockedView::new(self) }
 
     /// Flushes all deferred operations queued by locked views.
     ///
     /// This must be called when no component or singleton locks are held.
-    pub fn require_all_and_execute_defered_updates(&self) {
-        self.defered_updates.pop_all(self);
-    }
+    pub fn require_all_and_execute_defered_updates(&self) { self.defered_updates.pop_all(self); }
 
     /// Gets the lock to a particular component set
     pub(crate) fn component_set_lock<T: Component>(&self) -> Arc<RwLock<ComponentSet<T>>> {
@@ -236,7 +222,5 @@ impl<T: AnyComponentSet> AnyComponentSetRwLock for RwLock<T> {
     fn write(&self) -> MappedRwLockWriteGuard<'_, dyn AnyComponentSet> {
         RwLockWriteGuard::map(self.write(), |t| t as &mut dyn AnyComponentSet)
     }
-    fn as_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync> {
-        self
-    }
+    fn as_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync> { self }
 }

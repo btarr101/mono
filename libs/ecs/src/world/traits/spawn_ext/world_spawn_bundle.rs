@@ -26,7 +26,5 @@ where
     <<Self as AsRefTuple>::AsMuts<'a> as AsConsTuple>::As: ConsAsSingletonContainerGuards,
     for<'b> Self: LockedViewSpawnBundle<'b, <Self as AsRefTuple>::AsMuts<'a>, (), Idxs>,
 {
-    fn spawn(self, world: &'a World) -> EntityId {
-        LockedView::<<Self as AsRefTuple>::AsMuts<'a>, ()>::new(world).spawn(self)
-    }
+    fn spawn(self, world: &'a World) -> EntityId { LockedView::<<Self as AsRefTuple>::AsMuts<'a>, ()>::new(world).spawn(self) }
 }

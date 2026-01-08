@@ -25,9 +25,7 @@ impl<Dependency> RotatingLockedDeferedQueue<Dependency> {
     }
 
     /// Pushes some data and a callback to handle that data onto the defered queue
-    pub fn push<T>(&self, callback: fn(T, &Dependency), data: T) {
-        self.public.lock().push(callback, data);
-    }
+    pub fn push<T>(&self, callback: fn(T, &Dependency), data: T) { self.public.lock().push(callback, data); }
 
     /// Pops all elements off of this rotating defered queue that are currently in the public queue
     ///
@@ -157,9 +155,7 @@ unsafe fn callback_dispatcher<T, Dependency>(ptr: *mut u8, dependency: &Dependen
     callback(data, dependency);
 }
 
-fn pad(align: usize, start: usize) -> usize {
-    (align - (start % align)) % align
-}
+fn pad(align: usize, start: usize) -> usize { (align - (start % align)) % align }
 
 #[cfg(test)]
 mod tests {
@@ -170,9 +166,7 @@ mod tests {
 
     type Map = RefCell<HashMap<&'static str, Box<dyn Debug>>>;
 
-    fn callback<T: Debug + 'static>(data: T, map: &Map) {
-        map.borrow_mut().insert(type_name::<T>(), Box::new(data));
-    }
+    fn callback<T: Debug + 'static>(data: T, map: &Map) { map.borrow_mut().insert(type_name::<T>(), Box::new(data)); }
 
     #[test]
     fn test_add_to_map() {

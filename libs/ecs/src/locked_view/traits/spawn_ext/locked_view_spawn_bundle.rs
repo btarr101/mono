@@ -26,9 +26,7 @@ where
     Bundle: AsConsTuple,
     Bundle::As: LockedViewConsSpawnBundle<'a, C, S, Idxs>,
 {
-    fn add_components(self, id: EntityId, view: &'a mut LockedView<C, S>) {
-        self.to_cons_tuple().cons_add_components(id, view);
-    }
+    fn add_components(self, id: EntityId, view: &'a mut LockedView<C, S>) { self.to_cons_tuple().cons_add_components(id, view); }
 }
 
 /// Internal helper that walks cons-tuples produced by [`AsConsTuple`] to insert

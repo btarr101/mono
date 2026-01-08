@@ -32,19 +32,13 @@ where
 {
     type Plucked = <<Tuple::As as ConsHas<T, Idx>>::Plucked as ToFlat>::Flattened;
 
-    fn get(self) -> T {
-        self.to_cons_tuple().cons_get()
-    }
+    fn get(self) -> T { self.to_cons_tuple().cons_get() }
     fn plucked(self) -> (T, Self::Plucked) {
         let (target, plucked) = self.to_cons_tuple().cons_pluck();
         (target, plucked.flatten())
     }
-    fn get_ref(&self) -> &T {
-        self.to_cons_ref_tuple().cons_get()
-    }
-    fn get_mut(&mut self) -> &mut T {
-        self.to_cons_mut_tuple().cons_get()
-    }
+    fn get_ref(&self) -> &T { self.to_cons_ref_tuple().cons_get() }
+    fn get_mut(&mut self) -> &mut T { self.to_cons_mut_tuple().cons_get() }
 }
 
 /// Indexed access over a cons-style tuple representation.
@@ -65,18 +59,10 @@ pub trait ConsHas<T, Idx> {
 impl<Target, Tail> ConsHas<Target, Here> for (Target, Tail) {
     type Plucked = Tail;
 
-    fn cons_get(self) -> Target {
-        self.0
-    }
-    fn cons_pluck(self) -> (Target, Self::Plucked) {
-        self
-    }
-    fn cons_get_ref(&self) -> &Target {
-        &self.0
-    }
-    fn cons_get_mut(&mut self) -> &mut Target {
-        &mut self.0
-    }
+    fn cons_get(self) -> Target { self.0 }
+    fn cons_pluck(self) -> (Target, Self::Plucked) { self }
+    fn cons_get_ref(&self) -> &Target { &self.0 }
+    fn cons_get_mut(&mut self) -> &mut Target { &mut self.0 }
 }
 
 impl<Head, Tail, Target, Idx: Index> ConsHas<Target, There<Idx>> for (Head, Tail)
@@ -85,17 +71,11 @@ where
 {
     type Plucked = (Head, Tail::Plucked);
 
-    fn cons_get(self) -> Target {
-        self.1.cons_get()
-    }
+    fn cons_get(self) -> Target { self.1.cons_get() }
     fn cons_pluck(self) -> (Target, Self::Plucked) {
         let (target, plucked) = self.1.cons_pluck();
         (target, (self.0, plucked))
     }
-    fn cons_get_ref(&self) -> &Target {
-        self.1.cons_get_ref()
-    }
-    fn cons_get_mut(&mut self) -> &mut Target {
-        self.1.cons_get_mut()
-    }
+    fn cons_get_ref(&self) -> &Target { self.1.cons_get_ref() }
+    fn cons_get_mut(&mut self) -> &mut Target { self.1.cons_get_mut() }
 }

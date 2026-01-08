@@ -34,12 +34,8 @@ where
     where
         Self: 'a;
 
-    fn as_refs(&self) -> Self::AsRefs<'_> {
-        self.to_cons_ref_tuple().flatten()
-    }
-    fn as_muts(&mut self) -> Self::AsMuts<'_> {
-        self.to_cons_mut_tuple().flatten()
-    }
+    fn as_refs(&self) -> Self::AsRefs<'_> { self.to_cons_ref_tuple().flatten() }
+    fn as_muts(&mut self) -> Self::AsMuts<'_> { self.to_cons_mut_tuple().flatten() }
 }
 
 /// Converts a cons tuple to a cons tuple of refs
@@ -88,10 +84,6 @@ where
     where
         Self: 'a;
 
-    fn as_refs(&self) -> Self::AsRefs<'_> {
-        (&self.0, self.1.as_refs())
-    }
-    fn as_muts(&mut self) -> Self::AsMuts<'_> {
-        (&mut self.0, self.1.as_muts())
-    }
+    fn as_refs(&self) -> Self::AsRefs<'_> { (&self.0, self.1.as_refs()) }
+    fn as_muts(&mut self) -> Self::AsMuts<'_> { (&mut self.0, self.1.as_muts()) }
 }

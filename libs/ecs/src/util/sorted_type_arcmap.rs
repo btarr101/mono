@@ -18,9 +18,7 @@ pub struct SortedTypeArcMap<V: ?Sized> {
 }
 
 impl<V: ?Sized> Default for SortedTypeArcMap<V> {
-    fn default() -> Self {
-        Self::new()
-    }
+    fn default() -> Self { Self::new() }
 }
 
 impl<V: ?Sized> SortedTypeArcMap<V> {
@@ -33,14 +31,10 @@ impl<V: ?Sized> SortedTypeArcMap<V> {
     }
 
     /// Checks if this map has an element
-    pub fn has<T: 'static>(&self) -> bool {
-        self.direct.contains_key(&TypeId::of::<T>())
-    }
+    pub fn has<T: 'static>(&self) -> bool { self.direct.contains_key(&TypeId::of::<T>()) }
 
     /// Gets an element via direct access
-    pub fn get<T: 'static>(&self) -> Option<&Arc<V>> {
-        self.direct.get(&TypeId::of::<T>())
-    }
+    pub fn get<T: 'static>(&self) -> Option<&Arc<V>> { self.direct.get(&TypeId::of::<T>()) }
 
     /// Inserts an immediately returns the value inserted
     pub fn insert_and_return<T: 'static>(&mut self, arc: Arc<V>) -> &Arc<V> {
@@ -59,9 +53,7 @@ impl<V: ?Sized> SortedTypeArcMap<V> {
     }
 
     /// Iterates over the values in SORTED ORDER
-    pub fn values(&self) -> impl Iterator<Item = &Arc<V>> {
-        self.sorted.values()
-    }
+    pub fn values(&self) -> impl Iterator<Item = &Arc<V>> { self.sorted.values() }
 }
 
 /// Entry into a sorted type arc map

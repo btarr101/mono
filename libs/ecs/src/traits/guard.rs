@@ -39,9 +39,7 @@ impl<T: Component> Guard for ComponentSetReadGuard<T> {
     type Lock = Arc<RwLock<ComponentSet<T>>>;
     type Element = T;
 
-    fn get_lock_from_world(world: &World) -> Self::Lock {
-        world.component_set_lock::<T>()
-    }
+    fn get_lock_from_world(world: &World) -> Self::Lock { world.component_set_lock::<T>() }
     fn lock(lock: Arc<RwLock<ComponentSet<T>>>) -> Self {
         ComponentSetReadGuard(OwningHandle::new_with_fn(lock, |lock| unsafe { &*lock }.read()))
     }
@@ -51,36 +49,24 @@ impl<T: Component> Guard for ComponentSetWriteGuard<T> {
     type Lock = Arc<RwLock<ComponentSet<T>>>;
     type Element = T;
 
-    fn get_lock_from_world(world: &World) -> Self::Lock {
-        world.component_set_lock()
-    }
-    fn lock(lock: Self::Lock) -> Self {
-        Self(OwningHandle::new_with_fn(lock, |lock| unsafe { &*lock }.write()))
-    }
+    fn get_lock_from_world(world: &World) -> Self::Lock { world.component_set_lock() }
+    fn lock(lock: Self::Lock) -> Self { Self(OwningHandle::new_with_fn(lock, |lock| unsafe { &*lock }.write())) }
 }
 
 impl<T: Singleton> Guard for OptionalSingletonContainerReadGuard<T> {
     type Lock = Arc<RwLock<SingletonContainer<T>>>;
     type Element = T;
 
-    fn get_lock_from_world(world: &World) -> Self::Lock {
-        world.singleton_container_lock()
-    }
-    fn lock(lock: Self::Lock) -> Self {
-        Self::from_lock(lock)
-    }
+    fn get_lock_from_world(world: &World) -> Self::Lock { world.singleton_container_lock() }
+    fn lock(lock: Self::Lock) -> Self { Self::from_lock(lock) }
 }
 
 impl<T: Singleton> Guard for OptionalSingletonContainerWriteGuard<T> {
     type Lock = Arc<RwLock<SingletonContainer<T>>>;
     type Element = T;
 
-    fn get_lock_from_world(world: &World) -> Self::Lock {
-        world.singleton_container_lock()
-    }
-    fn lock(lock: Self::Lock) -> Self {
-        Self::from_lock(lock)
-    }
+    fn get_lock_from_world(world: &World) -> Self::Lock { world.singleton_container_lock() }
+    fn lock(lock: Self::Lock) -> Self { Self::from_lock(lock) }
 }
 
 /// Enum to represent if gaurd exists or not
@@ -100,9 +86,7 @@ pub trait DynMaybeLockedGuardExt {
 }
 
 impl<G: Guard> DynMaybeLockedGuardExt for MaybeLockedGuard<G> {
-    fn element_type_id(&self) -> TypeId {
-        TypeId::of::<G::Element>()
-    }
+    fn element_type_id(&self) -> TypeId { TypeId::of::<G::Element>() }
 
     fn lock(&mut self) {
         if let MaybeLockedGuard::Unlocked(lock) = std::mem::replace(self, MaybeLockedGuard::Lockless) {

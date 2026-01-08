@@ -11,9 +11,7 @@ pub struct SingletonContainer<T: Singleton>(DangerCell<Option<T>>);
 
 impl<T: Singleton> SingletonContainer<T> {
     /// Creates a new singleton container
-    pub fn new() -> Self {
-        Self(DangerCell::new(None))
-    }
+    pub fn new() -> Self { Self(DangerCell::new(None)) }
 
     /// Gets the optional singleton
     ///
