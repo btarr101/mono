@@ -90,7 +90,9 @@ pub trait ConsMaybeLockedGuardsExt {
 }
 
 impl ConsMaybeLockedGuardsExt for () {
-    fn dyn_muts(&mut self) -> impl Iterator<Item = &mut dyn DynMaybeLockedGuardExt> { std::iter::empty() }
+    fn dyn_muts(&mut self) -> impl Iterator<Item = &mut dyn DynMaybeLockedGuardExt> {
+        std::iter::empty()
+    }
 
     type LockedGuards = ();
     fn to_locked_guards(self) -> Self::LockedGuards {}
@@ -106,5 +108,7 @@ where
     }
 
     type LockedGuards = (Head::Guard, Tail::LockedGuards);
-    fn to_locked_guards(self) -> Self::LockedGuards { (self.0.to_locked_guard(), self.1.to_locked_guards()) }
+    fn to_locked_guards(self) -> Self::LockedGuards {
+        (self.0.to_locked_guard(), self.1.to_locked_guards())
+    }
 }

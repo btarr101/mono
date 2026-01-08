@@ -18,7 +18,9 @@ pub struct SingletonContainerReadGuard<T: Singleton>(
 impl<T: Singleton> Deref for SingletonContainerReadGuard<T> {
     type Target = T;
 
-    fn deref(&self) -> &Self::Target { &self.0 }
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl<T: Singleton> SingletonContainerReadGuard<T> {
@@ -64,11 +66,15 @@ pub struct SingletonContainerWriteGuard<T: Singleton>(
 impl<T: Singleton> Deref for SingletonContainerWriteGuard<T> {
     type Target = T;
 
-    fn deref(&self) -> &Self::Target { &self.0 }
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl<T: Singleton> DerefMut for SingletonContainerWriteGuard<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
 }
 
 impl<T: Singleton> SingletonContainerWriteGuard<T> {

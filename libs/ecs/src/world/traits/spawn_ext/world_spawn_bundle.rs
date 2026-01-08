@@ -10,7 +10,10 @@ use crate::{
     world::World,
 };
 
+/// Bridges [`SpawnExt`](super::SpawnExt) to locked-view spawning by acquiring the
+/// necessary component and singleton guards on demand.
 pub trait SpawnBundle<'a, Idxs> {
+    /// Locks the world, inserts the represented bundle, and returns the new entity id.
     fn spawn(self, world: &'a World) -> EntityId;
 }
 
@@ -23,5 +26,7 @@ where
     <<Self as AsRefTuple>::AsMuts<'a> as AsConsTuple>::As: ConsAsSingletonContainerGuards,
     for<'b> Self: LockedViewSpawnBundle<'b, <Self as AsRefTuple>::AsMuts<'a>, (), Idxs>,
 {
-    fn spawn(self, world: &'a World) -> EntityId { LockedView::<<Self as AsRefTuple>::AsMuts<'a>, ()>::new(world).spawn(self) }
+    fn spawn(self, world: &'a World) -> EntityId {
+        LockedView::<<Self as AsRefTuple>::AsMuts<'a>, ()>::new(world).spawn(self)
+    }
 }

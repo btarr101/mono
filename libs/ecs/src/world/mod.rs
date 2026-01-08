@@ -33,6 +33,26 @@ pub mod traits;
 assert_impl_all!(World: Send, Sync);
 
 /// Central ECS storage for entities, components, and singletons.
+///
+/// The `World` type owns all entity identifiers plus the component and
+/// singleton containers that back [`LockedView`](crate::locked_view::LockedView)
+/// operations.
+///
+/// # Examples
+/// ```no_run
+/// use ecs::locked_view::traits::{LockedViewGetComponentMutExt, LockedViewSpawnExt};
+/// use ecs::world::World;
+///
+/// #[derive(Default)]
+/// struct Position(f32, f32);
+///
+/// let world = World::new();
+/// let mut view = world.lock_components_view::<(&mut Position,)>();
+/// let entity = view.spawn((Position::default(),));
+/// let mut position = view.get_component_mut::<Position>(entity).unwrap();
+/// position.0 = 1.0;
+/// assert!(world.entity_exists(entity));
+/// ```
 #[derive(Default)]
 pub struct World {
     pub(crate) entities: Arc<RwLock<EntityIdAllocator>>,
@@ -42,33 +62,67 @@ pub struct World {
 }
 
 impl World {
-    /// Creates a new world
-    pub fn new() -> Self { Default::default() }
+    /// Creates an empty world with no entities or storage initialized.
+    #[inline]
+    pub fn new() -> Self {
+        Default::default()
+    }
 
-    /// Creates a new entity in this world
-    pub fn create_entity(&self) -> EntityId { self.entities.write().allocate_id() }
-
-    /// Checks if an entity exists
-    pub fn entity_exists(&self, id: EntityId) -> bool { self.entities.read().index_in_use(id.index) }
-
-    /// Attempts to add a component to an entity, and returns if a component was added
+    /// Allocates a fresh [`EntityId`] without touching component storage.
     ///
-    /// Requires locking the component set for write access
+    /// The returned identifier can subsequently be populated via locked views or
+    /// direct component-set operations.
+    pub fn create_entity(&self) -> EntityId {
+        self.entities.write().allocate_id()
+    }
+
+    /// Returns `true` when `id` still refers to a live entity.
+    pub fn entity_exists(&self, id: EntityId) -> bool {
+        self.entities.read().index_in_use(id.index)
+    }
+
+    /// Adds `component` to `id`, locking the backing component set for writing.
+    ///
+    /// Returns `true` when the component was inserted instead of replaced.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// use ecs::world::World;
+    ///
+    /// #[derive(Default)]
+    /// struct Position(f32, f32);
+    ///
+    /// let world = World::new();
+    /// let entity = world.create_entity();
+    /// assert!(world.require_components_and_add(entity, Position::default()));
+    /// ```
     pub fn require_components_and_add<T: Component>(&self, id: EntityId, component: T) -> bool {
         unsafe { ComponentSetWriteGuard::lock_from_world(self).try_add(id, component).is_some() }
     }
 
-    /// Attempts to remove a component, and returns the component if it was removed
+    /// Removes `T` from `id`, returning the removed component when present.
     ///
-    /// Requires locking the component set for write access
+    /// This acquires the component set's write lock, so prefer deferred removal
+    /// from a [`LockedView`](crate::locked_view::LockedView) when you already
+    /// hold access to the same set.
     pub fn require_components_and_pop<T: Component>(&self, id: EntityId) -> Option<T> {
         ComponentSetWriteGuard::lock_from_world(self).soft_pop(id)
     }
 
-    // Destroys an entity and all components associated with it
+    /// Destroys an entity plus every component stored for it.
     ///
-    /// Does so by locking every component set, removing the component, then moving onto the next one.
-    /// Thus if any component sets are currently locked and this is called on the same thread there will be a deadlock.
+    /// This acquires write access to every registered component set, so callers
+    /// must ensure no other outstanding locks exist to avoid deadlock.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// use ecs::world::World;
+    ///
+    /// let world = World::new();
+    /// let entity = world.create_entity();
+    /// world.require_all_components_and_destroy_entity(entity);
+    /// assert!(!world.entity_exists(entity));
+    /// ```
     pub fn require_all_components_and_destroy_entity(&self, id: EntityId) {
         // First, clear out components. If we fail to use an old entity id boo hoo. If we reallocate an entity id
         // with already existing components we are in trouble
@@ -90,36 +144,47 @@ impl World {
         self.entities.write().free_id(id);
     }
 
-    /// Lock a singleton immutably for reading
+    /// Attempts to immutably borrow the singleton of type `T`.
+    ///
+    /// Returns `None` if the singleton is not currently stored.
     pub fn lock_singleton<T: Singleton>(&self) -> Option<SingletonContainerReadGuard<T>> {
         SingletonContainerReadGuard::try_from_lock(self.singleton_container_lock())
     }
 
-    /// Locks a singleton mutably for writing
+    /// Attempts to mutably borrow the singleton of type `T`.
     pub fn lock_singleton_mut<T: Singleton>(&self) -> Option<SingletonContainerWriteGuard<T>> {
         SingletonContainerWriteGuard::try_from_lock(self.singleton_container_lock())
     }
 
-    /// Locks an entry to a singleton
+    /// Provides entry-style access for inserting or updating a singleton in-place.
     pub fn lock_singleton_entry<T: Singleton>(&self) -> SingletonContainerEntry<T> {
         SingletonContainerEntry::from_lock(self.singleton_container_lock())
     }
 
-    /// Locks a view of over this world
+    /// Locks a view over this world with pre-declared component and singleton access.
     ///
-    /// Typically, you would use this function at the beginning of a system
-    /// so it has guaranteed access to certain sets of components and
-    /// singletons.
-    pub fn lock_view<C: LockedViewElements, S: LockedViewElements>(&self) -> LockedView<C, S> { LockedView::new(self) }
+    /// Provide tuples of `&T`/`&mut T` specifiers to describe which data should
+    /// be locked.
+    pub fn lock_view<C: LockedViewElements, S: LockedViewElements>(&self) -> LockedView<C, S> {
+        LockedView::new(self)
+    }
 
-    /// Locks a view over this world (but only components)
-    pub fn lock_components_view<C: LockedViewElements>(&self) -> LockedView<C, ()> { LockedView::new(self) }
+    /// Locks a view scoped to components only.
+    pub fn lock_components_view<C: LockedViewElements>(&self) -> LockedView<C, ()> {
+        LockedView::new(self)
+    }
 
-    /// Locks a view over this world (but only singletons)
-    pub fn lock_singletons_view<S: LockedViewElements>(&self) -> LockedView<(), S> { LockedView::new(self) }
+    /// Locks a view scoped to singletons only.
+    pub fn lock_singletons_view<S: LockedViewElements>(&self) -> LockedView<(), S> {
+        LockedView::new(self)
+    }
 
-    /// Executes all updates that were defered due to not having proper lock access at a time
-    pub fn require_all_and_execute_defered_updates(&self) { self.defered_updates.pop_all(self); }
+    /// Flushes all deferred operations queued by locked views.
+    ///
+    /// This must be called when no component or singleton locks are held.
+    pub fn require_all_and_execute_defered_updates(&self) {
+        self.defered_updates.pop_all(self);
+    }
 
     /// Gets the lock to a particular component set
     pub(crate) fn component_set_lock<T: Component>(&self) -> Arc<RwLock<ComponentSet<T>>> {
@@ -171,5 +236,7 @@ impl<T: AnyComponentSet> AnyComponentSetRwLock for RwLock<T> {
     fn write(&self) -> MappedRwLockWriteGuard<'_, dyn AnyComponentSet> {
         RwLockWriteGuard::map(self.write(), |t| t as &mut dyn AnyComponentSet)
     }
-    fn as_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync> { self }
+    fn as_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync> {
+        self
+    }
 }

@@ -19,9 +19,27 @@ mod private {
     pub trait Sealed {}
 }
 
-/// Provides read-only component access through a `LockedView`.
+/// Provides read-only component access through a [`LockedView`](crate::locked_view::LockedView).
+///
+/// # Examples
+/// ```no_run
+/// use ecs::locked_view::traits::LockedViewGetComponentExt;
+/// use ecs::world::World;
+///
+/// #[derive(Default)]
+/// struct Position(f32, f32);
+///
+/// let world = World::new();
+/// let view = world.lock_components_view::<(&Position,)>();
+/// let entity = view.create_entity();
+/// view.add_component_defered(entity, Position::default());
+/// world.require_all_and_execute_defered_updates();
+///
+/// let position = view.get_component::<Position>(entity).unwrap();
+/// assert_eq!(position.0, 0.0);
+/// ```
 pub trait LockedViewGetComponentExt<C: LockedViewElements, Idx, QueryIdx>: private::Sealed {
-    /// Returns the component associated with `id` if it is locked by the view.
+    /// Returns the component associated with `id` if the current view locked it.
     fn get_component<T: Component>(&self, id: EntityId) -> Option<impl Deref<Target = T>>
     where
         Self: HasComponents<T, C, Idx, QueryIdx>;
@@ -47,6 +65,22 @@ where
 }
 
 /// Provides mutable component access through a `LockedView`.
+///
+/// # Examples
+/// ```no_run
+/// use ecs::locked_view::traits::{LockedViewGetComponentMutExt, LockedViewSpawnExt};
+/// use ecs::world::World;
+///
+/// #[derive(Default)]
+/// struct Position(f32, f32);
+///
+/// let world = World::new();
+/// let mut view = world.lock_view::<(&mut Position,), ()>();
+/// let entity = view.spawn((Position::default(),));
+///
+/// let mut position = view.get_component_mut::<Position>(entity).unwrap();
+/// position.0 = 42.0;
+/// ```
 pub trait LockedViewGetComponentMutExt<C: LockedViewElements, Idx>: private::Sealed {
     /// Returns a mutable reference to the component associated with `id` if present.
     fn get_component_mut<T: Component>(&self, id: EntityId) -> Option<impl DerefMut<Target = T>>
@@ -55,7 +89,8 @@ pub trait LockedViewGetComponentMutExt<C: LockedViewElements, Idx>: private::Sea
 
     /// Attempts to insert a component for `id` and returns a mutable reference on success.
     ///
-    /// Callers must handle the `None` case to detect when the component was not inserted.
+    /// Callers must handle the `None` case to detect when the component was not inserted
+    /// (for example when another system already inserted the component).
     #[must_use]
     fn add_component<T: Component>(&mut self, id: EntityId, component: T) -> Option<impl DerefMut<Target = T>>
     where
