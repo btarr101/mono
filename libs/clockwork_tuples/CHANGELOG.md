@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Other
 
-- guess I am NOT supposed to update version manually
+- Adding as refs conversion
 
 ## [0.1.1](https://github.com/btarr101/clockwork/compare/v0.1.0...v0.1.1) - 2026-01-05
 
