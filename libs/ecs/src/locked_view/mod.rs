@@ -30,7 +30,7 @@ pub(crate) mod types;
 /// example `(&Position, &mut Velocity)`) that describe which data is locked.
 ///
 /// # Examples
-/// ```no_run
+/// ```rust
 /// use ecs::{
 ///     locked_view::traits::{LockedViewGetComponentMutExt, LockedViewSpawnExt},
 ///     world::World,
@@ -69,7 +69,7 @@ where
     /// constructor.
     ///
     /// # Examples
-    /// ```no_run
+    /// ```rust
     /// use ecs::locked_view::LockedView;
     /// use ecs::world::World;
     ///
@@ -92,7 +92,7 @@ where
     /// executed.
     ///
     /// # Examples
-    /// ```no_run
+    /// ```rust
     /// use ecs::locked_view::traits::LockedViewGetComponentExt;
     /// use ecs::world::World;
     ///
@@ -118,7 +118,7 @@ where
     /// work when you hold the necessary locks.
     ///
     /// # Examples
-    /// ```no_run
+    /// ```rust
     /// use ecs::locked_view::traits::LockedViewGetComponentExt;
     /// use ecs::world::World;
     ///
@@ -150,7 +150,7 @@ where
     /// Schedules a component removal for the given entity.
     ///
     /// # Examples
-    /// ```no_run
+    /// ```rust
     /// use ecs::locked_view::traits::LockedViewGetComponentExt;
     /// use ecs::world::World;
     ///
@@ -190,7 +190,7 @@ where
     /// otherwise conflict with [`World::require_all_components_and_destroy_entity`].
     ///
     /// # Examples
-    /// ```no_run
+    /// ```rust
     /// use ecs::world::World;
     ///
     /// let world = World::new();

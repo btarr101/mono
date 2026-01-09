@@ -14,7 +14,7 @@
 ///
 /// assert!(world.entity_exists(entity));
 /// ```
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct EntityId {
     pub(crate) index: usize,
     pub(crate) generation: usize,

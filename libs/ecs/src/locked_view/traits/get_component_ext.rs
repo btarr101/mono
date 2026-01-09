@@ -22,7 +22,7 @@ mod private {
 /// Provides read-only component access through a [`LockedView`](crate::locked_view::LockedView).
 ///
 /// # Examples
-/// ```no_run
+/// ```rust
 /// use ecs::locked_view::traits::LockedViewGetComponentExt;
 /// use ecs::world::World;
 ///
@@ -30,11 +30,15 @@ mod private {
 /// struct Position(f32, f32);
 ///
 /// let world = World::new();
-/// let view = world.lock_components_view::<(&Position,)>();
-/// let entity = view.create_entity();
-/// view.add_component_defered(entity, Position::default());
+/// let entity = {
+///     let view = world.lock_components_view::<(&Position,)>();
+///     let entity = view.create_entity();
+///     view.add_component_defered(entity, Position::default());
+///     entity
+/// };
 /// world.require_all_and_execute_defered_updates();
 ///
+/// let view = world.lock_components_view::<(&Position,)>();
 /// let position = view.get_component::<Position>(entity).unwrap();
 /// assert_eq!(position.0, 0.0);
 /// ```
@@ -67,7 +71,7 @@ where
 /// Provides mutable component access through a `LockedView`.
 ///
 /// # Examples
-/// ```no_run
+/// ```rust
 /// use ecs::locked_view::traits::{LockedViewGetComponentMutExt, LockedViewSpawnExt};
 /// use ecs::world::World;
 ///

@@ -17,7 +17,7 @@ mod locked_view_query_element;
 /// Provides combined component and singleton queries over a [`LockedView`](crate::locked_view::LockedView).
 ///
 /// # Examples
-/// ```no_run
+/// ```rust
 /// use ecs::locked_view::traits::{
 ///     LockedViewGetSingletonMutExt,
 ///     LockedViewQueryExt,
@@ -35,13 +35,14 @@ mod locked_view_query_element;
 /// let entity = view.spawn((Position::default(),));
 /// view.insert_singleton(Time(0.1));
 ///
-/// for (id, mut position, time) in view
-///     .query_components_and_singletons::<(&mut Position,), (&Time,)>()
-/// {
+/// let mut query_count = 0;
+/// for (id, _, _) in view.query_components_and_singletons::<(&mut Position,), (&Time,)>() {
 ///     assert_eq!(id, entity);
-///     position.0 += time.0;
+///     query_count += 1;
 /// }
+/// assert_eq!(query_count, 1);
 /// ```
+
 pub trait LockedViewQueryExt<C, S, ComponentIdxs, ComponentQueryIdxs, SingletonIdxs, SingletonQueryIdxs>
 where
     C: LockedViewElements,
@@ -105,7 +106,7 @@ where
 /// Provides component-only or singleton-only queries over a `LockedView`.
 ///
 /// # Examples
-/// ```no_run
+/// ```rust
 /// use ecs::locked_view::traits::{
 ///     LockedViewQueryComponentsOrSingletonsExt,
 ///     LockedViewSpawnExt,
@@ -119,11 +120,14 @@ where
 /// let mut view = world.lock_components_view::<(&mut Position,)>();
 /// let entity = view.spawn((Position::default(),));
 ///
-/// for (id, mut position) in view.query_components::<(&mut Position,)>() {
+/// let mut iterated = 0;
+/// for (id, _) in view.query_components::<(&mut Position,)>() {
 ///     assert_eq!(id, entity);
-///     position.0 += 1.0;
+///     iterated += 1;
 /// }
+/// assert_eq!(iterated, 1);
 /// ```
+
 pub trait LockedViewQueryComponentsOrSingletonsExt<C, S, Idxs, QueryIdxs>
 where
     C: LockedViewElements,

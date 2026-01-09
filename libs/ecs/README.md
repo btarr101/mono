@@ -20,7 +20,7 @@ errors.
 
 ## Quick Start
 
-```rust,no_run
+```rust
 use ecs::{
     locked_view::traits::{
         LockedViewGetComponentMutExt,
@@ -47,7 +47,7 @@ for (id, (mut position, mut velocity)) in view.query_components::<(&mut Position
 
 ### Working with Singletons
 
-```rust,no_run
+```rust
 use ecs::{
     locked_view::traits::LockedViewGetSingletonMutExt,
     world::World,
@@ -66,7 +66,7 @@ view.singleton_entry::<FrameCount>().or_default().0 += 1;
 Locked views expose methods such as `add_component_defered` and
 `remove_component_defered` when you need to stage structural changes.
 
-```rust,no_run
+```rust
 use ecs::{
     locked_view::traits::LockedViewGetComponentExt,
     world::World,
@@ -93,7 +93,7 @@ assert!(view.get_component::<Position>(entity).is_some());
 When you cannot hold onto a locked view, the `SpawnExt` trait bridges world-level
 spawning back to locked views:
 
-```rust,no_run
+```rust
 use ecs::world::{traits::spawn_ext::SpawnExt, World};
 
 #[derive(Default)]

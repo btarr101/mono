@@ -23,7 +23,7 @@ mod private {
 /// Provides read-only singleton access through a [`LockedView`](crate::locked_view::LockedView).
 ///
 /// # Examples
-/// ```no_run
+/// ```rust
 /// use ecs::locked_view::traits::LockedViewGetSingletonExt;
 /// use ecs::world::World;
 ///
@@ -65,7 +65,7 @@ where
 /// and is returned by [`LockedViewGetSingletonMutExt::singleton_entry`].
 ///
 /// # Examples
-/// ```no_run
+/// ```rust
 /// use ecs::locked_view::traits::LockedViewGetSingletonMutExt;
 /// use ecs::world::World;
 ///
@@ -108,7 +108,7 @@ impl<'a, T: Singleton> LockedViewSingletonEntry<'a, T> {
 /// Provides mutable singleton access through a `LockedView`.
 ///
 /// # Examples
-/// ```no_run
+/// ```rust
 /// use ecs::locked_view::traits::LockedViewGetSingletonMutExt;
 /// use ecs::world::World;
 ///

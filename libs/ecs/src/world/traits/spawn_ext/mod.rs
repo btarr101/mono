@@ -11,14 +11,11 @@ mod world_spawn_bundle;
 /// In practice you select it through fully qualified syntax, as shown below.
 ///
 /// # Examples
-/// ```no_run
+/// ```rust
 /// use ecs::world::{traits::spawn_ext::SpawnExt, World};
 ///
-/// #[derive(Default)]
-/// struct Position(f32, f32);
-///
 /// let world = World::new();
-/// let entity = <World as SpawnExt<'_, (&mut Position,)>>::spawn(&world, (Position::default(),));
+/// let entity = <World as SpawnExt<'_, ()>>::spawn(&world, ());
 /// assert!(world.entity_exists(entity));
 /// ```
 pub trait SpawnExt<'a, Idxs> {

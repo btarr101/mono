@@ -15,7 +15,7 @@ pub use locked_view_spawn_bundle::{LockedViewConsSpawnBundle, LockedViewSpawnBun
 /// implementation.
 ///
 /// # Examples
-/// ```no_run
+/// ```rust
 /// use ecs::locked_view::traits::{LockedViewGetComponentMutExt, LockedViewSpawnExt};
 /// use ecs::world::World;
 ///

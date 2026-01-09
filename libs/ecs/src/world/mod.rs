@@ -39,7 +39,7 @@ assert_impl_all!(World: Send, Sync);
 /// operations.
 ///
 /// # Examples
-/// ```no_run
+/// ```rust
 /// use ecs::locked_view::traits::{LockedViewGetComponentMutExt, LockedViewSpawnExt};
 /// use ecs::world::World;
 ///
@@ -80,7 +80,7 @@ impl World {
     /// Returns `true` when the component was inserted instead of replaced.
     ///
     /// # Examples
-    /// ```no_run
+    /// ```rust
     /// use ecs::world::World;
     ///
     /// #[derive(Default)]
@@ -109,7 +109,7 @@ impl World {
     /// must ensure no other outstanding locks exist to avoid deadlock.
     ///
     /// # Examples
-    /// ```no_run
+    /// ```rust
     /// use ecs::world::World;
     ///
     /// let world = World::new();
