@@ -4,22 +4,20 @@ use crate::{
     surface::Surface,
 };
 
-pub struct Context<A: ContextAdapter> {
-    adapter: A,
+pub struct Context<A: ClockworkAdapters> {
+    adapter: A::ContextAdapter,
 }
 
-impl<A: ContextAdapter> Context<A> {
+impl<A: ClockworkAdapters> Context<A> {
     pub async fn new_handle_with_surface(
         surface_target: impl Into<wgpu::SurfaceTarget<'static>>,
-    ) -> anyhow::Result<(
-        UnlockedHandle<Self>,
-        UnlockedHandle<Surface<<A::Adapters as ClockworkAdapters>::SurfaceAdapter>>,
-    )> {
-        let (context_adapter, surface_adapter) = A::new_with_surface(surface_target).await?;
-        let context = UnlockedHandle::new(context_adapter);
+    ) -> anyhow::Result<(UnlockedHandle<Self>, UnlockedHandle<Surface<A>>)> {
+        let (adapter, surface_adapter) = A::ContextAdapter::new_with_surface(surface_target).await?;
+        let context_handle = UnlockedHandle::new(Self { adapter });
 
-        let surface = Surface::new(context, surface_adapter);
+        let surface = Surface::new(context_handle.clone(), surface_adapter);
+        let surface_handle = UnlockedHandle::new(surface);
 
-        todo!()
+        Ok((context_handle, surface_handle))
     }
 }

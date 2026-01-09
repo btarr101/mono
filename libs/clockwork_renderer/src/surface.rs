@@ -1,16 +1,10 @@
-use crate::{
-    adapters::{ClockworkAdapters, context::ContextAdapter, surface::SurfaceAdapter},
-    context::Context,
-    handle::UnlockedHandle,
-};
+use crate::{adapters::ClockworkAdapters, context::Context, handle::UnlockedHandle};
 
-pub struct Surface<A: SurfaceAdapter> {
-    context: UnlockedHandle<Context<<A::Adapters as ClockworkAdapters>::ContextAdapter>>,
-    adapter: A,
+pub struct Surface<A: ClockworkAdapters> {
+    context: UnlockedHandle<Context<A>>,
+    adapter: A::SurfaceAdapter,
 }
 
-impl<A: SurfaceAdapter> Surface<A> {
-    pub(crate) fn new(context: UnlockedHandle<Context<<A::Adapters as ClockworkAdapters>::ContextAdapter>>, adapter: A) -> Self {
-        Self { context, adapter }
-    }
+impl<A: ClockworkAdapters> Surface<A> {
+    pub(crate) fn new(context: UnlockedHandle<Context<A>>, adapter: A::SurfaceAdapter) -> Self { Self { context, adapter } }
 }
