@@ -12,10 +12,10 @@ mod world_spawn_bundle;
 ///
 /// # Examples
 /// ```rust
-/// use ecs::world::{traits::spawn_ext::SpawnExt, World};
+/// use clockwork_ecs::world::{traits::spawn_ext::SpawnExt, World};
 ///
 /// let world = World::new();
-/// let entity = <World as SpawnExt<'_, ()>>::spawn(&world, ());
+/// let entity = world.spawn((0i32,));
 /// assert!(world.entity_exists(entity));
 /// ```
 pub trait SpawnExt<'a, Idxs> {

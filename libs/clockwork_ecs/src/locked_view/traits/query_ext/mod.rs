@@ -18,12 +18,12 @@ mod locked_view_query_element;
 ///
 /// # Examples
 /// ```rust
-/// use ecs::locked_view::traits::{
+/// use clockwork_ecs::locked_view::traits::{
 ///     LockedViewGetSingletonMutExt,
 ///     LockedViewQueryExt,
 ///     LockedViewSpawnExt,
 /// };
-/// use ecs::world::World;
+/// use clockwork_ecs::world::World;
 ///
 /// #[derive(Default)]
 /// struct Position(f32, f32);
@@ -106,11 +106,11 @@ where
 ///
 /// # Examples
 /// ```rust
-/// use ecs::locked_view::traits::{
+/// use clockwork_ecs::locked_view::traits::{
 ///     LockedViewQueryComponentsOrSingletonsExt,
 ///     LockedViewSpawnExt,
 /// };
-/// use ecs::world::World;
+/// use clockwork_ecs::world::World;
 ///
 /// #[derive(Default)]
 /// struct Position(f32, f32);
@@ -126,7 +126,6 @@ where
 /// }
 /// assert_eq!(iterated, 1);
 /// ```
-
 pub trait LockedViewQueryComponentsOrSingletonsExt<C, S, Idxs, QueryIdxs>
 where
     C: LockedViewElements,

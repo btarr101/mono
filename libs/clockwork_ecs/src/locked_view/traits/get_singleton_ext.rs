@@ -24,8 +24,8 @@ mod private {
 ///
 /// # Examples
 /// ```rust
-/// use ecs::locked_view::traits::LockedViewGetSingletonExt;
-/// use ecs::world::World;
+/// use clockwork_ecs::locked_view::traits::LockedViewGetSingletonExt;
+/// use clockwork_ecs::world::World;
 ///
 /// #[derive(Default)]
 /// struct FrameCount(u64);
@@ -66,8 +66,8 @@ where
 ///
 /// # Examples
 /// ```rust
-/// use ecs::locked_view::traits::LockedViewGetSingletonMutExt;
-/// use ecs::world::World;
+/// use clockwork_ecs::locked_view::traits::LockedViewGetSingletonMutExt;
+/// use clockwork_ecs::world::World;
 ///
 /// #[derive(Default)]
 /// struct FrameCount(u64);
@@ -109,8 +109,8 @@ impl<'a, T: Singleton> LockedViewSingletonEntry<'a, T> {
 ///
 /// # Examples
 /// ```rust
-/// use ecs::locked_view::traits::LockedViewGetSingletonMutExt;
-/// use ecs::world::World;
+/// use clockwork_ecs::locked_view::traits::LockedViewGetSingletonMutExt;
+/// use clockwork_ecs::world::World;
 ///
 /// #[derive(Default)]
 /// struct FrameCount(u64);

@@ -31,7 +31,7 @@ pub(crate) mod types;
 ///
 /// # Examples
 /// ```rust
-/// use ecs::{
+/// use clockwork_ecs::{
 ///     locked_view::traits::{LockedViewGetComponentMutExt, LockedViewSpawnExt},
 ///     world::World,
 /// };
@@ -70,8 +70,8 @@ where
     ///
     /// # Examples
     /// ```rust
-    /// use ecs::locked_view::LockedView;
-    /// use ecs::world::World;
+    /// use clockwork_ecs::locked_view::LockedView;
+    /// use clockwork_ecs::world::World;
     ///
     /// let world = World::new();
     /// let view = LockedView::<(), ()>::new(&world);
@@ -93,8 +93,8 @@ where
     ///
     /// # Examples
     /// ```rust
-    /// use ecs::locked_view::traits::LockedViewGetComponentExt;
-    /// use ecs::world::World;
+    /// use clockwork_ecs::locked_view::traits::LockedViewGetComponentExt;
+    /// use clockwork_ecs::world::World;
     ///
     /// #[derive(Default)]
     /// struct Position(f32, f32);
@@ -119,8 +119,8 @@ where
     ///
     /// # Examples
     /// ```rust
-    /// use ecs::locked_view::traits::LockedViewGetComponentExt;
-    /// use ecs::world::World;
+    /// use clockwork_ecs::locked_view::traits::LockedViewGetComponentExt;
+    /// use clockwork_ecs::world::World;
     ///
     /// #[derive(Default)]
     /// struct Position(f32, f32);
@@ -150,8 +150,8 @@ where
     ///
     /// # Examples
     /// ```rust
-    /// use ecs::locked_view::traits::LockedViewGetComponentExt;
-    /// use ecs::world::World;
+    /// use clockwork_ecs::locked_view::traits::LockedViewGetComponentExt;
+    /// use clockwork_ecs::world::World;
     ///
     /// #[derive(Default)]
     /// struct Position(f32, f32);
@@ -190,7 +190,7 @@ where
     ///
     /// # Examples
     /// ```rust
-    /// use ecs::world::World;
+    /// use clockwork_ecs::world::World;
     ///
     /// let world = World::new();
     /// let entity = world.create_entity();

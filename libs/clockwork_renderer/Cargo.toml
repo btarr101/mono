@@ -1,0 +1,12 @@
+[package]
+name = "clockwork_renderer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.100"
+derived-deref = "2.1.0"
+glam = "0.30.10"
+parking_lot = "0.12.5"
+thiserror = "2.0.17"
+wgpu = "28.0.0"

@@ -1,5 +1,10 @@
 [workspace]
 resolver = "2"
-members = ["libs/ecs", "libs/clockwork_tuples", "apps/pong"]
+members = [
+	"libs/clockwork_ecs",
+	"libs/clockwork_tuples",
+	"apps/pong",
+	"libs/clockwork_renderer",
+]
 
-default-members = ["libs/ecs"]
+default-members = ["libs/clockwork_ecs"]

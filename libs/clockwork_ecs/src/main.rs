@@ -1,4 +1,4 @@
-use ecs::{
+use clockwork_ecs::{
     locked_view::traits::{spawn_ext::LockedViewSpawnExt, *},
     world::{World, traits::spawn_ext::SpawnExt},
 };

@@ -7,7 +7,7 @@
 ///
 /// # Examples
 /// ```
-/// use ecs::world::World;
+/// use clockwork_ecs::world::World;
 ///
 /// let world = World::new();
 /// let entity = world.create_entity();

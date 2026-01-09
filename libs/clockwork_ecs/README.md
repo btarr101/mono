@@ -1,4 +1,4 @@
-# ecs
+# clockwork_ecs
 
 Entity-component system primitives for the Clockwork workspace. The crate
 exposes strongly borrowed views over world data so that systems can lock exactly
@@ -21,7 +21,7 @@ errors.
 ## Quick Start
 
 ```rust
-use ecs::{
+use clockwork_ecs::{
     locked_view::traits::{
         LockedViewGetComponentMutExt,
         LockedViewQueryComponentsOrSingletonsExt,
@@ -48,7 +48,7 @@ for (id, (mut position, mut velocity)) in view.query_components::<(&mut Position
 ### Working with Singletons
 
 ```rust
-use ecs::{
+use clockwork_ecs::{
     locked_view::traits::LockedViewGetSingletonMutExt,
     world::World,
 };
@@ -67,7 +67,7 @@ Locked views expose methods such as `add_component_defered` and
 `remove_component_defered` when you need to stage structural changes.
 
 ```rust
-use ecs::{
+use clockwork_ecs::{
     locked_view::traits::LockedViewGetComponentExt,
     world::World,
 };
@@ -94,12 +94,12 @@ When you cannot hold onto a locked view, the `SpawnExt` trait bridges world-leve
 spawning back to locked views:
 
 ```rust
-use ecs::world::{traits::spawn_ext::SpawnExt, World};
+use clockwork_ecs::world::{traits::spawn_ext::SpawnExt, World};
 
 #[derive(Default)]
 struct Position(f32, f32);
 
 let world = World::new();
-let entity = <World as SpawnExt<'_, (&mut Position,)>>::spawn(&world, (Position::default(),));
+let entity = world.spawn((Position::default(),));
 assert!(world.entity_exists(entity));
 ```

@@ -40,8 +40,8 @@ assert_impl_all!(World: Send, Sync);
 ///
 /// # Examples
 /// ```rust
-/// use ecs::locked_view::traits::{LockedViewGetComponentMutExt, LockedViewSpawnExt};
-/// use ecs::world::World;
+/// use clockwork_ecs::locked_view::traits::{LockedViewGetComponentMutExt, LockedViewSpawnExt};
+/// use clockwork_ecs::world::World;
 ///
 /// #[derive(Default)]
 /// struct Position(f32, f32);
@@ -81,7 +81,7 @@ impl World {
     ///
     /// # Examples
     /// ```rust
-    /// use ecs::world::World;
+    /// use clockwork_ecs::world::World;
     ///
     /// #[derive(Default)]
     /// struct Position(f32, f32);
@@ -110,7 +110,7 @@ impl World {
     ///
     /// # Examples
     /// ```rust
-    /// use ecs::world::World;
+    /// use clockwork_ecs::world::World;
     ///
     /// let world = World::new();
     /// let entity = world.create_entity();
