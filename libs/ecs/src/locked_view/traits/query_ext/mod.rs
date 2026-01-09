@@ -42,7 +42,6 @@ mod locked_view_query_element;
 /// }
 /// assert_eq!(query_count, 1);
 /// ```
-
 pub trait LockedViewQueryExt<C, S, ComponentIdxs, ComponentQueryIdxs, SingletonIdxs, SingletonQueryIdxs>
 where
     C: LockedViewElements,
