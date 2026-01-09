@@ -136,7 +136,6 @@ where
     ///
     /// let view = world.lock_components_view::<(&Position,)>();
     /// assert!(view.get_component::<Position>(entity).is_some());
-
     /// ```
     pub fn add_component_defered<T: Component>(&self, id: EntityId, component: T) {
         self.defered_updates.push(

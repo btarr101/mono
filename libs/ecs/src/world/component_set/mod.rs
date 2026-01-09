@@ -96,24 +96,8 @@ impl<T: Component> ComponentSet<T> {
     /// # Safety
     /// Only call if this thread has exclusive access
     pub unsafe fn try_add(&mut self, id: EntityId, component: T) -> Option<&mut T> {
-        if self.0.get(id.index).is_none() {
-            return Some(unsafe { self.add(id, component) });
-        }
-
-        let (generation, slot) = self
-            .0
-            .get_mut(id.index)
-            .expect("component entry should exist after prior check");
-
-        if *generation != id.generation {
-            return None;
-        }
-
-        *slot = Some(component.into());
-        let cell = slot.as_mut().expect("component");
-
-        // SAFETY: Exclusive access plus matching generation allows exposing a mutable borrow.
-        Some(unsafe { cell.get_mut_exclusive() })
+        let current_generation = self.0.get(id.index).map(|(generation, _)| *generation).unwrap_or(0);
+        (id.generation >= current_generation).then(|| unsafe { self.add(id, component) })
     }
 
     /// Removes a component from this component set by index. If there was a generation,
