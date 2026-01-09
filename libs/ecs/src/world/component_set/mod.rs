@@ -96,12 +96,8 @@ impl<T: Component> ComponentSet<T> {
     /// # Safety
     /// Only call if this thread has exclusive access
     pub unsafe fn try_add(&mut self, id: EntityId, component: T) -> Option<&mut T> {
-        let current_generation = self.0.get(id.index).map(|(generation, _)| *generation)?;
-
-        (current_generation == id.generation).then(|| {
-            // SAFETY: Matching generation plus exclusive access allows deferring to `add`.
-            unsafe { self.add(id, component) }
-        })
+        let current_generation = self.0.get(id.index).map(|(generation, _)| *generation).unwrap_or(0);
+        (id.generation >= current_generation).then(|| unsafe { self.add(id, component) })
     }
 
     /// Removes a component from this component set by index. If there was a generation,

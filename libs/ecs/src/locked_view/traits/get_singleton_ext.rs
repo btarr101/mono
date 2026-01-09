@@ -20,7 +20,20 @@ mod private {
     pub trait Sealed {}
 }
 
-/// Provides read-only singleton access through a `LockedView`.
+/// Provides read-only singleton access through a [`LockedView`](crate::locked_view::LockedView).
+///
+/// # Examples
+/// ```rust
+/// use ecs::locked_view::traits::LockedViewGetSingletonExt;
+/// use ecs::world::World;
+///
+/// #[derive(Default)]
+/// struct FrameCount(u64);
+///
+/// let world = World::new();
+/// let singleton_view = world.lock_singletons_view::<(&FrameCount,)>();
+/// assert!(singleton_view.get_singleton::<FrameCount>().is_none());
+/// ```
 pub trait LockedViewGetSingletonExt<S: LockedViewElements, Idx, QueryIdx>: private::Sealed {
     /// Returns the singleton if the view locked the requested type.
     fn get_singleton<T: Singleton>(&self) -> Option<impl Deref<Target = T>>
@@ -47,6 +60,25 @@ where
 }
 
 /// Mutable handle to an optional singleton stored in a locked view.
+///
+/// `LockedViewSingletonEntry` mirrors [`std::collections::hash_map::Entry`] APIs
+/// and is returned by [`LockedViewGetSingletonMutExt::singleton_entry`].
+///
+/// # Examples
+/// ```rust
+/// use ecs::locked_view::traits::LockedViewGetSingletonMutExt;
+/// use ecs::world::World;
+///
+/// #[derive(Default)]
+/// struct FrameCount(u64);
+///
+/// let world = World::new();
+/// let mut view = world.lock_singletons_view::<(&mut FrameCount,)>();
+/// view
+///     .singleton_entry::<FrameCount>()
+///     .or_insert_with(FrameCount::default)
+///     .0 += 1;
+/// ```
 pub struct LockedViewSingletonEntry<'a, T: Singleton>(&'a mut Option<T>);
 
 impl<'a, T: Singleton> LockedViewSingletonEntry<'a, T> {
@@ -74,6 +106,22 @@ impl<'a, T: Singleton> LockedViewSingletonEntry<'a, T> {
 }
 
 /// Provides mutable singleton access through a `LockedView`.
+///
+/// # Examples
+/// ```rust
+/// use ecs::locked_view::traits::LockedViewGetSingletonMutExt;
+/// use ecs::world::World;
+///
+/// #[derive(Default)]
+/// struct FrameCount(u64);
+///
+/// let world = World::new();
+/// let mut view = world.lock_singletons_view::<(&mut FrameCount,)>();
+/// view
+///     .singleton_entry::<FrameCount>()
+///     .or_default()
+///     .0 += 1;
+/// ```
 pub trait LockedViewGetSingletonMutExt<S: LockedViewElements, Idx>: private::Sealed {
     /// Returns a mutable reference to the singleton if locked by the view.
     fn get_singleton_mut<T: Singleton>(&self) -> Option<impl DerefMut<Target = T>>
