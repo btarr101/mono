@@ -1,68 +1,97 @@
-import { type Ref } from 'react'
-import { motion, useAnimation, type MotionStyle, type PanInfo } from 'motion/react'
+import { animate, motion, useMotionValue } from 'motion/react'
 import type { StackItem } from '../../contexts/StackContext/types'
-
-type DragHandler = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void
+import { useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
+import { boxShadow } from '../../util/css'
 
 export type ItemCardProps = {
-  ref?: Ref<HTMLDivElement>
   item: StackItem
-  onDrag?: DragHandler
-  onDragStart?: DragHandler
-  onDragEnd?: DragHandler
-  isDragging?: boolean
+  onDragEnd?: () => void
 }
 
-export const ItemCard = ({
-  ref,
-  item: { content },
-  onDrag,
-  onDragStart,
-  onDragEnd,
-  isDragging = false,
-}: ItemCardProps) => {
-  const controls = useAnimation()
+export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardProps) => {
+  const [dragOrigin, setDragOrigin] = useState<{ x: number; y: number } | null>(null)
+  const ref = useRef<HTMLDivElement | null>(null)
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+
+  const dragging = dragOrigin !== null
 
   return (
     <motion.div
-      layout
       ref={ref}
-      animate={controls}
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.97 }}
-      // dragging
-      drag
-      whileDrag={{ scale: 1.05, zIndex: 20, boxShadow: '0 15px 30px rgba(15, 23, 42, 0.25)' }}
-      onDrag={onDrag}
-      onDragStart={onDragStart}
-      onDragEnd={(event, info) => {
-        if (onDragEnd) {
-          onDragEnd(event, info)
-        }
+      id={id}
+      layout={!dragging}
+      onPointerDown={event => {
+        x.stop()
+        y.stop()
+        setDragOrigin({ x: event.clientX - x.get(), y: event.clientY - y.get() })
+        event.currentTarget.setPointerCapture(event.pointerId)
       }}
-      dragElastic={0.12}
-      dragMomentum={false}
+      onPointerMove={event => {
+        if (!dragOrigin) return
+
+        x.set(event.clientX - dragOrigin.x)
+        y.set(event.clientY - dragOrigin.y)
+      }}
+      onPointerUp={() => {
+        const element = ref.current!
+
+        const before = element.getBoundingClientRect()
+        flushSync(() => onDragEnd?.())
+        const after = element.getBoundingClientRect()
+
+        const dx = after.x - before.x
+        const dy = after.y - before.y
+
+        x.set(x.get() - dx)
+        y.set(y.get() - dy)
+
+        animate(x, 0)
+        animate(y, 0)
+
+        setDragOrigin(null)
+      }}
+      initial={{ scale: 0 }}
+      animate={{
+        scale: 1,
+        boxShadow: boxShadow({
+          x: '0px',
+          y: '6px',
+          blur: '12px',
+        }),
+        ...(dragging
+          ? {
+              boxShadow: boxShadow({
+                x: '0px',
+                y: '16px',
+                blur: '24px',
+              }),
+              scale: 1.25,
+              zIndex: 999,
+            }
+          : {
+              zIndex: 0,
+            }),
+      }}
       style={{
-        ...style,
+        x,
+        y,
+        width: 100,
+        height: 100,
+        backgroundColor: color,
+        borderRadius: 5,
+        // marginLeft: 4,
+        // marginBottom: 4,
+        margin: 4,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         cursor: 'grab',
         userSelect: 'none',
-        boxShadow: isDragging
-          ? '0 12px 24px rgba(15, 23, 42, 0.2)'
-          : '0 2px 6px rgba(15, 23, 42, 0.15)',
       }}
     >
       <span>{content}</span>
     </motion.div>
   )
 }
-
-const style = {
-  width: 100,
-  height: 100,
-  backgroundColor: '#09f',
-  borderRadius: 5,
-  margin: 4,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-} satisfies MotionStyle

@@ -1,51 +1,24 @@
-import { useCallback, useRef } from 'react'
+import { Fragment, useCallback } from 'react'
 import { useStackStore } from '../contexts/StackContext'
 import { Endpoint } from './Endpoint'
 import { ItemCard } from './ItemCard'
-
-type Point = { x: number; y: number }
-
-const getCenter = (boundingRect: DOMRect) => ({
-  x: (boundingRect.left + boundingRect.right) / 2,
-  y: (boundingRect.top + boundingRect.bottom) / 2,
-})
-
-const getDistance = (a: Point, b: Point) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
+import { getCenter, getDistance, type Position } from './util'
+import { choose } from '../util/arrays'
+import { taskColors } from '../style'
 
 export const Stack = () => {
   const { items, push, queue, moveBefore } = useStackStore()
-  const itemCardRefs = useRef(new Map<string, HTMLDivElement | null>())
 
-  const ref = useRef<HTMLDivElement>(null)
-  const onDrag = useCallback(
+  const onDragEnd = useCallback(
     (id: string) => () => {
-      const element = itemCardRefs.current.get(id)
-      if (!element) return
+      const element = document.getElementById(id)
+      if (!(element instanceof HTMLDivElement)) return
 
       const center = getCenter(element.getBoundingClientRect())
-      const otherBoundingRects = Array.from(itemCardRefs.current.entries())
-        .filter(([otherId]) => id !== otherId)
-        .flatMap(([id, element]) =>
-          element ? [{ id, boundingRect: element.getBoundingClientRect() }] : [],
-        )
+      const closestDropPointId = getClosestDropPointBeforeIdFrom(center)
 
-      const closestBoundingRect = otherBoundingRects.reduce(
-        (current, { id, boundingRect }) => {
-          const distance = getDistance(center, getCenter(boundingRect))
-          return !current || current.distance > distance
-            ? {
-                id,
-                distance,
-              }
-            : current
-        },
-        undefined as { id: string; distance: number } | undefined,
-      )
-
-      console.log(closestBoundingRect)
-
-      if (closestBoundingRect) {
-        moveBefore(id, closestBoundingRect.id)
+      if (closestDropPointId !== undefined) {
+        moveBefore(id, closestDropPointId)
       }
     },
     [moveBefore],
@@ -53,29 +26,87 @@ export const Stack = () => {
 
   return (
     <div
-      ref={ref}
       style={{
         display: 'flex',
         flexWrap: 'wrap',
         flexDirection: 'row',
-        background: 'green',
-        width: '100%',
+        margin: '10%',
+        // width: '100%',\
+        width: 'fit-content',
+        border: 'solid',
+        borderWidth: 2,
         alignItems: 'center',
         justifyContent: 'start',
       }}
     >
-      <Endpoint onClick={() => queue({ content: 'Queued Item' })} />
+      <Endpoint onClick={() => queue({ content: 'Queued Item', color: choose(taskColors) })} />
       {items.map(item => (
-        <ItemCard
-          ref={element => {
-            itemCardRefs.current.set(item.id, element)
-          }}
-          key={item.id}
-          item={item}
-          onDragEnd={onDrag(item.id)}
-        />
+        <Fragment key={item.id}>
+          <DropPoint beforeId={item.id} />
+          <ItemCard key={item.id} item={item} onDragEnd={onDragEnd(item.id)} />
+        </Fragment>
       ))}
-      {items.length !== 0 && <Endpoint onClick={() => push({ content: 'Pushed Item' })} />}
+      {items.length !== 0 && (
+        <>
+          <DropPoint />
+          <Endpoint onClick={() => push({ content: 'Pushed Item', color: choose(taskColors) })} />
+        </>
+      )}
     </div>
   )
+}
+
+type DropPointProps = {
+  beforeId?: string
+}
+
+const DropPoint = ({ beforeId: itemId }: DropPointProps) => (
+  <div x-drop-point-before={itemId ?? 'NONE'} />
+)
+
+type DropPointRect = {
+  beforeId: string | null
+  boundingRect: DOMRect
+}
+
+const getDropPointRects = () => {
+  const dropPoints: NodeListOf<HTMLDivElement> = document.querySelectorAll(
+    'div[x-drop-point-before]',
+  )
+
+  return Array.from(dropPoints.values()).flatMap(element => {
+    const rawBeforeId = element.getAttribute('x-drop-point-before')
+    if (rawBeforeId === null) return []
+    const beforeId = rawBeforeId === 'NONE' ? null : rawBeforeId
+
+    return [
+      {
+        beforeId,
+        boundingRect: element.getBoundingClientRect(),
+      } satisfies DropPointRect,
+    ]
+  })
+}
+
+/**
+ * Returns the "before id" of the closest drop point to a position.
+ *
+ * ### Note
+ * `null` is a valid "before id", it means this drop point is
+ * before "nothing", but it's still a drop point.
+ */
+const getClosestDropPointBeforeIdFrom = (position: Position) => {
+  const dropPointRects = getDropPointRects()
+  return dropPointRects.reduce(
+    (current, { beforeId, boundingRect }) => {
+      const distance = getDistance(position, getCenter(boundingRect))
+      return !current || current.distance > distance
+        ? {
+            beforeId,
+            distance,
+          }
+        : current
+    },
+    undefined as { beforeId: string | null; distance: number } | undefined,
+  )?.beforeId
 }

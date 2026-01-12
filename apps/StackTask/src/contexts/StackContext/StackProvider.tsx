@@ -29,39 +29,24 @@ const buildStackStore = () =>
         const from = items.findIndex(item => item.id === id)
         if (from === -1) return { items }
 
-        const to = items.findIndex(item => item.id === beforeId)
-        if (to === -1) return { items }
-
         const newItems = items.slice()
         const [moving] = newItems.splice(from, 1)
+
+        if (beforeId === null) {
+          newItems.push(moving!)
+          return {
+            items: newItems,
+          }
+        }
+
+        const to = items.findIndex(item => item.id === beforeId)
+        if (to === -1) return { items }
 
         const insertAt = from < to ? to - 1 : to
         newItems.splice(insertAt, 0, moving!)
 
         return {
           items: newItems,
-        }
-      })
-    },
-    swap: (id, id2) => {
-      set(({ items }) => {
-        const index = items.findIndex(item => item.id === id)
-        if (index === -1) return { items }
-
-        const index2 = items.findIndex(item => item.id === id2)
-        if (index2 === -1) return { items }
-
-        const item = items[index]!
-        const item2 = items[index2]!
-
-        return {
-          items: [
-            ...items.slice(0, index),
-            item2,
-            ...items.slice(index + 1, index2),
-            item,
-            ...items.slice(index2 + 1),
-          ],
         }
       })
     },

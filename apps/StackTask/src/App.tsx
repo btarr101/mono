@@ -2,6 +2,7 @@ import { type CSSProperties } from 'react'
 import { StackProvider } from './contexts/StackContext/StackProvider'
 import { Stack } from './Stack'
 import { ContextMenuProvider } from './contexts/ContextMenuContext/ContextMenuProvider'
+import { colors } from './style'
 
 export const App = () => (
   <ContextMenuProvider>
@@ -18,7 +19,7 @@ const screenStyle: CSSProperties = {
   inset: 0,
   width: '100vw',
   height: '100vh',
-  background: 'red',
+  background: colors.ivory,
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',

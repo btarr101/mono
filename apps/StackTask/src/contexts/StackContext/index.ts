@@ -9,8 +9,7 @@ export type StackStore = {
   push: (item: StackItemParams) => void
   queue: (item: StackItemParams) => void
   pop: () => StackItem | null
-  moveBefore: (id: string, id2: string) => void
-  swap: (id: string, id2: string) => void
+  moveBefore: (id: string, id2: string | null) => void
 }
 
 export const StackContext = createContext<StoreApi<StackStore> | null>(null)
