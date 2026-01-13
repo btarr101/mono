@@ -2,12 +2,22 @@ import { type CSSProperties } from 'react'
 import { StackProvider } from './contexts/StackContext/StackProvider'
 import { Stack } from './Stack'
 import { ContextMenuProvider } from './contexts/ContextMenuContext/ContextMenuProvider'
-import { colors } from './style'
 
 export const App = () => (
   <ContextMenuProvider>
     <StackProvider>
       <div style={screenStyle}>
+        <h1
+          style={{
+            textAlign: 'center',
+            alignContent: 'center',
+            fontSize: '5rem',
+            marginRight: 'auto',
+            marginLeft: 'auto',
+          }}
+        >
+          StackTask
+        </h1>
         <Stack />
       </div>
     </StackProvider>
@@ -15,12 +25,8 @@ export const App = () => (
 )
 
 const screenStyle: CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  width: '100vw',
-  height: '100vh',
-  background: colors.ivory,
+  minHeight: '100vh',
   display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
+  flexDirection: 'column',
+  alignItems: 'stretch',
 }

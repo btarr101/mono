@@ -38,3 +38,8 @@ export const taskColors = [
   colors.orchid,
   colors.bubblegum,
 ] as const
+
+export const cardWidth = '100px'
+export const cardHeight = '100px'
+export const cardRadius = 5
+export const cardMargin = 4

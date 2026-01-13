@@ -1,10 +1,11 @@
-import { Fragment, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useStackStore } from '../contexts/StackContext'
 import { Endpoint } from './Endpoint'
 import { ItemCard } from './ItemCard'
 import { getCenter, getDistance, type Position } from './util'
 import { choose } from '../util/arrays'
-import { taskColors } from '../style'
+import { cardWidth, taskColors } from '../style'
+import { DropPoint } from './DropPoint'
 
 export const Stack = () => {
   const { items, push, queue, moveBefore } = useStackStore()
@@ -27,42 +28,36 @@ export const Stack = () => {
   return (
     <div
       style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        flexDirection: 'row',
-        margin: '10%',
-        // width: '100%',\
-        width: 'fit-content',
-        border: 'solid',
-        borderWidth: 2,
-        alignItems: 'center',
-        justifyContent: 'start',
+        border: '1',
+        borderColor: 'black',
+        borderStyle: 'solid',
+        display: 'grid',
+        gridTemplateColumns: `repeat(auto-fill, ${cardWidth})`,
+        gridAutoRows: 'auto',
+        gap: '10px',
+
+        paddingLeft: '10%',
+        paddingRight: '10%',
+        marginBottom: '10vh',
       }}
     >
       <Endpoint onClick={() => queue({ content: 'Queued Item', color: choose(taskColors) })} />
       {items.map(item => (
-        <Fragment key={item.id}>
-          <DropPoint beforeId={item.id} />
-          <ItemCard key={item.id} item={item} onDragEnd={onDragEnd(item.id)} />
-        </Fragment>
+        <ItemCard item={item} key={item.id} onDragEnd={onDragEnd(item.id)} />
       ))}
       {items.length !== 0 && (
-        <>
+        <div
+          style={{
+            display: 'flex',
+          }}
+        >
           <DropPoint />
           <Endpoint onClick={() => push({ content: 'Pushed Item', color: choose(taskColors) })} />
-        </>
+        </div>
       )}
     </div>
   )
 }
-
-type DropPointProps = {
-  beforeId?: string
-}
-
-const DropPoint = ({ beforeId: itemId }: DropPointProps) => (
-  <div x-drop-point-before={itemId ?? 'NONE'} />
-)
 
 type DropPointRect = {
   beforeId: string | null
