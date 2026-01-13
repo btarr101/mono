@@ -23,6 +23,8 @@ export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardPr
   const dragging = dragOrigin !== null
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return
+
     x.stop()
     y.stop()
     scale.stop()
@@ -39,7 +41,9 @@ export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardPr
     y.set(event.clientY - dragOrigin.y)
   }
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return
+
     const element = ref.current!
 
     const before = element.getBoundingClientRect()
@@ -82,6 +86,10 @@ export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardPr
                 blur: '12px',
               }),
         }}
+        exit={{
+          scale: 0,
+          opacity: 0,
+        }}
         id={id}
         initial={{ scale: 0 }}
         layout={!dragging}
@@ -99,6 +107,7 @@ export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardPr
           cursor: 'grab',
           userSelect: 'none',
           scale,
+          touchAction: 'none',
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -106,6 +115,7 @@ export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardPr
       >
         <span>{content}</span>
       </motion.div>
+      <DropPoint afterId={id} />
     </div>
   )
 }

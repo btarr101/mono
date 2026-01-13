@@ -10,6 +10,7 @@ export type StackStore = {
   queue: (item: StackItemParams) => void
   pop: () => StackItem | null
   moveBefore: (id: string, id2: string | null) => void
+  moveAfter: (id: string, id2: string | null) => void
 }
 
 export const StackContext = createContext<StoreApi<StackStore> | null>(null)

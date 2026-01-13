@@ -6,10 +6,10 @@ import { v4 } from 'uuid'
 const buildStackStore = () =>
   createStore<StackStore>(set => ({
     items: [],
-    push: item => {
+    queue: item => {
       set(({ items }) => ({ items: [...items, { id: v4(), ...item }] }))
     },
-    queue: item => {
+    push: item => {
       set(({ items }) => ({ items: [{ id: v4(), ...item }, ...items] }))
     },
     pop: () => {
@@ -19,7 +19,7 @@ const buildStackStore = () =>
         if (items.length === 0) return { items }
         last = items[items.length - 1]
 
-        return { stack: items.slice(0, -1) }
+        return { items: items.slice(1) }
       })
 
       return last
@@ -43,6 +43,32 @@ const buildStackStore = () =>
         if (to === -1) return { items }
 
         const insertAt = from < to ? to - 1 : to
+        newItems.splice(insertAt, 0, moving!)
+
+        return {
+          items: newItems,
+        }
+      })
+    },
+    moveAfter: (id, afterId) => {
+      set(({ items }) => {
+        const from = items.findIndex(item => item.id === id)
+        if (from === -1) return { items }
+
+        const newItems = items.slice()
+        const [moving] = newItems.splice(from, 1)
+
+        if (afterId === null) {
+          newItems.push(moving!)
+          return {
+            items: newItems,
+          }
+        }
+
+        const to = items.findIndex(item => item.id === afterId)
+        if (to === -1) return { items }
+
+        const insertAt = from < to ? to : to + 1
         newItems.splice(insertAt, 0, moving!)
 
         return {
