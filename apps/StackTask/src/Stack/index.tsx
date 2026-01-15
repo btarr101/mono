@@ -6,6 +6,7 @@ import { getCenter, getDistance, type Position } from './util'
 import { choose } from '../util/arrays'
 import { cardWidth, taskColors } from '../style'
 import { AnimatePresence } from 'motion/react'
+import { PopButton } from './PushButton'
 
 export const Stack = () => {
   const { items, pop, push, moveBefore, moveAfter } = useStackStore()
@@ -37,19 +38,24 @@ export const Stack = () => {
         gridAutoRows: 'auto',
         gap: '10px',
         justifyContent: 'center',
-        paddingLeft: '25%',
-        paddingRight: '25%',
+        marginLeft: '10%',
+        marginRight: '10%',
+        marginTop: '5%',
+        marginBottom: '5%',
       }}
     >
-      <Endpoint onClick={() => pop()} />
-
       <AnimatePresence>
+        <PopButton onClick={pop} />
+
         {items.map(item => (
           <ItemCard item={item} key={item.id} onDragEnd={onDragEnd(item.id)} />
         ))}
-      </AnimatePresence>
 
-      <Endpoint onClick={() => push({ content: 'Pushed Item', color: choose(taskColors) })} />
+        <Endpoint
+          key="push"
+          onClick={() => push({ content: 'Pushed Item', color: choose(taskColors) })}
+        />
+      </AnimatePresence>
     </div>
   )
 }

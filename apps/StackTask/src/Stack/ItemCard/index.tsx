@@ -1,11 +1,13 @@
 import type { PointerEvent } from 'react'
-import { animate, motion, useMotionValue } from 'motion/react'
+import { animate, motion, useMotionValue, usePresence } from 'motion/react'
 import type { StackItem } from '../../contexts/StackContext/types'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { boxShadow } from '../../util/css'
 import { cardHeight, cardRadius, cardWidth } from '../../style'
-import { DropPoint } from '../DropPoint'
+import { DropPoint } from './DropPoint'
+import pop from '../../assets/pop.wav'
+import swish from '../../assets/swish.wav'
 
 export type ItemCardProps = {
   item: StackItem
@@ -13,6 +15,7 @@ export type ItemCardProps = {
 }
 
 export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardProps) => {
+  const [isPresent, safeToRemove] = usePresence()
   const [dragOrigin, setDragOrigin] = useState<{ x: number; y: number } | null>(null)
   const ref = useRef<HTMLDivElement | null>(null)
   const x = useMotionValue(0)
@@ -21,6 +24,24 @@ export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardPr
   const scale = useMotionValue(1)
 
   const dragging = dragOrigin !== null
+
+  const popAudio = useRef<HTMLAudioElement | null>(new Audio(pop))
+  useEffect(() => {
+    if (popAudio.current) {
+      popAudio.current.play().then(() => {
+        popAudio.current = null
+      })
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isPresent) {
+      const audio = new Audio(swish)
+      audio.volume = 0.3
+      audio.play()
+      safeToRemove()
+    }
+  }, [isPresent, safeToRemove])
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return
@@ -74,6 +95,8 @@ export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardPr
       <motion.div
         animate={{
           scale: 1,
+          x: 0,
+          y: 0,
           boxShadow: dragging
             ? boxShadow({
                 x: '0px',
@@ -88,10 +111,11 @@ export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardPr
         }}
         exit={{
           scale: 0,
-          opacity: 0,
+          opacity: 1,
+          y: 0,
         }}
         id={id}
-        initial={{ scale: 0 }}
+        initial={{ scale: 0, y: 50 }}
         layout={!dragging}
         ref={ref}
         style={{

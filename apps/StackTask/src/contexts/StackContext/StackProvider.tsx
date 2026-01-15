@@ -6,11 +6,8 @@ import { v4 } from 'uuid'
 const buildStackStore = () =>
   createStore<StackStore>(set => ({
     items: [],
-    queue: item => {
-      set(({ items }) => ({ items: [...items, { id: v4(), ...item }] }))
-    },
     push: item => {
-      set(({ items }) => ({ items: [{ id: v4(), ...item }, ...items] }))
+      set(({ items }) => ({ items: [...items, { id: v4(), ...item }] }))
     },
     pop: () => {
       let last = null

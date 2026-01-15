@@ -15,4 +15,5 @@ const screenStyle: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'stretch',
+  justifyContent: 'center',
 }

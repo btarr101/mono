@@ -7,7 +7,6 @@ export type StackItemParams = Omit<StackItem, 'id'>
 export type StackStore = {
   readonly items: readonly StackItem[]
   push: (item: StackItemParams) => void
-  queue: (item: StackItemParams) => void
   pop: () => StackItem | null
   moveBefore: (id: string, id2: string | null) => void
   moveAfter: (id: string, id2: string | null) => void
