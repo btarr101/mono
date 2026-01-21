@@ -1,12 +1,12 @@
 import { useCallback } from 'react'
 import { useStackStore } from '../contexts/StackContext'
-import { Endpoint } from './Endpoint'
+import { AddButton } from './AddButton'
 import { ItemCard } from './ItemCard'
 import { getCenter, getDistance, type Position } from './util'
 import { choose } from '../util/arrays'
 import { cardWidth, taskColors } from '../style'
 import { AnimatePresence } from 'motion/react'
-import { PopButton } from './PushButton'
+import { PopButton } from './PopButton'
 
 export const Stack = () => {
   const { items, pop, push, moveBefore, moveAfter } = useStackStore()
@@ -51,10 +51,7 @@ export const Stack = () => {
           <ItemCard item={item} key={item.id} onDragEnd={onDragEnd(item.id)} />
         ))}
 
-        <Endpoint
-          key="push"
-          onClick={() => push({ content: 'Pushed Item', color: choose(taskColors) })}
-        />
+        <AddButton key="push" onClick={content => push({ content, color: choose(taskColors) })} />
       </AnimatePresence>
     </div>
   )

@@ -137,7 +137,13 @@ export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardPr
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
-        <span>{content}</span>
+        <span
+          style={{
+            margin: 10,
+          }}
+        >
+          {content}
+        </span>
       </motion.div>
       <DropPoint afterId={id} />
     </div>

@@ -4,7 +4,7 @@ import { useStackStore } from '../contexts/StackContext'
 import buttonClick from '../assets/button-click.wav'
 
 export type EndpointProps = {
-  onClick?: React.MouseEventHandler<HTMLDivElement> | undefined
+  onClick?: React.MouseEventHandler<HTMLButtonElement> | undefined
 }
 
 export const PopButton = ({ onClick }: EndpointProps) => {
@@ -28,12 +28,11 @@ export const PopButton = ({ onClick }: EndpointProps) => {
             right: 0,
             top: 0,
             bottom: 0,
-            background: 'blue',
             borderRadius: cardRadius,
             backgroundColor: active ? colors.wine : colors.charcoal,
           }}
         />
-        <motion.div
+        <motion.button
           animate={{
             position: 'absolute',
             left: 0,
@@ -60,7 +59,7 @@ export const PopButton = ({ onClick }: EndpointProps) => {
           onTapStart={() => {
             new Audio(buttonClick).play()
           }}
-        ></motion.div>
+        ></motion.button>
       </motion.div>
     </motion.div>
   )
