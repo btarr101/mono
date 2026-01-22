@@ -1,79 +1,89 @@
 import { useState, type PropsWithChildren } from 'react'
 import { createStore } from 'zustand'
+import { persist } from 'zustand/middleware'
 import { StackContext, type StackStore } from '.'
 import { v4 } from 'uuid'
 
 const buildStackStore = () =>
-  createStore<StackStore>(set => ({
-    items: [],
-    push: item => {
-      set(({ items }) => ({ items: [...items, { id: v4(), ...item }] }))
-    },
-    pop: () => {
-      let last = null
+  createStore<StackStore>()(
+    persist(
+      set => ({
+        items: [],
+        push: item => {
+          set(({ items }) => ({ items: [...items, { id: v4(), ...item }] }))
+        },
+        pop: () => {
+          let last = null
 
-      set(({ items }) => {
-        if (items.length === 0) return { items }
-        last = items[items.length - 1]
+          set(({ items }) => {
+            if (items.length === 0) return { items }
+            last = items[items.length - 1]
 
-        return { items: items.slice(1) }
-      })
+            return { items: items.slice(1) }
+          })
 
-      return last
-    },
-    moveBefore: (id, beforeId) => {
-      set(({ items }) => {
-        const from = items.findIndex(item => item.id === id)
-        if (from === -1) return { items }
+          return last
+        },
+        moveBefore: (id, beforeId) => {
+          set(({ items }) => {
+            const from = items.findIndex(item => item.id === id)
+            if (from === -1) return { items }
 
-        const newItems = items.slice()
-        const [moving] = newItems.splice(from, 1)
+            const newItems = items.slice()
+            const [moving] = newItems.splice(from, 1)
 
-        if (beforeId === null) {
-          newItems.push(moving!)
-          return {
-            items: newItems,
-          }
-        }
+            if (beforeId === null) {
+              newItems.push(moving!)
+              return {
+                items: newItems,
+              }
+            }
 
-        const to = items.findIndex(item => item.id === beforeId)
-        if (to === -1) return { items }
+            const to = items.findIndex(item => item.id === beforeId)
+            if (to === -1) return { items }
 
-        const insertAt = from < to ? to - 1 : to
-        newItems.splice(insertAt, 0, moving!)
+            const insertAt = from < to ? to - 1 : to
+            newItems.splice(insertAt, 0, moving!)
 
-        return {
-          items: newItems,
-        }
-      })
-    },
-    moveAfter: (id, afterId) => {
-      set(({ items }) => {
-        const from = items.findIndex(item => item.id === id)
-        if (from === -1) return { items }
+            return {
+              items: newItems,
+            }
+          })
+        },
+        moveAfter: (id, afterId) => {
+          set(({ items }) => {
+            const from = items.findIndex(item => item.id === id)
+            if (from === -1) return { items }
 
-        const newItems = items.slice()
-        const [moving] = newItems.splice(from, 1)
+            const newItems = items.slice()
+            const [moving] = newItems.splice(from, 1)
 
-        if (afterId === null) {
-          newItems.push(moving!)
-          return {
-            items: newItems,
-          }
-        }
+            if (afterId === null) {
+              newItems.push(moving!)
+              return {
+                items: newItems,
+              }
+            }
 
-        const to = items.findIndex(item => item.id === afterId)
-        if (to === -1) return { items }
+            const to = items.findIndex(item => item.id === afterId)
+            if (to === -1) return { items }
 
-        const insertAt = from < to ? to : to + 1
-        newItems.splice(insertAt, 0, moving!)
+            const insertAt = from < to ? to : to + 1
+            newItems.splice(insertAt, 0, moving!)
 
-        return {
-          items: newItems,
-        }
-      })
-    },
-  }))
+            return {
+              items: newItems,
+            }
+          })
+        },
+      }),
+      {
+        name: 'stack',
+        partialize: ({ items }) => ({ items }),
+        version: 1,
+      },
+    ),
+  )
 
 export const StackProvider = ({ children }: PropsWithChildren) => {
   const [store] = useState(buildStackStore)

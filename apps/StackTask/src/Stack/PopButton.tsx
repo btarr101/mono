@@ -23,6 +23,9 @@ export const PopButton = ({ onClick }: EndpointProps) => {
       >
         <motion.div
           animate={{
+            backgroundColor: active ? colors.wine : colors.charcoal,
+          }}
+          initial={{
             position: 'absolute',
             left: 0,
             right: 0,
@@ -34,6 +37,9 @@ export const PopButton = ({ onClick }: EndpointProps) => {
         />
         <motion.button
           animate={{
+            backgroundColor: active ? colors.crimson : colors.mossGray,
+          }}
+          initial={{
             position: 'absolute',
             left: 0,
             right: 0,
@@ -44,10 +50,8 @@ export const PopButton = ({ onClick }: EndpointProps) => {
             textAlign: 'center',
             alignContent: 'center',
             cursor: 'pointer',
-            backgroundColor: active ? colors.crimson : colors.mossGray,
-          }}
-          initial={{
             y: -8,
+            backgroundColor: active ? colors.crimson : colors.mossGray,
           }}
           whileHover={{
             y: -5,

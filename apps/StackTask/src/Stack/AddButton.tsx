@@ -13,10 +13,12 @@ export const AddButton = ({ onClick }: EndpointProps) => {
   const dialogRef = useRef<HTMLDialogElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
 
+  const formValid = !(content.length === 0)
+
   const handleDialogOpen = () => setDialogOpen(true)
   const handleDialogClose = () => setDialogOpen(false)
   const handleSubmit = () => {
-    if (content.length === 0) return
+    if (!formValid) return
     onClick?.(content)
     setContent('')
     inputRef.current?.blur()
@@ -113,15 +115,18 @@ export const AddButton = ({ onClick }: EndpointProps) => {
                 width: '100%',
                 backgroundColor: colors.ivory,
                 marginRight: 8,
+                fontFamily: 'unset',
               }}
               value={content}
               onChange={event => setContent(event.target.value)}
             />
-            <button
+            <motion.button
+              animate={{
+                background: formValid ? colors.neonGreen : colors.mossGray,
+              }}
               style={{
                 cursor: 'pointer',
                 borderRadius: cardRadius,
-                background: colors.neonGreen,
                 aspectRatio: '1/1',
                 padding: 2,
                 height: '32px',
@@ -133,7 +138,7 @@ export const AddButton = ({ onClick }: EndpointProps) => {
               type="submit"
             >
               +
-            </button>
+            </motion.button>
           </div>
         </motion.form>
       </motion.dialog>

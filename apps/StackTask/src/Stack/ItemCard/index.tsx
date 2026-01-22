@@ -28,9 +28,14 @@ export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardPr
   const popAudio = useRef<HTMLAudioElement | null>(new Audio(pop))
   useEffect(() => {
     if (popAudio.current) {
-      popAudio.current.play().then(() => {
-        popAudio.current = null
-      })
+      popAudio.current.play().then(
+        () => {
+          popAudio.current = null
+        },
+        () => {
+          popAudio.current = null
+        },
+      )
     }
   }, [])
 
@@ -38,7 +43,7 @@ export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardPr
     if (!isPresent) {
       const audio = new Audio(swish)
       audio.volume = 0.3
-      audio.play()
+      audio.play().catch()
       safeToRemove()
     }
   }, [isPresent, safeToRemove])
