@@ -12,6 +12,7 @@ export const App = () => (
 
 const screenStyle: CSSProperties = {
   minHeight: '100vh',
+  overflowX: 'hidden',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'stretch',
