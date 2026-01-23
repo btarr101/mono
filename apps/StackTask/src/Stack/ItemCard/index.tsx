@@ -124,6 +124,8 @@ export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardPr
         layout={!dragging}
         ref={ref}
         style={{
+          fontSize: '12px',
+          overflowWrap: 'anywhere',
           x,
           y,
           width: cardWidth,
