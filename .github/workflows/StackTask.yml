@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "apps/StackTask/**"
+    # paths:
+    #   - "apps/StackTask/**"
   pull_request:
     branches:
       - main
@@ -52,10 +52,9 @@ jobs:
           host: btarr.xyz
           username: gha
           key: ${{ secrets.BTARR_XYZ_DEPLOY_KEY }}
-          source: ./dist/*
+          source: ./dist/
           target: /var/www/stacktask.btarr.xyz/
           overwrite: true
-          strip_components: 2
 
       - name: Make executable
         uses: appleboy/ssh-action@v0.1.7
