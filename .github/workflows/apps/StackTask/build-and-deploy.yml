@@ -46,9 +46,9 @@ jobs:
       - name: Upload new app
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
+          host: btarr.xyz
+          username: gha
+          key: ${{ secrets.BTARR_XYZ_DEPLOY_KEY }}
           source: ./dist/*
           target: /var/www/stacktask.btarr.xyz/
           overwrite: true
@@ -57,7 +57,7 @@ jobs:
       - name: Make executable
         uses: appleboy/ssh-action@v0.1.7
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
+          host: btarr.xyz
+          username: gha
+          key: ${{ secrets.BTARR_XYZ_DEPLOY_KEY }}
           script: sudo chmod -R a+rX /var/www/stacktask.btarr.xyz
