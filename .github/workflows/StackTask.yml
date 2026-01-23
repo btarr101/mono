@@ -1,4 +1,4 @@
-name: Build 🔨 & Deploy 🚀
+name: Build 🔨 & Deploy 🚀 StackTask
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: StackTaskDist
+          name: dist
           path: ./apps/StackTask/dist
 
   deploy:
