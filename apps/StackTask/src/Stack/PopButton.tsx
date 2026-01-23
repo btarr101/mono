@@ -1,7 +1,7 @@
 import { motion, type MotionStyle } from 'motion/react'
 import { cardHeight, cardRadius, cardWidth, colors } from '../style'
 import { useStackStore } from '../contexts/StackContext'
-import buttonClick from '../assets/button-click.wav'
+import buttonClick from '../assets/sounds/button-click.wav'
 
 export type EndpointProps = {
   onClick?: React.MouseEventHandler<HTMLButtonElement> | undefined

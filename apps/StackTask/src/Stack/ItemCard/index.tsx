@@ -6,8 +6,8 @@ import { flushSync } from 'react-dom'
 import { boxShadow } from '../../util/css'
 import { cardHeight, cardRadius, cardWidth } from '../../style'
 import { DropPoint } from './DropPoint'
-import pop from '../../assets/pop.wav'
-import swish from '../../assets/swish.wav'
+import pop from '../../assets/sounds/pop.wav'
+import swish from '../../assets/sounds/swish.wav'
 
 export type ItemCardProps = {
   item: StackItem

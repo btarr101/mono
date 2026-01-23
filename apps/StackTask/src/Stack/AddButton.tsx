@@ -80,6 +80,7 @@ export const AddButton = ({ onClick }: EndpointProps) => {
           border: 'none',
           backgroundColor: 'white',
           borderRadius: cardRadius,
+          padding: '32px',
           boxShadow: boxShadow({
             x: '0px',
             y: '16px',
@@ -89,6 +90,20 @@ export const AddButton = ({ onClick }: EndpointProps) => {
         onAnimationComplete={() => {
           if (!dialogOpen) {
             dialogRef.current?.close()
+          }
+        }}
+        onClick={event => {
+          if (!dialogRef.current) return
+
+          const rect = dialogRef.current.getBoundingClientRect()
+
+          if (
+            event.clientX < rect.left ||
+            event.clientX > rect.right ||
+            event.clientY < rect.top ||
+            event.clientY > rect.bottom
+          ) {
+            handleDialogClose()
           }
         }}
         onClose={handleDialogClose}
@@ -110,12 +125,13 @@ export const AddButton = ({ onClick }: EndpointProps) => {
             <input
               ref={inputRef}
               style={{
-                fontSize: '24px',
+                fontSize: '20px',
                 border: 'none',
                 width: '100%',
                 backgroundColor: colors.ivory,
                 marginRight: 8,
                 fontFamily: 'unset',
+                padding: '12px',
               }}
               value={content}
               onChange={event => setContent(event.target.value)}
