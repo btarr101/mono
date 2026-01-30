@@ -6,7 +6,6 @@ import { flushSync } from 'react-dom'
 import { boxShadow } from '../../util/css'
 import { cardHeight, cardRadius, cardWidth } from '../../style'
 import { DropPoint } from './DropPoint'
-import pop from '../../assets/sounds/pop.wav'
 import swish from '../../assets/sounds/swish.wav'
 
 export type ItemCardProps = {
@@ -24,20 +23,6 @@ export const ItemCard = ({ item: { id, content, color }, onDragEnd }: ItemCardPr
   const scale = useMotionValue(1)
 
   const dragging = dragOrigin !== null
-
-  const popAudio = useRef<HTMLAudioElement | null>(new Audio(pop))
-  useEffect(() => {
-    if (popAudio.current) {
-      popAudio.current.play().then(
-        () => {
-          popAudio.current = null
-        },
-        () => {
-          popAudio.current = null
-        },
-      )
-    }
-  }, [])
 
   useEffect(() => {
     if (!isPresent) {

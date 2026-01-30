@@ -2,6 +2,7 @@ import { motion } from 'motion/react'
 import { cardHeight, cardRadius, cardWidth, colors } from '../style'
 import { useEffect, useRef, useState } from 'react'
 import { boxShadow } from '../util/css'
+import pop from '../assets/sounds/pop.wav'
 
 export type EndpointProps = {
   onClick?: (content: string) => void
@@ -23,6 +24,7 @@ export const AddButton = ({ onClick }: EndpointProps) => {
     setContent('')
     inputRef.current?.blur()
     handleDialogClose()
+    new Audio(pop).play()
   }
 
   useEffect(() => {
