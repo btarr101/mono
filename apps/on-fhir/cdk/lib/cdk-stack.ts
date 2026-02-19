@@ -59,7 +59,16 @@ export class CdkStack extends cdk.Stack {
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       associatePublicIpAddress: true,
     });
-    instance.connections.allowFromAnyIpv4(ec2.Port.tcp(80));
+    
+    // Restrict access to CloudFront IP ranges only using AWS managed prefix list
+    const cloudfrontPrefixList = ec2.Peer.prefixList(
+      "com.amazonaws.global.cloudfront.origin-facing",
+    );
+    instance.connections.allowFrom(
+      cloudfrontPrefixList,
+      ec2.Port.tcp(80),
+      "Allow HTTP traffic from CloudFront only",
+    );
     instance.role.addManagedPolicy(
       iam.ManagedPolicy.fromAwsManagedPolicyName(
         "AmazonSSMManagedInstanceCore",
