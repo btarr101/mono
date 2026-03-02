@@ -3,6 +3,7 @@ import globals from "globals";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
+import simpleImportSort from "eslint-plugin-simple-import-sort";
 import tseslint from "typescript-eslint";
 import { defineConfig, globalIgnores } from "eslint/config";
 import { fileURLToPath } from "node:url";
@@ -29,6 +30,7 @@ export default defineConfig([
     },
     plugins: {
       react,
+      "simple-import-sort": simpleImportSort,
     },
     rules: {
       "react/jsx-sort-props": [
@@ -39,6 +41,8 @@ export default defineConfig([
           ignoreCase: true,
         },
       ],
+      "simple-import-sort/imports": "error",
+      "simple-import-sort/exports": "error",
     },
   },
 ]);

@@ -47,7 +47,7 @@ export class CdkStack extends cdk.Stack {
       isDefault: true,
     });
 
-    const instance = new ec2.Instance(this, "fhir-instance", {
+    const instance = new ec2.Instance(this, "fhir-server-instance", {
       vpc: defaultVpc,
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T4G,
@@ -58,6 +58,7 @@ export class CdkStack extends cdk.Stack {
       }),
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       associatePublicIpAddress: true,
+      userDataCausesReplacement: true,
     });
     instance.connections.allowFromAnyIpv4(ec2.Port.tcp(80));
     instance.role.addManagedPolicy(
@@ -82,6 +83,7 @@ export class CdkStack extends cdk.Stack {
         "usermod -a -G docker ec2-user",
         `docker run -d -p 80:8080 \
         -e SERVER_FORWARD_HEADERS_STRATEGY=framework \
+        -e SPRINGDOC_API_DOCS_SERVER_URL=/fhir \
         --log-driver=awslogs \
         --log-opt awslogs-region=${cdk.Stack.of(this).region} \
         --log-opt awslogs-group=${logGroup.logGroupName} \
