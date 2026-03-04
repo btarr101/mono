@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
-    "target": "ES2023",
+    "target": "esnext",
     "lib": [
-      "ES2023"
+      "ESNext"
     ],
     "module": "ESNext",
     "types": [
@@ -23,12 +23,6 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    /* Path aliases */
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    }
   },
   "include": [
     "vite.config.ts"
