@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "schema": {
+    "version": 0,
+    "project": {
+      "name": "Grappl",
+      "tile_size": 0,
+      "default_layer_types": []
+    },
+    "enums": {},
+    "data_types": {},
+    "embedded_types": {}
+  },
+  "tilesets": [],
+  "data": {
+    "instances": {}
+  },
+  "levels": [],
+  "autotile_config": {
+    "terrain_sets": [],
+    "terrains": []
+  },
+  "sprite_sheets": [],
+  "dialogues": [],
+  "world_config": {
+    "layout": "Free",
+    "grid_width": 256,
+    "grid_height": 256,
+    "connections": []
+  },
+  "stamps": [],
+  "game_config": {
+    "project_path": null,
+    "starting_level": null,
+    "project_name": "",
+    "use_release_build": false,
+    "enable_codegen": false,
+    "codegen_output_path": "",
+    "generate_entities": false,
+    "generate_stubs": false,
+    "generate_behaviors": false,
+    "generate_enums": false,
+    "vscode_path": null
+  },
+  "entity_type_configs": {}
+}

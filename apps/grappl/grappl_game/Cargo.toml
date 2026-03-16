@@ -1,0 +1,14 @@
+[package]
+name = "grappl_game"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bevy = { version = "0.18.1", features = ["dynamic_linking"] }
+bevy_aseprite_ultra = "0.8.2"
+rand = "0.10.0"
+
+
+# Enable a large amount of optimization in the dev profile for dependencies.
+# [profile.dev.package."*"]
+# opt-level =
