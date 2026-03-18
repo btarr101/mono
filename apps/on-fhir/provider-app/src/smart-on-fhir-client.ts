@@ -1,6 +1,6 @@
+import { FetchFhirClient } from "@bonfhir/core/r4b";
 import FHIR from "fhirclient";
 import Client from "fhirclient/lib/Client";
-import { FetchFhirClient } from "@bonfhir/core/r4b";
 
 let smartFlowClientPromise: Promise<Client> | null = null;
 
