@@ -8,9 +8,7 @@
 //! runtimes or engines. Internal modules may rely on unsafe code to
 //! uphold documented invariants.
 
-#![feature(unsafe_cell_access)]
 #![feature(impl_trait_in_assoc_type)]
-#![feature(refcell_try_map)]
 
 pub mod entity_id;
 pub mod locked_view;
