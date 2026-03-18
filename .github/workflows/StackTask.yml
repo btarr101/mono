@@ -6,11 +6,6 @@ on:
       - main
     paths:
       - "apps/StackTask/**"
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "apps/StackTask/**"
 
 jobs:
   build:
