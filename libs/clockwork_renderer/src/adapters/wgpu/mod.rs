@@ -1,14 +1,19 @@
 use crate::adapters::{
-    ClockworkAdapters,
-    wgpu::{context::WgpuContextAdapter, surface::WgpuSurfaceAdapter},
+    ClockworkRendererAdapters,
+    wgpu::{context::WgpuContextAdapter, mesh::WgpuMeshAdapter, surface::WgpuSurfaceAdapter, texture::WgpuTextureAdapter},
 };
 
+mod buffer;
 mod context;
+mod mesh;
 mod surface;
+mod texture;
 
 pub struct WgpuAdapters;
 
-impl ClockworkAdapters for WgpuAdapters {
+impl ClockworkRendererAdapters for WgpuAdapters {
     type ContextAdapter = WgpuContextAdapter;
     type SurfaceAdapter = WgpuSurfaceAdapter;
+    type TextureAdapter = WgpuTextureAdapter;
+    type MeshAdapter = WgpuMeshAdapter;
 }

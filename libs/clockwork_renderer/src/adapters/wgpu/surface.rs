@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 
 use crate::adapters::{
-    ClockworkAdapter,
+    ClockworkRendererAdapter,
     surface::SurfaceAdapter,
     wgpu::{WgpuAdapters, context::WgpuContextAdapter},
 };
@@ -12,7 +12,7 @@ pub struct WgpuSurfaceAdapter {
     depth_texture: RefCell<DepthTexture>,
 }
 
-impl ClockworkAdapter for WgpuSurfaceAdapter {
+impl ClockworkRendererAdapter for WgpuSurfaceAdapter {
     type Adapters = WgpuAdapters;
 }
 

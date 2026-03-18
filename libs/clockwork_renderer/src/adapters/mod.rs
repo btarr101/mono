@@ -1,14 +1,22 @@
-use crate::adapters::{context::ContextAdapter, surface::SurfaceAdapter};
+use crate::adapters::{
+    context::ContextAdapter, mesh::MeshAdapter, surface::SurfaceAdapter, texture::TextureAdapter, wgpu::WgpuAdapters,
+};
 
 pub mod context;
+pub mod mesh;
 pub mod surface;
+pub mod texture;
 mod wgpu;
 
-pub trait ClockworkAdapter {
-    type Adapters: ClockworkAdapters;
+pub trait ClockworkRendererAdapter {
+    type Adapters: ClockworkRendererAdapters;
 }
 
-pub trait ClockworkAdapters {
+pub trait ClockworkRendererAdapters {
     type ContextAdapter: ContextAdapter<Adapters = Self>;
     type SurfaceAdapter: SurfaceAdapter<Adapters = Self>;
+    type TextureAdapter: TextureAdapter<Adapters = Self>;
+    type MeshAdapter: MeshAdapter<Adapters = Self>;
 }
+
+pub type DefaultAdapters = WgpuAdapters;
