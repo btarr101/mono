@@ -5,6 +5,7 @@ use crate::adapters::{
 
 mod buffer;
 mod context;
+mod instance;
 mod mesh;
 mod surface;
 mod texture;

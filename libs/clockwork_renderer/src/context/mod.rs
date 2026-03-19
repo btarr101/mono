@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use crate::{
     adapters::{ClockworkRendererAdapters, DefaultAdapters, context::ContextAdapter},
     handle::UnlockedHandle,
@@ -8,6 +10,7 @@ use crate::{
 
 pub struct Context<A: ClockworkRendererAdapters = DefaultAdapters> {
     pub(crate) adapter: A::ContextAdapter,
+    next_index: Cell<usize>,
 }
 
 impl<A: ClockworkRendererAdapters> Context<A> {
@@ -15,12 +18,21 @@ impl<A: ClockworkRendererAdapters> Context<A> {
         surface_target: impl Into<wgpu::SurfaceTarget<'static>>,
     ) -> anyhow::Result<(UnlockedHandle<Self>, UnlockedHandle<Surface<A>>)> {
         let (adapter, surface_adapter) = A::ContextAdapter::new_with_surface(surface_target).await?;
-        let context_handle = UnlockedHandle::new(Self { adapter });
+        let context_handle = UnlockedHandle::new(Self {
+            adapter,
+            next_index: Cell::new(0),
+        });
 
         let surface = Surface::new(context_handle.clone(), surface_adapter);
         let surface_handle = UnlockedHandle::new(surface);
 
         Ok((context_handle, surface_handle))
+    }
+
+    pub(crate) fn generate_index(&self) -> usize {
+        let index = self.next_index.get();
+        self.next_index.set(index + 1);
+        index
     }
 }
 

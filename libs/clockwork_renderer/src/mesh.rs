@@ -2,6 +2,7 @@ use crate::{
     adapters::{ClockworkRendererAdapters, DefaultAdapters, mesh::MeshAdapter},
     context::Context,
     handle::UnlockedHandle,
+    id::Id,
 };
 
 pub struct Vertex {
@@ -18,6 +19,7 @@ pub struct MeshData {
 }
 
 pub struct Mesh<A: ClockworkRendererAdapters = DefaultAdapters> {
+    pub(crate) id: Id<Self>,
     context: UnlockedHandle<Context<A>>,
     adapter: A::MeshAdapter,
 }
@@ -26,6 +28,10 @@ impl<A: ClockworkRendererAdapters> Mesh<A> {
     pub(crate) fn new(context: UnlockedHandle<Context<A>>, data: &MeshData) -> Self {
         let adapter = A::MeshAdapter::new(&context.adapter, &data.vertices, data.indices.as_deref());
 
-        Self { context, adapter }
+        Self {
+            id: Id::new(context.generate_index()),
+            context,
+            adapter,
+        }
     }
 }

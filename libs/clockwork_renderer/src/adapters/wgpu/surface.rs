@@ -7,9 +7,9 @@ use crate::adapters::{
 };
 
 pub struct WgpuSurfaceAdapter {
-    configuration: RefCell<wgpu::SurfaceConfiguration>,
-    surface: wgpu::Surface<'static>,
-    depth_texture: RefCell<DepthTexture>,
+    pub(crate) configuration: RefCell<wgpu::SurfaceConfiguration>,
+    pub(crate) surface: wgpu::Surface<'static>,
+    pub(crate) depth_texture: RefCell<DepthTexture>,
 }
 
 impl ClockworkRendererAdapter for WgpuSurfaceAdapter {

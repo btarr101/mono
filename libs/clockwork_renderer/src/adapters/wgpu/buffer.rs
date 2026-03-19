@@ -2,7 +2,7 @@ use std::{
     cell::Cell,
     cmp::max,
     marker::PhantomData,
-    num::NonZeroUsize,
+    num::{NonZero, NonZeroUsize},
     ops::{Deref, RangeBounds},
 };
 
@@ -92,7 +92,23 @@ impl<T: bytemuck::NoUninit> Buffer<T> {
         self.write(queue, index_offset, data)
     }
 
+    pub fn push_and_reallocate(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, data: &[T]) {
+        while self.push(queue, data).is_err() {
+            let new_capacity = self
+                .capacity
+                .checked_mul(NonZeroUsize::new(2).expect("2 > 0"))
+                .max(NonZero::new(self.len() + data.len()))
+                .unwrap_or(NonZeroUsize::MAX);
+
+            let new_buffer = Self::new(device, self.usage(), new_capacity);
+            new_buffer.copy_from(device, queue, 0, self, 0..self.len()).unwrap();
+            *self = new_buffer;
+        }
+    }
+
     pub fn pop(&self) { self.length.update(|length| length.saturating_sub(1)); }
+
+    pub fn clear(&self) { self.length.set(0); }
 
     pub fn copy_from(
         &self,

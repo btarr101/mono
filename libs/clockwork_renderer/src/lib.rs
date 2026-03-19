@@ -4,7 +4,9 @@ use crate::{context::Context, handle::UnlockedHandle, surface::Surface};
 
 mod adapters;
 pub mod context;
+pub mod draw_params;
 pub mod handle;
+pub mod id;
 pub mod maybe_locked;
 pub mod mesh;
 pub mod surface;
