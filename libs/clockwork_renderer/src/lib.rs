@@ -3,6 +3,7 @@
 use crate::{context::Context, handle::UnlockedHandle, surface::Surface};
 
 mod adapters;
+pub mod camera;
 pub mod context;
 pub mod draw_params;
 pub mod handle;
@@ -12,7 +13,13 @@ pub mod mesh;
 pub mod surface;
 pub mod texture;
 
-pub async fn create_context_with_surface_target(
+pub fn create_context_with_surface_target(
+    surface_target: impl Into<wgpu::SurfaceTarget<'static>>,
+) -> anyhow::Result<(UnlockedHandle<Context>, UnlockedHandle<Surface>)> {
+    pollster::block_on(create_context_with_surface_async(surface_target))
+}
+
+pub async fn create_context_with_surface_async(
     surface_target: impl Into<wgpu::SurfaceTarget<'static>>,
 ) -> anyhow::Result<(UnlockedHandle<Context>, UnlockedHandle<Surface>)> {
     let (context, surface) = Context::new_handle_with_surface(surface_target).await?;

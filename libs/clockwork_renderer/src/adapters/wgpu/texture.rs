@@ -2,7 +2,7 @@ use crate::adapters::{ClockworkRendererAdapter, texture::TextureAdapter, wgpu::W
 
 pub struct WgpuTextureAdapter {
     texture: wgpu::Texture,
-    bind_group: wgpu::BindGroup,
+    pub(crate) bind_group: wgpu::BindGroup,
 }
 
 impl ClockworkRendererAdapter for WgpuTextureAdapter {

@@ -23,12 +23,6 @@ pub enum BufferWriteError {
     NotEnoughCapacity,
 }
 
-#[derive(Error, Debug)]
-pub enum BufferReadError {
-    #[error("Index out of bounds for buffer read")]
-    IndexOutOfBounds,
-}
-
 impl<T: bytemuck::NoUninit> Deref for Buffer<T> {
     type Target = wgpu::Buffer;
     fn deref(&self) -> &Self::Target { &self.buffer }

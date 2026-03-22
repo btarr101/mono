@@ -14,7 +14,7 @@ struct InstanceInput {
     @location(5) transform_3: vec4<f32>,
     @location(6) color: vec4<f32>,
     @location(7) uv_window: vec4<f32>,
-    @location(8) flip_bits: u32
+    // @location(8) flip_bits: u32
 }
 
 struct VertexOutput {
@@ -48,12 +48,12 @@ fn vertex_main(
     out.clip_position = camera_uniform.view_projection * instance_transform * vec4<f32>(model.position, 1.0);
     out.color = instance.color;
 
-    let hflip = (instance.flip_bits & 0x1u) != 0u; // bit 0
-    let vflip = (instance.flip_bits & 0x2u) != 0u; // bit 1
+    // let hflip = (instance.flip_bits & 0x1u) != 0u; // bit 0
+    // let vflip = (instance.flip_bits & 0x2u) != 0u; // bit 1
 
     var uv = instance.uv_window.xy + (model.texture_coordinates * instance.uv_window.zw);
-    uv.x = select(uv.x, instance.uv_window.x + instance.uv_window.z - (model.texture_coordinates.x * instance.uv_window.z), hflip);
-    uv.y = select(uv.y, instance.uv_window.y + instance.uv_window.w - (model.texture_coordinates.y * instance.uv_window.w), vflip);
+    // uv.x = select(uv.x, instance.uv_window.x + instance.uv_window.z - (model.texture_coordinates.x * instance.uv_window.z), hflip);
+    // uv.y = select(uv.y, instance.uv_window.y + instance.uv_window.w - (model.texture_coordinates.y * instance.uv_window.w), vflip);
 
     out.texture_coordinates = uv;
 

@@ -21,7 +21,7 @@ pub struct MeshData {
 pub struct Mesh<A: ClockworkRendererAdapters = DefaultAdapters> {
     pub(crate) id: Id<Self>,
     context: UnlockedHandle<Context<A>>,
-    adapter: A::MeshAdapter,
+    pub(crate) adapter: A::MeshAdapter,
 }
 
 impl<A: ClockworkRendererAdapters> Mesh<A> {

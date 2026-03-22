@@ -13,7 +13,5 @@ pub trait ContextAdapter: ClockworkRendererAdapter + Sized {
 
     fn draw(&self, texture: Handle<'static, Texture>, mesh: Handle<'static, Mesh>, params: &DrawParams);
 
-    fn render(&self, surface: &<Self::Adapters as ClockworkRendererAdapters>::SurfaceAdapter);
-
     fn clear(&self);
 }

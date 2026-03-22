@@ -7,8 +7,9 @@ use crate::{
         wgpu::{
             WgpuAdapters,
             buffer::Buffer,
+            camera::{WgpuCameraAdapter, WgpuCameraUniform},
             instance::{WgpuInstance, WgpuInstanceKey},
-            mesh::WgpuVertex,
+            mesh::{WgpuMeshAdapter, WgpuVertex},
             surface::WgpuSurfaceAdapter,
         },
     },
@@ -29,8 +30,11 @@ pub struct WgpuContextAdapter {
     pub(crate) device: wgpu::Device,
     pub(crate) queue: wgpu::Queue,
     pub(crate) render_pipeline: wgpu::RenderPipeline,
+    // globals_bind_group: wgpu::BindGroup,
+    // globals_uniform_buffer: Buffer<WgpuGlobalsUniform>,
+    pub(crate) camera_bind_group_layout: wgpu::BindGroupLayout,
     texture_bind_group_layout: wgpu::BindGroupLayout,
-    instances: RefCell<rustc_hash::FxHashMap<WgpuInstanceKey, Buffer<WgpuInstance>>>,
+    pub instances: RefCell<rustc_hash::FxHashMap<WgpuInstanceKey, Buffer<WgpuInstance>>>,
 }
 
 impl ClockworkRendererAdapter for WgpuContextAdapter {
@@ -40,9 +44,9 @@ impl ContextAdapter for WgpuContextAdapter {
     async fn new_with_surface(
         surface_target: impl Into<wgpu::SurfaceTarget<'static>>,
     ) -> anyhow::Result<(Self, WgpuSurfaceAdapter)> {
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: BACKENDS,
-            ..Default::default()
+            ..wgpu::InstanceDescriptor::new_without_display_handle()
         });
 
         let surface = instance.create_surface(surface_target.into())?;
@@ -69,15 +73,21 @@ impl ContextAdapter for WgpuContextAdapter {
             .await?;
 
         let surface = WgpuSurfaceAdapter::new_from_surface(surface, &adapter, &device, glam::uvec2(1, 1))?;
+        let camera_bind_group_layout = Self::create_camera_bind_group_layout(&device);
         let texture_bind_group_layout = Self::create_texture_bind_group_layout(&device);
-        let render_pipeline =
-            Self::create_render_pipeline(&device, &texture_bind_group_layout, surface.configuration.borrow().format);
+        let render_pipeline = Self::create_render_pipeline(
+            &device,
+            &camera_bind_group_layout,
+            &texture_bind_group_layout,
+            surface.configuration.borrow().format,
+        );
 
         let context = Self {
             instance,
             adapter,
             device,
             queue,
+            camera_bind_group_layout,
             texture_bind_group_layout,
             render_pipeline,
             instances: RefCell::new(rustc_hash::FxHashMap::default()),
@@ -104,37 +114,51 @@ impl ContextAdapter for WgpuContextAdapter {
                     transform: params.transform.to_cols_array_2d(),
                     color: params.color.to_array(),
                     uv_window: params.texture_window.to_array(),
+                    // flip_bits: 0,
                 }],
             )
     }
 
-    fn render(&self, surface: &WgpuSurfaceAdapter) {
-        let wgpu_surface = &surface.surface;
-        let surface_texture = wgpu_surface.get_current_texture().unwrap();
-        let surface_view = surface_texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-
-        {
-            let depth_texture = surface.depth_texture.borrow();
-            let mut render_pass = Self::begin_render_pass(&mut encoder, &surface_view, &depth_texture.view);
-            render_pass.set_pipeline(&self.render_pipeline);
-            // render_pass.set_bind_group(0, todo!(), todo!()); // globals bind group
-            // TODO: GLOBALS
-        }
-    }
-
     fn clear(&self) {
-        self.instances
-            .borrow_mut()
-            .values_mut()
-            .for_each(|instance_buffer| instance_buffer.clear());
+        self.instances.borrow_mut().retain(|_, instance_buffer| {
+            if instance_buffer.is_empty() {
+                false
+            } else {
+                instance_buffer.clear();
+                true
+            }
+        });
     }
 }
 
 impl WgpuContextAdapter {
+    fn create_camera_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        })
+    }
+
+    pub fn create_camera_bind_group(&self, uniform_buffer: &Buffer<WgpuCameraUniform>) -> wgpu::BindGroup {
+        self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &self.camera_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+        })
+    }
+
     fn create_texture_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: None,
@@ -178,6 +202,7 @@ impl WgpuContextAdapter {
 
     fn create_render_pipeline(
         device: &wgpu::Device,
+        camera_bind_group_layout: &wgpu::BindGroupLayout,
         texture_bind_group_layout: &wgpu::BindGroupLayout,
         texture_format: wgpu::TextureFormat,
     ) -> wgpu::RenderPipeline {
@@ -185,7 +210,7 @@ impl WgpuContextAdapter {
 
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &[texture_bind_group_layout],
+            bind_group_layouts: &[Some(camera_bind_group_layout), Some(texture_bind_group_layout)],
             ..Default::default()
         });
 
@@ -288,8 +313,8 @@ impl WgpuContextAdapter {
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less,
+                depth_write_enabled: Some(true),
+                depth_compare: Some(wgpu::CompareFunction::Less),
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
             }),
@@ -304,7 +329,7 @@ impl WgpuContextAdapter {
         })
     }
 
-    fn begin_render_pass<'a>(
+    pub fn begin_render_pass<'a>(
         encoder: &'a mut wgpu::CommandEncoder,
         surface_view: &'a wgpu::TextureView,
         depth_texture_view: &'a wgpu::TextureView,

@@ -7,7 +7,7 @@ use crate::{
 pub struct Texture<A: ClockworkRendererAdapters = DefaultAdapters> {
     pub(crate) id: Id<Self>,
     context: UnlockedHandle<Context<A>>,
-    adapter: A::TextureAdapter,
+    pub(crate) adapter: A::TextureAdapter,
 }
 
 impl<A: ClockworkRendererAdapters> Texture<A> {

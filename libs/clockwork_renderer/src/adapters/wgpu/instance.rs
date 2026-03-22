@@ -28,4 +28,5 @@ pub struct WgpuInstance {
     pub transform: [[f32; 4]; 4],
     pub color: [u8; 4],
     pub uv_window: [f32; 4],
+    // pub flip_bits: u32,
 }
