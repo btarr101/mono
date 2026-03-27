@@ -103,7 +103,7 @@ impl ContextAdapter for WgpuContextAdapter {
             .or_insert_with(|| {
                 Buffer::new(
                     &self.device,
-                    wgpu::BufferUsages::UNIFORM,
+                    wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                     NonZeroUsize::new(1).expect("1 > 0"),
                 )
             })
@@ -150,7 +150,7 @@ impl WgpuContextAdapter {
 
     pub fn create_camera_bind_group(&self, uniform_buffer: &Buffer<WgpuCameraUniform>) -> wgpu::BindGroup {
         self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: None,
+            label: Some("Camera Bind Group"),
             layout: &self.camera_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,

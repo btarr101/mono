@@ -4,7 +4,7 @@ use crate::{
     adapters::{ClockworkRendererAdapters, DefaultAdapters, context::ContextAdapter},
     camera::Camera,
     draw_params::DrawParams,
-    handle::{Handle, UnlockedHandle},
+    handle::{AsHandle, Handle, UnlockedHandle},
     mesh::{Mesh, MeshData},
     surface::Surface,
     texture::Texture,
@@ -31,8 +31,8 @@ impl<A: ClockworkRendererAdapters> Context<A> {
         Ok((context_handle, surface_handle))
     }
 
-    pub fn draw(&self, texture: &Handle<'static, Texture>, mesh: &Handle<'static, Mesh>, params: &DrawParams) {
-        self.adapter.draw(texture.clone(), mesh.clone(), params);
+    pub fn draw(&self, texture: &impl AsHandle<'static, Texture>, mesh: &impl AsHandle<'static, Mesh>, params: &DrawParams) {
+        self.adapter.draw(texture.as_handle(), mesh.as_handle(), params);
     }
 
     pub fn clear(&self) { self.adapter.clear(); }

@@ -49,3 +49,15 @@ impl<T> LockedHandle<T> {
     pub fn read(&self) -> RwLockReadGuard<'_, T> { self.0.read() }
     pub fn write(&self) -> RwLockWriteGuard<'_, T> { self.0.write() }
 }
+
+pub trait AsHandle<'a, T> {
+    fn as_handle(&self) -> Handle<'a, T>;
+}
+
+impl<'a, T: 'a> AsHandle<'a, T> for UnlockedHandle<T> {
+    fn as_handle(&self) -> Handle<'a, T> { Handle(self.0.clone()) }
+}
+
+impl<'a, T: 'a> AsHandle<'a, T> for LockedHandle<T> {
+    fn as_handle(&self) -> Handle<'a, T> { Handle(self.0.clone()) }
+}

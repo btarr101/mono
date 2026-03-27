@@ -25,7 +25,7 @@ impl CameraAdapter for WgpuCameraAdapter {
     fn new(context: &<Self::Adapters as ClockworkRendererAdapters>::ContextAdapter) -> Self {
         let uniform_buffer = Buffer::new(
             &context.device,
-            wgpu::BufferUsages::UNIFORM,
+            wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             NonZeroUsize::new(1).expect("1 > 0"),
         );
         let bind_group = context.create_camera_bind_group(&uniform_buffer);
@@ -54,7 +54,7 @@ impl CameraAdapter for WgpuCameraAdapter {
         let surface_texture = match wgpu_surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
             wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => surface_texture,
-            _ => panic!("Failed to acquire surface texture"),
+            _ => return, // Surface lost, we just skip rendering this frame
         };
         let surface_view = surface_texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
