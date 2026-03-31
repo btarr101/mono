@@ -4,7 +4,7 @@ use crate::{
     adapters::{ClockworkRendererAdapters, DefaultAdapters, context::ContextAdapter},
     camera::Camera,
     draw_params::DrawParams,
-    handle::{AsHandle, Handle, UnlockedHandle},
+    handle::{AsHandle, UnlockedHandle},
     mesh::{Mesh, MeshData},
     surface::Surface,
     texture::Texture,
