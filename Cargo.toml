@@ -5,6 +5,5 @@ members = [
 	"libs/clockwork_tuples",
 	"apps/pong",
 	"libs/clockwork_renderer",
+	"apps/controlmylights/controlmylights_server",
 ]
-
-default-members = ["libs/clockwork_ecs"]

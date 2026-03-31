@@ -1,0 +1,52 @@
+use std::sync::Arc;
+
+use controlmylights_server::{
+    api_router,
+    config::Config,
+    led_repo::{Color, LedRepo},
+};
+use serde_envfile::from_env;
+use tower_http::{
+    cors::{AllowMethods, AllowOrigin, CorsLayer},
+    services::{ServeDir, ServeFile},
+    trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
+};
+use tracing::{info, level_filters::LevelFilter};
+use tracing_subscriber::EnvFilter;
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let config: Config = from_env()?;
+
+    tracing_subscriber::fmt()
+        .json()
+        .with_env_filter(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env_lossy(),
+        )
+        .init();
+    let _span = tracing::info_span!("root", stage = &config.stage).entered();
+
+    let app = axum::Router::new()
+        .nest("/api", api_router::get_router())
+        .with_state(Arc::new(LedRepo::new([Color::WHITE; 1152].into_iter())))
+        .layer(
+            CorsLayer::new()
+                .allow_methods(AllowMethods::any())
+                .allow_origin(AllowOrigin::any()),
+        )
+        .fallback_service(ServeDir::new(&config.public_dir).fallback(ServeFile::new(config.public_dir.join("index.html"))))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::new().include_headers(true).level(tracing::Level::INFO))
+                .on_request(DefaultOnRequest::new().level(tracing::Level::INFO))
+                .on_response(DefaultOnResponse::new().level(tracing::Level::INFO)),
+        );
+
+    info!("Starting server at http://{}", config.bind_address);
+    let listener = tokio::net::TcpListener::bind(config.bind_address).await?;
+    axum::serve(listener, app).await?;
+
+    Ok(())
+}
