@@ -1,0 +1,13 @@
+services:
+  scryfall-api-search-bot:
+    image: ghcr.io/btarr101/scryfall-ai-search-bot:main
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - path: .env
+        required: true
+  watchtower:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 30 --cleanup

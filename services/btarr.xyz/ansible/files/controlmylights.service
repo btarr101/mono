@@ -1,0 +1,15 @@
+[Unit]
+Description=Service to control my lights.
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/opt/controlmylights/.env
+ExecStart=/opt/controlmylights/bin/controlmylights
+User=btarr
+WorkingDirectory=/opt/controlmylights
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

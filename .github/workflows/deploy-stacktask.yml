@@ -1,0 +1,34 @@
+name: Deploy StackTask
+
+on:
+  push:
+    tags:
+      - 'stacktask-v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+          cache-dependency-path: 'apps/StackTask/pnpm-lock.yaml'
+      
+      - run: cd apps/StackTask && pnpm install && pnpm build
+      
+      - uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          source: 'apps/StackTask/dist/'
+          target: '/var/www/stacktask.btarr.xyz'
+          strip_components: 3

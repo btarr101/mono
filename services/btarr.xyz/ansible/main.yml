@@ -1,0 +1,5 @@
+- name: Set up deployer user
+  import_playbook: playbooks/deployer.yml
+
+- name: Nginx setup for btarr.xyz
+  import_playbook: playbooks/nginx.yml

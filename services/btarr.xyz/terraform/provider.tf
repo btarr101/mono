@@ -7,6 +7,6 @@ terraform {
   }
 }
 
-data "digitalocean_ssh_key" "terraform" {
-  name = "terraform"
+data "digitalocean_ssh_key" "ansible" {
+  name = "ansible"
 }

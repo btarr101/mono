@@ -1,0 +1,5 @@
+root: "{{ inventory_dir }}"
+files: "{{ root }}/files"
+env:
+  DEPLOYER_SSH_PUBLIC_KEY: "{{ lookup('dotenv', 'DEPLOYER_SSH_PUBLIC_KEY', file=root ~ '/.env') }}"
+  BTARR_SSH_PUBLIC_KEY: "{{ lookup('dotenv', 'BTARR_SSH_PUBLIC_KEY', file=root ~ '/.env') }}"
