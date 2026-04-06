@@ -9,16 +9,6 @@ on:
     branches:
       - main
       - controlmylights # temp for testing
-  push:
-    branches:
-      - main
-    paths:
-      - "apps/StackTask/**"
-      # Exclude so this runs in sequence
-      - "!services/btarr.xyz/**"
-      - "!.github/workflows/deploy-btarr.xyz.yml"
-      - "!services/terraform-backend/**"
-      - "!.github/workflows/deploy-terraform-backend.yml"
   pull_request:
     branches:
       - main

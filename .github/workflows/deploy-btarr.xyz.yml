@@ -1,17 +1,14 @@
 name: Deploy 🚀 btarr.xyz infrastructure 🏗️
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Deploy 🚀 Terraform Backend 🪣
+    types:
+      - completed
     branches:
       - main
       - controlmylights # temp for testing
-    paths:
-      - services/btarr.xyz/**
-      - .github/workflows/deploy-btarr.xyz.yml
-      # Exclude so this runs in sequence
-      - "!services/terraform-backend/**"
-      - "!.github/workflows/deploy-terraform-backend.yml"
-  workflow_dispatch:
 
 jobs:
   deploy:
