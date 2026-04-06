@@ -30,6 +30,7 @@ jobs:
         with:
           key: ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
           name: ansible
+          known_hosts: unnecessary
 
       - name: Deploy btarr.xyz
         working-directory: services/btarr.xyz
