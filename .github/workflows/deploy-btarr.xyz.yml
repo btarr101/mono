@@ -1,0 +1,40 @@
+name: Deploy 🚀 btarr.xyz infrastructure 🏗️
+
+on:
+  push:
+    branches:
+      - main
+      - controlmylights # temp for testing
+    paths:
+      - services/btarr.xyz/**
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: services/btarr.xyz
+
+      - uses: hashicorp/setup-terraform@v4
+
+      - name: Install ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Set up SSH key for Ansible
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
+          name: ansible
+
+      - name: Deploy btarr.xyz
+        working-directory: services/btarr.xyz
+        env:
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+          DEPLOYER_SSH_PUBLIC_KEY: ${{ env.DEPLOYER_SSH_PUBLIC_KEY }}
+          BTARR_SSH_PUBLIC_KEY: ${{ env.BTARR_SSH_PUBLIC_KEY }}
+        run: ./deploy.sh

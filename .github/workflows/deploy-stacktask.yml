@@ -1,34 +1,76 @@
-name: Deploy StackTask
+name: Build 🔨 & Deploy 🚀 StackTask
 
 on:
+  workflow_run:
+    workflows:
+      - Deploy 🚀 btarr.xyz infrastructure 🏗️
+    types:
+      - completed
+    branches:
+      - main
+      - controlmylights # temp for testing
   push:
-    tags:
-      - 'stacktask-v*'
+    branches:
+      - main
+    paths:
+      - "apps/StackTask/**"
+      - "!services/btarr.xyz/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "apps/StackTask/**"
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
-      
-      - uses: pnpm/action-setup@v2
         with:
-          version: 8
-      
-      - uses: actions/setup-node@v4
+          sparse-checkout: apps/StackTask
+
+      - uses: pnpm/action-setup@v4
         with:
-          node-version: '18'
-          cache: 'pnpm'
-          cache-dependency-path: 'apps/StackTask/pnpm-lock.yaml'
-      
-      - run: cd apps/StackTask && pnpm install && pnpm build
-      
-      - uses: appleboy/scp-action@master
+          version: 10
+          run_install: |
+            - cwd: ./apps/StackTask
+              args: [--frozen-lockfile]
+
+      - run: pnpm build
+        working-directory: ./apps/StackTask
+
+      - uses: actions/upload-artifact@v4
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          source: 'apps/StackTask/dist/'
-          target: '/var/www/stacktask.btarr.xyz'
-          strip_components: 3
+          name: dist
+          path: ./apps/StackTask/dist
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: prod
+    needs:
+      - build
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Upload new app
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: btarr.xyz # TODO: How do I propagate IP instead of relying on DNS
+          username: deployer
+          key: ${{ secrets.DEPLOYER_SSH_PRIVATE_KEY }}
+          source: ./dist/*
+          target: /var/www/stacktask.btarr.xyz/
+          overwrite: true
+          strip_components: 1
+
+      - name: Make executable
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: btarr.xyz # TODO: How do I propagate IP instead of relying on DNS
+          username: deployer
+          key: ${{ secrets.DEPLOYER_SSH_PRIVATE_KEY }}
+          script: sudo chmod -R a+rX /var/www/stacktask.btarr.xyz

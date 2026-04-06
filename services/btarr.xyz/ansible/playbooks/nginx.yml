@@ -1,5 +1,5 @@
 - name: Set up nginx
-  hosts: btarr.xyz
+  hosts: all
   become: true
 
   tasks:
@@ -23,14 +23,20 @@
         owner: root
         group: root
         mode: "0644"
-      notify: Reload nginx
+      notify: nginx config changed
 
     - name: Validate nginx configuration
       ansible.builtin.command: nginx -t
       changed_when: false
 
   handlers:
+    - name: Validate nginx configuration
+      ansible.builtin.command: nginx -t
+      changed_when: false
+      listen: nginx config changed
+
     - name: Reload nginx
       ansible.builtin.service:
         name: nginx
         state: reloaded
+      listen: nginx config changed

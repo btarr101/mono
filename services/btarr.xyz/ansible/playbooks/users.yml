@@ -1,5 +1,5 @@
-- name: Set up deployer and web roots
-  hosts: btarr.xyz
+- name: Set up users
+  hosts: all
   become: true
 
   tasks:
@@ -7,6 +7,8 @@
       ansible.builtin.user:
         name: deployer
         shell: /bin/bash
+        groups: sudo
+        append: true
 
     - name: Install SSH key for deployer
       ansible.posix.authorized_key:
@@ -17,13 +19,15 @@
       ansible.builtin.user:
         name: btarr
         shell: /bin/bash
+        groups: sudo
+        append: true
 
     - name: Install SSH key for btarr
       ansible.posix.authorized_key:
         user: btarr
         key: "{{ env.BTARR_SSH_PUBLIC_KEY }}"
 
-    - name: Allow ansible, deployer, and btarr SSH logins
+    - name: Allow SSH logins
       ansible.builtin.copy:
         dest: /etc/ssh/sshd_config.d/zz-allowusers.conf
         owner: root
@@ -31,12 +35,30 @@
         mode: "0644"
         content: |
           AllowUsers deployer btarr
+      notify: SSH config changed
 
+    - name: Allow passwordless sudo for deployer
+      community.general.sudoers:
+        name: deployer
+        user: deployer
+        commands: ALL
+        nopassword: true
+
+    - name: Allow passwordless sudo for btarr
+      community.general.sudoers:
+        name: btarr
+        user: btarr
+        commands: ALL
+        nopassword: true
+
+  handlers:
     - name: Validate SSH daemon configuration
       ansible.builtin.command: sshd -t
       changed_when: false
+      listen: SSH config changed
 
     - name: Reload SSH service
       ansible.builtin.service:
         name: ssh
         state: reloaded
+      listen: SSH config changed
