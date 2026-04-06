@@ -38,5 +38,5 @@ jobs:
           role-to-assume: ${{ vars.DEPLOYER_AWS_ROLE_ARN }}
           aws-region: us-west-2
 
-      - run: cd cdk && cdk deploy --require-approval never
+      - run: cdk deploy --require-approval never
         working-directory: services/terraform-backend
