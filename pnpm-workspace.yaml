@@ -1,0 +1,10 @@
+packages:
+  - 'apps/**'
+  - 'libs/**'
+  - 'services/**'
+allowBuilds:
+  '@swc/core': true
+  core-js: true
+  esbuild: true
+  msw: true
+  sharp: true

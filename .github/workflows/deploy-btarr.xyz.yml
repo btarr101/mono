@@ -8,6 +8,9 @@ on:
     paths:
       - services/btarr.xyz/**
       - .github/workflows/deploy-btarr.xyz.yml
+      # Exclude so this runs in sequence
+      - "!services/terraform-backend/**"
+      - "!.github/workflows/deploy-terraform-backend.yml"
   workflow_dispatch:
 
 jobs:
