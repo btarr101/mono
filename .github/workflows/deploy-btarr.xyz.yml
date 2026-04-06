@@ -7,6 +7,7 @@ on:
       - controlmylights # temp for testing
     paths:
       - services/btarr.xyz/**
+      - .github/workflows/deploy-btarr.xyz.yml
   workflow_dispatch:
 
 jobs:
