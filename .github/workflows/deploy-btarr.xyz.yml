@@ -1,6 +1,14 @@
 name: Deploy 🚀 btarr.xyz infrastructure 🏗️
 
 on:
+  # workflow_run:
+  #   workflows:
+  #     - Deploy 🚀 Terraform Backend 🪣
+  #   types:
+  #     - completed
+  #   branches:
+  #     - main
+  #     - controlmylights # temp for testing
   workflow_dispatch:
 
 jobs:
