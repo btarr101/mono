@@ -7,7 +7,6 @@ on:
     paths:
       - services/terraform-backend/**
       - .github/workflows/deploy-terraform-backend.yml
-  workflow_dispatch:
 
 jobs:
   deploy:

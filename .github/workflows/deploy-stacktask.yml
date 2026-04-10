@@ -1,19 +1,7 @@
 name: Build 🔨 & Deploy 🚀 StackTask
 
 on:
-  workflow_run:
-    workflows:
-      - Deploy 🚀 btarr.xyz infrastructure 🏗️
-    types:
-      - completed
-    branches:
-      - main
-      - controlmylights # temp for testing
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "apps/StackTask/**"
+  workflow_dispatch:
 
 jobs:
   build:
