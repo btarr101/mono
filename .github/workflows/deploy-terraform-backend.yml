@@ -1,13 +1,8 @@
 name: Deploy 🚀 Terraform Backend 🪣
+
 on:
-  # push:
-  #   branches:
-  #     - main
-  #     - controlmylights # temp for testing
-  #   paths:
-  #     - services/terraform-backend/**
-  #     - .github/workflows/deploy-terraform-backend.yml
-  workflow_dispatch:
+  workflow_call: {}
+  workflow_dispatch: {}
 
 jobs:
   deploy:

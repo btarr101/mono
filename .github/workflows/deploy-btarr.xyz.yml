@@ -1,15 +1,8 @@
 name: Deploy 🚀 btarr.xyz infrastructure 🏗️
 
 on:
-  # workflow_run:
-  #   workflows:
-  #     - Deploy 🚀 Terraform Backend 🪣
-  #   types:
-  #     - completed
-  #   branches:
-  #     - main
-  #     - controlmylights # temp for testing
-  workflow_dispatch:
+  workflow_call: {}
+  workflow_dispatch: {}
 
 jobs:
   deploy:
@@ -50,3 +43,4 @@ jobs:
           DEPLOYER_SSH_PUBLIC_KEY: ${{ vars.DEPLOYER_SSH_PUBLIC_KEY }}
           BTARR_SSH_PUBLIC_KEY: ${{ vars.BTARR_SSH_PUBLIC_KEY }}
         run: ./deploy.sh
+

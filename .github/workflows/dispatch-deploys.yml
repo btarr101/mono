@@ -1,0 +1,58 @@
+name: 🪐 Dispatch Workflows
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - controlmylights
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      terraform_backend: ${{ steps.filter.outputs.terraform_backend }}
+      btarr_xyz: ${{ steps.filter.outputs.btarr_xyz }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed deployment areas
+        id: filter
+        if: github.event_name == 'push'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            terraform_backend:
+              - 'services/terraform-backend/**'
+              - '.github/workflows/deploy.yml'
+              - '.github/workflows/deploy-terraform-backend.yml'
+            btarr_xyz:
+              - 'services/btarr.xyz/**'
+              - '.github/workflows/deploy.yml'
+              - '.github/workflows/deploy-btarr.xyz.yml'
+
+
+  deploy_terraform_backend:
+    needs: changes
+    if: always() && needs.changes.outputs.terraform_backend == 'true'
+    uses: ./.github/workflows/deploy-terraform-backend.yml
+    secrets: inherit
+
+  deploy_btarr_xyz:
+    needs:
+      - changes
+      - deploy_terraform_backend
+    if: |
+      always() &&
+      needs.changes.outputs.btarr_xyz == 'true' &&
+      (needs.deploy_terraform_backend.result == 'success' || needs.deploy_terraform_backend.result == 'skipped')
+    uses: ./.github/workflows/deploy-btarr.xyz.yml
+    secrets: inherit
