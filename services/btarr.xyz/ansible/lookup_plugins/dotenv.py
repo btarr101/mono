@@ -6,6 +6,7 @@ Ansible officially supports Python 2.7 and 3.5+, but this requires Python 3.8+.
 
 from __future__ import annotations
 
+import os
 from typing import Sequence
 
 from ansible.errors import AnsibleFileNotFound, AnsibleLookupError
@@ -79,21 +80,41 @@ class LookupModule(LookupBase):  # class name is not arbitrary, DO NOT CHANGE
         self.set_options(var_options=variables, direct=options)
         params = self.get_options()
         path = self.find_file_in_search_path(variables, "files", params["file"])
-        if not path:
-            raise AnsibleFileNotFound(f"Could not find file {params['file']}")
         var_pattern = compile(r"^\s*([a-zA-Z_]+[a-zA-Z0-9_]*)\s*=\s*(.*)\s*$")
-        variables = {}
-        for line in open(path, "rt").readlines():
-            # Parse the dotenv file permissively, accepting valid NAME=VALUE
-            # lines while ignoring everything else.
-            # TODO: Support RFC 2 line continuation syntax.
-            if match := var_pattern.match(line):
-                value = match.group(2).strip()
-                if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
-                    value = value[1:-1]
-                variables[match.group(1)] = value
-        try:
-            return [variables[key] for key in terms]
-        except KeyError as err:
-            key = err.args[0]
-            raise AnsibleLookupError(f"No value for '{key}' in {path}")
+        dotenv_values = {}
+        if path:
+            for line in open(path, "rt").readlines():
+                # Parse the dotenv file permissively, accepting valid NAME=VALUE
+                # lines while ignoring everything else.
+                # TODO: Support RFC 2 line continuation syntax.
+                if match := var_pattern.match(line):
+                    value = match.group(2).strip()
+                    if (
+                        len(value) >= 2
+                        and value[0] == value[-1]
+                        and value[0] in ('"', "'")
+                    ):
+                        value = value[1:-1]
+                    dotenv_values[match.group(1)] = value
+
+        resolved_values = []
+        for key in terms:
+            dotenv_value = dotenv_values.get(key, "")
+            if dotenv_value:
+                resolved_values.append(dotenv_value)
+                continue
+
+            env_value = os.getenv(key, "")
+            if env_value:
+                resolved_values.append(env_value)
+                continue
+
+            if path:
+                raise AnsibleLookupError(
+                    f"No value for '{key}' in {path} or process environment"
+                )
+            raise AnsibleFileNotFound(
+                f"Could not find file {params['file']} and no process environment value for '{key}'"
+            )
+
+        return resolved_values
