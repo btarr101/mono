@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      # - controlmylights
+      - controlmylights
 
 concurrency:
   group: deploy-${{ github.ref_name }}
