@@ -33,17 +33,20 @@ jobs:
             terraform_backend:
               - 'services/terraform-backend/**'
               - '.github/workflows/deploy.yml'
-              - '.github/workflows/deploy-terraform-backend.yml'
+              - '.github/workflows/deploy_terraform_backend.yml'
             btarr_xyz:
               - 'services/btarr.xyz/**'
               - '.github/workflows/deploy.yml'
-              - '.github/workflows/deploy-btarr.xyz.yml'
+              - '.github/workflows/deploy_btarr_xyz.yml'
 
 
   deploy_terraform_backend:
     needs: changes
     if: always() && needs.changes.outputs.terraform_backend == 'true'
-    uses: ./.github/workflows/deploy-terraform-backend.yml
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy_terraform_backend.yml
     secrets: inherit
 
   deploy_btarr_xyz:
@@ -54,5 +57,8 @@ jobs:
       always() &&
       needs.changes.outputs.btarr_xyz == 'true' &&
       (needs.deploy_terraform_backend.result == 'success' || needs.deploy_terraform_backend.result == 'skipped')
-    uses: ./.github/workflows/deploy-btarr.xyz.yml
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy_btarr_xyz.yml
     secrets: inherit
