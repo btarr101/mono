@@ -1,11 +1,10 @@
-name: Deploy 🚀 Terraform Backend 🪣
-
 on:
   workflow_call: {}
   workflow_dispatch: {}
 
 jobs:
   deploy:
+    name: Deploy 🚀 Terraform Backend 🪣
     runs-on: ubuntu-latest
     environment: prod
     permissions:

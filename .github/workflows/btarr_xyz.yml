@@ -1,11 +1,10 @@
-name: Deploy 🚀 btarr.xyz infrastructure 🏗️
-
 on:
   workflow_call: {}
   workflow_dispatch: {}
 
 jobs:
   deploy:
+    name: Deploy 🚀 btarr.xyz infrastructure 🏗️
     runs-on: ubuntu-latest
     environment: prod
     permissions:
