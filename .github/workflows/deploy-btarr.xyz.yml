@@ -34,6 +34,12 @@ jobs:
           name: ansible
           known_hosts: unnecessary
 
+      # We need AWS credentials for terraform to access the S3 backend
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.DEPLOYER_AWS_ROLE_ARN }}
+          aws-region: us-west-1
+
       - name: Deploy btarr.xyz
         working-directory: services/btarr.xyz
         env:
