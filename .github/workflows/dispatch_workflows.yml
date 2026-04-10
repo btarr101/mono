@@ -5,14 +5,14 @@ on:
   push:
     branches:
       - main
-      - controlmylights
+      # - controlmylights
 
 concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
-  changes:
+  parse_changes:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -26,9 +26,9 @@ jobs:
 
       - name: Detect changed deployment areas
         id: filter
-        if: github.event_name == 'push'
         uses: dorny/paths-filter@v3
         with:
+          base: ${{ github.ref_name }}
           filters: |
             terraform_backend:
               - 'services/terraform-backend/**'
@@ -41,8 +41,8 @@ jobs:
 
 
   terraform_backend:
-    needs: changes
-    if: always() && needs.changes.outputs.terraform_backend == 'true'
+    needs: parse_changes
+    if: always() && needs.parse_changes.outputs.terraform_backend == 'true'
     permissions:
       id-token: write
       contents: read
@@ -51,11 +51,11 @@ jobs:
 
   btarr_xyz:
     needs:
-      - changes
+      - parse_changes
       - terraform_backend
     if: |
       always() &&
-      needs.changes.outputs.btarr_xyz == 'true' &&
+      needs.parse_changes.outputs.btarr_xyz == 'true' &&
       (needs.terraform_backend.result == 'success' || needs.terraform_backend.result == 'skipped')
     permissions:
       id-token: write
