@@ -3,3 +3,6 @@
 
 - name: Nginx setup for btarr.xyz
   import_playbook: playbooks/nginx.yml
+
+- name: Install necessary tools
+  import_playbook: playbooks/tools.yml
