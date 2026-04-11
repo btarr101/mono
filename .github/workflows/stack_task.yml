@@ -1,22 +1,15 @@
 name: Build 🔨 & Deploy 🚀 StackTask
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "apps/StackTask/**"
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "apps/StackTask/**"
+  workflow_call: {}
+  workflow_dispatch: {}
 
 jobs:
   build:
+    name: 🔨 Build StackTask
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           sparse-checkout: apps/StackTask
 
@@ -36,8 +29,10 @@ jobs:
           path: ./apps/StackTask/dist
 
   deploy:
-    if: github.ref == 'refs/heads/main'
+    name: 🚀 Deploy StackTask
+    if: github.ref == 'refs/heads/main' || true
     runs-on: ubuntu-latest
+    environment: prod
     needs:
       - build
     steps:
@@ -50,17 +45,19 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           host: btarr.xyz
-          username: gha
-          key: ${{ secrets.BTARR_XYZ_DEPLOY_KEY }}
+          username: deployer
+          key: ${{ secrets.DEPLOYER_SSH_PRIVATE_KEY }}
           source: ./dist/*
           target: /var/www/stacktask.btarr.xyz/
           overwrite: true
           strip_components: 1
 
-      - name: Make executable
+      - name: Set nginx-readable permissions
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: btarr.xyz
-          username: gha
-          key: ${{ secrets.BTARR_XYZ_DEPLOY_KEY }}
-          script: sudo chmod -R a+rX /var/www/stacktask.btarr.xyz
+          username: deployer
+          key: ${{ secrets.DEPLOYER_SSH_PRIVATE_KEY }}
+          script: |
+            sudo find /var/www/stacktask.btarr.xyz -type d -exec chmod 755 {} \;
+            sudo find /var/www/stacktask.btarr.xyz -type f -exec chmod 644 {} \;
