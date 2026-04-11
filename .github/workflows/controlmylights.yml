@@ -8,10 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-        with:
-          sparse-checkout: |
-            Cargo.lock
-            apps/controlmylights/controlmylights_server
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -22,9 +18,6 @@ jobs:
             ~/.cargo/git
             apps/controlmylights/controlmylights_server/target
           key: ${{ runner.os }}-controlmylights-${{ hashFiles('Cargo.lock') }}
-
-      - name: Use root lockfile
-        run: cp Cargo.lock ./apps/controlmylights/controlmylights_server/Cargo.lock
 
       - run: cargo build --verbose --release --locked
         working-directory: ./apps/controlmylights/controlmylights_server
