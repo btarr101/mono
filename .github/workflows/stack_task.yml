@@ -51,16 +51,20 @@ jobs:
           username: deployer
           key: ${{ secrets.DEPLOYER_SSH_PRIVATE_KEY }}
           source: ./dist/*
-          target: /var/www/stacktask.btarr.xyz/
+          target: /tmp/stacktask.btarr.xyz/
           overwrite: true
           strip_components: 1
 
-      - name: Set nginx-readable permissions
+      - name: Promote release and set permissions
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: btarr.xyz
           username: deployer
           key: ${{ secrets.DEPLOYER_SSH_PRIVATE_KEY }}
           script: |
+            set -eu
+            sudo mkdir -p /var/www/stacktask.btarr.xyz
+            sudo rsync -a --delete /tmp/stacktask.btarr.xyz/ /var/www/stacktask.btarr.xyz/
             sudo find /var/www/stacktask.btarr.xyz -type d -exec chmod 755 {} \;
             sudo find /var/www/stacktask.btarr.xyz -type f -exec chmod 644 {} \;
+            rm -rf /tmp/stacktask.btarr.xyz
