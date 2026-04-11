@@ -16,7 +16,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            apps/controlmylights/controlmylights_server/target
+            target
           key: ${{ runner.os }}-controlmylights-${{ hashFiles('Cargo.lock') }}
 
       - run: cargo build --verbose --release --locked
@@ -25,7 +25,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: controlmylights_server
-          path: ./apps/controlmylights/controlmylights_server/target/release/controlmylights_server
+          path: ./target/release/controlmylights_server
 
   deploy:
     name: 🚀 Deploy controlmylights server
