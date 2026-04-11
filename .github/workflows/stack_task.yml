@@ -11,13 +11,16 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          sparse-checkout: apps/StackTask
+          sparse-checkout: |
+            package.json
+            pnpm-lock.yaml
+            pnpm-workspace.yaml
+            apps/StackTask
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 10
           run_install: |
-            - cwd: ./apps/StackTask
+            - cwd: ./
               args: [--frozen-lockfile]
 
       - run: pnpm build
