@@ -30,15 +30,12 @@ jobs:
           filters: |
             terraform_backend:
               - 'services/terraform-backend/**'
-              - '.github/workflows/deploy.yml'
               - '.github/workflows/terraform_backend.yml'
             btarr_xyz:
               - 'services/btarr.xyz/**'
-              - '.github/workflows/deploy.yml'
               - '.github/workflows/btarr_xyz.yml'
             stack_task:
               - 'apps/StackTask/**'
-              - '.github/workflows/deploy.yml'
               - '.github/workflows/stack_task.yml'
 
 
