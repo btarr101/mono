@@ -3,15 +3,45 @@
   become: true
 
   tasks:
-    - name: Install nginx and certbot packages
+    - name: Install nginx and snapd
       ansible.builtin.apt:
         name:
           - nginx
-          - certbot
-          - python3-certbot-dns-digitalocean
+          - snapd
         state: present
         update_cache: true
         cache_valid_time: 3600
+
+    - name: Ensure snapd service is enabled and running
+      ansible.builtin.service:
+        name: snapd
+        state: started
+        enabled: true
+
+    - name: Remove apt certbot to ensure snap certbot is used
+      ansible.builtin.apt:
+        name: certbot
+        state: absent
+
+    - name: Install certbot snap
+      ansible.builtin.command: snap install --classic certbot
+      args:
+        creates: /snap/certbot/current
+
+    - name: Allow certbot to use DNS plugin snaps
+      ansible.builtin.command: snap set certbot trust-plugin-with-root=ok
+      changed_when: false
+
+    - name: Install certbot DigitalOcean DNS plugin snap
+      ansible.builtin.command: snap install certbot-dns-digitalocean
+      args:
+        creates: /snap/certbot-dns-digitalocean/current
+
+    - name: Connect certbot to DigitalOcean DNS plugin
+      ansible.builtin.command: snap connect certbot:plugin certbot-dns-digitalocean
+      register: snap_connect
+      changed_when: false
+      failed_when: snap_connect.rc != 0 and 'already connected' not in (snap_connect.stderr | lower)
 
     - name: Write DigitalOcean credentials for certbot DNS challenge
       ansible.builtin.copy:
@@ -25,7 +55,7 @@
     - name: Request or renew wildcard Let's Encrypt certificate via DNS challenge
       ansible.builtin.command:
         cmd: >-
-          certbot certonly --dns-digitalocean
+          /snap/bin/certbot certonly --dns-digitalocean
           --dns-digitalocean-credentials /root/certbot-creds.ini
           --non-interactive --agree-tos --email {{ env.CERTBOT_EMAIL }}
           --cert-name btarr.xyz --keep-until-expiring
@@ -44,9 +74,9 @@
           set -euo pipefail
           systemctl reload nginx
 
-    - name: Ensure certbot timer is enabled and running
+    - name: Ensure snap certbot renew timer is enabled and running
       ansible.builtin.service:
-        name: certbot.timer
+        name: snap.certbot.renew.timer
         state: started
         enabled: true
 
