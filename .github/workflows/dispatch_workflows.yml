@@ -54,8 +54,8 @@ jobs:
       - terraform_backend
     if: |
       always() &&
-      needs.parse_changes.outputs.btarr_xyz == 'true' &&
-      (needs.terraform_backend.result == 'success' || needs.terraform_backend.result == 'skipped')
+      (needs.parse_changes.outputs.btarr_xyz == 'true' && needs.terraform_backend.result == 'skipped') ||
+      needs.terraform_backend.result == 'success'
     permissions:
       id-token: write
       contents: read
@@ -68,7 +68,7 @@ jobs:
       - btarr_xyz
     if: |
       always() &&
-      needs.parse_changes.outputs.stack_task == 'true' &&
-      (needs.btarr_xyz.result == 'success' || needs.btarr_xyz.result == 'skipped')
+      (needs.parse_changes.outputs.stack_task == 'true' && needs.btarr_xyz.result == 'skipped') ||
+      needs.btarr_xyz.result == 'success'
     uses: ./.github/workflows/stack_task.yml
     secrets: inherit
