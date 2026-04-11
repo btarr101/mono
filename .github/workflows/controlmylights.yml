@@ -1,0 +1,72 @@
+on:
+  workflow_call: {}
+  workflow_dispatch: {}
+  
+jobs:
+  build_server:
+    name: 🔨 Build controlmylights server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            Cargo.lock
+            apps/controlmylights/controlmylights_server
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/controlmylights/controlmylights_server/target
+          key: ${{ runner.os }}-controlmylights-${{ hashFiles('Cargo.lock') }}
+
+      - name: Use root lockfile
+        run: cp Cargo.lock ./apps/controlmylights/controlmylights_server/Cargo.lock
+
+      - run: cargo build --verbose --release --locked
+        working-directory: ./apps/controlmylights/controlmylights_server
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: controlmylights_server
+          path: ./apps/controlmylights/controlmylights_server/target/release/controlmylights_server
+
+  deploy:
+    name: 🚀 Deploy controlmylights server
+    if: github.ref == 'refs/heads/main' || true
+    runs-on: ubuntu-latest
+    environment: prod
+    needs:
+      - build_server
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: controlmylights_server
+
+      - name: Upload new binary
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: btarr.xyz
+          username: deployer
+          key: ${{ secrets.DEPLOYER_SSH_PRIVATE_KEY }}
+          source: ./controlmylights_server
+          target: /tmp/controlmylights/
+          overwrite: true
+
+      - name: Install new binary and restart service
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: btarr.xyz
+          username: deployer
+          key: ${{ secrets.DEPLOYER_SSH_PRIVATE_KEY }}
+          script: |
+            set -eu
+            sudo mkdir -p /opt/controlmylights/bin
+            sudo install -m 755 /tmp/controlmylights/controlmylights_server /opt/controlmylights/bin/controlmylights
+            rm -rf /tmp/controlmylights
+            sudo systemctl restart controlmylights.service
+            sudo systemctl is-active controlmylights.service
+  
