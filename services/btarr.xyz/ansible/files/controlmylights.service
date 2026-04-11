@@ -13,3 +13,6 @@ RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
+
+# TODO: INSTALL THIS SOMEWHERE
+# TODO: SET UP HTTPS

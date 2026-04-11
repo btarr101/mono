@@ -3,20 +3,54 @@
   become: true
 
   tasks:
-    - name: Install nginx
+    - name: Install nginx and certbot packages
       ansible.builtin.apt:
-        name: nginx
+        name:
+          - nginx
+          - certbot
+          - python3-certbot-dns-digitalocean
         state: present
         update_cache: true
         cache_valid_time: 3600
 
-    - name: Ensure nginx is enabled and running
+    - name: Write DigitalOcean credentials for certbot DNS challenge
+      ansible.builtin.copy:
+        dest: /root/certbot-creds.ini
+        owner: root
+        group: root
+        mode: "0600"
+        content: |
+          dns_digitalocean_token = {{ env.DIGITALOCEAN_TOKEN }}
+
+    - name: Request or renew wildcard Let's Encrypt certificate via DNS challenge
+      ansible.builtin.command:
+        cmd: >-
+          certbot certonly --dns-digitalocean
+          --dns-digitalocean-credentials /root/certbot-creds.ini
+          --non-interactive --agree-tos --email {{ env.CERTBOT_EMAIL }}
+          --cert-name btarr.xyz --keep-until-expiring
+          -d *.btarr.xyz
+      register: output
+      changed_when: "'Certificate not yet due for renewal' not in output.stdout"
+
+    - name: Install certbot deploy hook to reload nginx after renewals
+      ansible.builtin.copy:
+        dest: /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+        owner: root
+        group: root
+        mode: "0755"
+        content: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          systemctl reload nginx
+
+    - name: Ensure certbot timer is enabled and running
       ansible.builtin.service:
-        name: nginx
+        name: certbot.timer
         state: started
         enabled: true
 
-    - name: Deploy nginx virtual host config
+    - name: Deploy nginx config
       ansible.builtin.copy:
         src: "{{ files }}/nginx.conf"
         dest: /etc/nginx/conf.d/btarr.xyz.conf
@@ -25,9 +59,11 @@
         mode: "0644"
       notify: nginx config changed
 
-    - name: Validate nginx configuration
-      ansible.builtin.command: nginx -t
-      changed_when: false
+    - name: Ensure nginx is enabled and running
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
 
   handlers:
     - name: Validate nginx configuration
