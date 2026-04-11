@@ -16,6 +16,7 @@ jobs:
     outputs:
       terraform_backend: ${{ steps.filter.outputs.terraform_backend }}
       btarr_xyz: ${{ steps.filter.outputs.btarr_xyz }}
+      stack_task: ${{ steps.filter.outputs.stack_task }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,11 +31,15 @@ jobs:
             terraform_backend:
               - 'services/terraform-backend/**'
               - '.github/workflows/deploy.yml'
-              - '.github/workflows/deploy_terraform_backend.yml'
+              - '.github/workflows/terraform_backend.yml'
             btarr_xyz:
               - 'services/btarr.xyz/**'
               - '.github/workflows/deploy.yml'
-              - '.github/workflows/deploy_btarr_xyz.yml'
+              - '.github/workflows/btarr_xyz.yml'
+            stack_task:
+              - 'apps/StackTask/**'
+              - '.github/workflows/deploy.yml'
+              - '.github/workflows/stack_task.yml'
 
 
   terraform_backend:
@@ -58,4 +63,15 @@ jobs:
       id-token: write
       contents: read
     uses: ./.github/workflows/btarr_xyz.yml
+    secrets: inherit
+
+  stack_task:
+    needs:
+      - parse_changes
+      - btarr_xyz
+    if: |
+      always() &&
+      needs.parse_changes.outputs.stack_task == 'true' &&
+      (needs.btarr_xyz.result == 'success' || needs.btarr_xyz.result == 'skipped')
+    uses: ./.github/workflows/stack_task.yml
     secrets: inherit
