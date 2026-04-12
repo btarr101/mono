@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use axum::{
     Router,
@@ -52,7 +52,17 @@ async fn get_ws(
             let mut rx_task = tokio::spawn(ws_rx_handler(rx, tx.clone(), leds.clone()).instrument(rx_span));
 
             let tx_span = info_span!("tx", ws_client_id = ws_client_id.to_string(), colors_only, snapshot_interval);
-            let mut tx_task = tokio::spawn(ws_tx_handler(tx, leds, WsTxHandlerOptions::default()).instrument(tx_span));
+            let mut tx_task = tokio::spawn(
+                ws_tx_handler(
+                    tx,
+                    leds,
+                    WsTxHandlerOptions {
+                        colors_only,
+                        snapshot_interval: Duration::from_millis(snapshot_interval),
+                    },
+                )
+                .instrument(tx_span),
+            );
 
             tokio::select! {
                 _ = &mut rx_task => tx_task.abort(),

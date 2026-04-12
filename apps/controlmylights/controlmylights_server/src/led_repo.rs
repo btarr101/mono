@@ -85,6 +85,7 @@ impl LedRepo {
         let mut leds = self.leds.lock().await;
         let led = leds.get_mut(id).ok_or(LedRepoError::OutOfBounds(id))?;
         led.color = color;
+        led.last_updated = Utc::now();
         self.generation.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
         Ok(*led)
     }

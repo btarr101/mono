@@ -1,4 +1,4 @@
-"""Custom Ansible Lookup Plugin for reading dotenv files.
+"""Custom Ansible Lookup Plugin for reading dotenv files. (modified)
 
 Ansible officially supports Python 2.7 and 3.5+, but this requires Python 3.8+.
 
@@ -25,7 +25,7 @@ DOCUMENTATION = """
     - Michael Klatt <mdklatt(at)alumni.ou.edu>
   short_description: Retrieve values from dotenv files
   requirements:
-    - Anisble must be running under Python 3.8+.
+    - Ansible must be running under Python 3.8+.
   description:
     - Retrieve values from dotenv values.
   seealso:
@@ -83,19 +83,20 @@ class LookupModule(LookupBase):  # class name is not arbitrary, DO NOT CHANGE
         var_pattern = compile(r"^\s*([a-zA-Z_]+[a-zA-Z0-9_]*)\s*=\s*(.*)\s*$")
         dotenv_values = {}
         if path:
-            for line in open(path, "rt").readlines():
-                # Parse the dotenv file permissively, accepting valid NAME=VALUE
-                # lines while ignoring everything else.
-                # TODO: Support RFC 2 line continuation syntax.
-                if match := var_pattern.match(line):
-                    value = match.group(2).strip()
-                    if (
-                        len(value) >= 2
-                        and value[0] == value[-1]
-                        and value[0] in ('"', "'")
-                    ):
-                        value = value[1:-1]
-                    dotenv_values[match.group(1)] = value
+            with open(path, "rt") as file:
+                for line in file.readlines():
+                    # Parse the dotenv file permissively, accepting valid NAME=VALUE
+                    # lines while ignoring everything else.
+                    # TODO: Support RFC 2 line continuation syntax.
+                    if match := var_pattern.match(line):
+                        value = match.group(2).strip()
+                        if (
+                            len(value) >= 2
+                            and value[0] == value[-1]
+                            and value[0] in ('"', "'")
+                        ):
+                            value = value[1:-1]
+                        dotenv_values[match.group(1)] = value
 
         resolved_values = []
         for key in terms:
