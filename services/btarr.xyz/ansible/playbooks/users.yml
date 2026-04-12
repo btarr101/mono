@@ -3,11 +3,18 @@
   become: true
 
   tasks:
+    - name: Ensure generic service user exists
+      ansible.builtin.user:
+        name: svc
+        system: true
+        shell: /usr/sbin/nologin
+        create_home: false
+
     - name: Ensure deployer user exists
       ansible.builtin.user:
         name: deployer
         shell: /bin/bash
-        groups: sudo
+        groups: sudo,svc
         append: true
 
     - name: Install SSH key for deployer

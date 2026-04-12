@@ -6,13 +6,10 @@ After=network.target
 Type=simple
 EnvironmentFile=/opt/controlmylights/.env
 ExecStart=/opt/controlmylights/bin/controlmylights
-User=btarr
+User=svc
 WorkingDirectory=/opt/controlmylights
 Restart=always
 RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
-
-# TODO: INSTALL THIS SOMEWHERE
-# TODO: SET UP HTTPS
