@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-EnvironmentFile=/opt/controlmylights/.env
+EnvironmentFile=-/opt/controlmylights/.env
 ExecStart=/opt/controlmylights/bin/controlmylights
 User=svc
 WorkingDirectory=/opt/controlmylights
