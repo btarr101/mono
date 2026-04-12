@@ -31,7 +31,7 @@ jobs:
 
   deploy:
     name: 🚀 Deploy StackTask
-    if: github.ref == 'refs/heads/main' || true
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: prod
     needs:
