@@ -1,0 +1,47 @@
+on:
+  workflow_call: {}
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    name: Deploy 🚀 btarr.xyz infrastructure 🏗️
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: services/btarr.xyz
+
+      - uses: hashicorp/setup-terraform@v4
+
+      - name: Install ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Set up SSH key for Ansible
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
+          name: ansible
+          known_hosts: unnecessary
+
+      # We need AWS credentials for terraform to access the S3 backend
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.DEPLOYER_AWS_ROLE_ARN }}
+          aws-region: us-west-1
+
+      - name: Deploy btarr.xyz
+        working-directory: services/btarr.xyz
+        env:
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+          DEPLOYER_SSH_PUBLIC_KEY: ${{ vars.DEPLOYER_SSH_PUBLIC_KEY }}
+          BTARR_SSH_PUBLIC_KEY: ${{ vars.BTARR_SSH_PUBLIC_KEY }}
+          CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
+        run: ./deploy.sh
+

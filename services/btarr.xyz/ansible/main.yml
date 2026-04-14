@@ -1,0 +1,11 @@
+- name: Set up users
+  import_playbook: playbooks/users.yml
+
+- name: Install necessary tools
+  import_playbook: playbooks/tools.yml
+
+- name: Set up custom services
+  import_playbook: playbooks/services.yml
+
+- name: Nginx setup for btarr.xyz
+  import_playbook: playbooks/nginx.yml

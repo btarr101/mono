@@ -1,0 +1,95 @@
+name: 🪐 Dispatch Workflows
+
+on:
+  workflow_dispatch:
+  push:
+
+concurrency:
+  group: ${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  parse_changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      terraform_backend: ${{ steps.filter.outputs.terraform_backend }}
+      btarr_xyz: ${{ steps.filter.outputs.btarr_xyz }}
+      stack_task: ${{ steps.filter.outputs.stack_task }}
+      controlmylights: ${{ steps.filter.outputs.controlmylights }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed deployment areas
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          base: ${{ github.ref_name }}
+          filters: |
+            terraform_backend:
+              - 'services/terraform-backend/**'
+              - '.github/workflows/terraform_backend.yml'
+            btarr_xyz:
+              - 'services/btarr.xyz/**'
+              - '.github/workflows/btarr_xyz.yml'
+            stack_task:
+              - 'apps/StackTask/**'
+              - '.github/workflows/stack_task.yml'
+            controlmylights:
+              - 'apps/controlmylights/**'
+              - '.github/workflows/controlmylights.yml'
+
+
+  terraform_backend:
+    needs: parse_changes
+    if: always() && needs.parse_changes.outputs.terraform_backend == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/terraform_backend.yml
+    secrets: inherit
+
+  btarr_xyz:
+    needs:
+      - parse_changes
+      - terraform_backend
+    if: |
+      always() &&
+      (
+        (needs.parse_changes.outputs.btarr_xyz == 'true' && needs.terraform_backend.result == 'skipped') ||
+        needs.terraform_backend.result == 'success'
+      )
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/btarr_xyz.yml
+    secrets: inherit
+
+  stack_task:
+    needs:
+      - parse_changes
+      - btarr_xyz
+    if: |
+      always() &&
+      (
+        (needs.parse_changes.outputs.stack_task == 'true' && needs.btarr_xyz.result == 'skipped') ||
+        needs.btarr_xyz.result == 'success'
+      )
+    uses: ./.github/workflows/stack_task.yml
+    secrets: inherit
+
+  controlmylights:
+    needs:
+      - parse_changes
+      - btarr_xyz
+    if: |
+      always() &&
+      (
+        (needs.parse_changes.outputs.controlmylights == 'true' && needs.btarr_xyz.result == 'skipped') ||
+        needs.btarr_xyz.result == 'success'
+      )
+    uses: ./.github/workflows/controlmylights.yml
+    secrets: inherit

@@ -1,0 +1,11 @@
+- name: Install necessary tools
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install rsync
+      ansible.builtin.apt:
+        name: rsync
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
