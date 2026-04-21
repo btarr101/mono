@@ -1,0 +1,6 @@
+.palette-picker .react-colorful-pointer {
+  box-shadow: none !important;
+  border: 2px solid #ffffff !important;
+  outline: 2px solid black;
+  outline-offset: 0;
+}

@@ -1,52 +1,33 @@
 import type { Color } from '../types'
 import { buildContext } from '../util/buildContext'
 
-export type Splotch = {
+export type Led = {
   readonly color: Color
   readonly setColor: (color: Color) => void
-  readonly active: boolean
-  readonly setActive: () => void
 }
 
 export type EaselStore = {
-  readonly splotches: Splotch[]
-  readonly activeSplotch: Splotch | null
+  readonly leds: Led[]
 }
 
 export type EaselProviderProps = {
-  initialSplotchColors: Color[]
+  initialLedAttributes: {
+    color: Color
+  }[]
 }
 
 export const { StoreProvider: EaselProvider, useStoreContext: useEasel } = buildContext<
   EaselStore,
   EaselProviderProps
->((set, { initialSplotchColors }) => {
-  const splotches = initialSplotchColors.map((color, index) => ({
+>((set, _, { initialLedAttributes: ledAttributes }) => ({
+  leds: ledAttributes.map(({ color }, index) => ({
     color,
-    setColor: (color: Color) =>
-      set(({ splotches }) => ({
-        splotches: splotches.map((splotch, subIndex) => ({
-          ...splotch,
-          color: subIndex === index ? color : splotch.color,
+    setColor: color =>
+      set(({ leds }) => ({
+        leds: leds.map((led, subIndex) => ({
+          ...led,
+          color: subIndex === index ? color : led.color,
         })),
       })),
-    active: index === 0, // default the first splotch to active
-    setActive: () =>
-      set(({ splotches }) => {
-        const newSplotches = splotches.map((splotch, subIndex) => ({
-          ...splotch,
-          active: index === subIndex,
-        }))
-
-        return {
-          activeSplotch: newSplotches.find(({ active }) => active) ?? null,
-          splotches: newSplotches,
-        }
-      }),
-  }))
-
-  return {
-    activeSplotch: splotches.find(({ active }) => active) ?? null,
-    splotches,
-  }
-})
+  })),
+}))
