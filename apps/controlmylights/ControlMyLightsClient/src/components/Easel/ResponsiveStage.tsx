@@ -1,7 +1,7 @@
 import {
   type ComponentPropsWithoutRef,
   type PropsWithChildren,
-  useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from 'react'
@@ -26,20 +26,20 @@ export const ResponsiveStage = ({
   const [stageSize, setStageSize] = useState({
     width: 0,
     height: 0,
-    scaleX: 0,
-    scaleY: 0,
+    scale: 0,
   })
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const onResize = () => {
       if (!container.current) return
       const containerWidth = container.current.offsetWidth
       const containerHeight = container.current.offsetHeight
+      const scale = Math.min(containerWidth / sceneWidth, containerHeight / sceneHeight)
+
       setStageSize({
-        width: containerWidth,
-        height: containerHeight,
-        scaleX: containerWidth / sceneWidth,
-        scaleY: containerHeight / sceneHeight,
+        width: sceneWidth * scale,
+        height: sceneHeight * scale,
+        scale,
       })
     }
 
@@ -52,12 +52,18 @@ export const ResponsiveStage = ({
     return () => observer.disconnect()
   }, [sceneHeight, sceneWidth])
 
+  const { style: divStyle, ...restDivProps } = divProps ?? {}
+
   return (
-    <div ref={container} {...divProps}>
+    <div
+      ref={container}
+      style={{ alignItems: 'center', display: 'flex', justifyContent: 'center', ...divStyle }}
+      {...restDivProps}
+    >
       <Stage
         height={stageSize.height}
-        scaleX={stageSize.scaleX}
-        scaleY={stageSize.scaleY}
+        scaleX={stageSize.scale}
+        scaleY={stageSize.scale}
         width={stageSize.width}
         {...stageProps}
       >

@@ -3,6 +3,7 @@ import { viteImage } from '@son426/vite-image'
 import tailwindcss from '@tailwindcss/vite'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { qrcode } from 'vite-plugin-qrcode'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -15,5 +16,6 @@ export default defineConfig({
         extensions: ['.jpg'],
       },
     }),
+    qrcode(),
   ],
 })
