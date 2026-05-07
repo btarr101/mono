@@ -3,12 +3,19 @@ import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Vector2d } from 'konva/lib/types'
 import { useMemo } from 'react'
 import { Circle, Layer, Stage } from 'react-konva'
-import useMeasure from 'react-use-measure'
 
 import { EASEL_IMAGE } from '../../constants'
 import { useEasel } from '../../contexts/EaselContext'
 import { usePalette } from '../../contexts/PaletteContext'
 import type { Color } from '../../types'
+
+export type EaselProps = {
+  stageSize?: {
+    width: number
+    height: number
+    scale: number
+  }
+}
 
 const pad = 32
 const positions = Array.from({ length: 24 }).flatMap((_, row) =>
@@ -23,58 +30,68 @@ const positions = Array.from({ length: 24 }).flatMap((_, row) =>
   })),
 )
 
-export const Easel = () => {
+export const Easel = ({ stageSize }: EaselProps) => {
   const { splotches } = usePalette()
   const activeSplotch = splotches.find(({ active }) => active) ?? null
   const { leds } = useEasel()
 
-  const [ref, bounds] = useMeasure({
-    scroll: false,
-  })
-
-  const scale = useMemo(
+  const stageScale = useMemo(
     () =>
-      bounds.width !== null && bounds.height !== null
+      stageSize
         ? ({
-            x: bounds.width / EASEL_IMAGE.width,
-            y: bounds.height / EASEL_IMAGE.height,
+            x: stageSize.scale,
+            y: stageSize.scale,
           } satisfies Vector2d)
         : undefined,
-    [bounds.height, bounds.width],
+    [stageSize],
   )
 
   return (
-    // overflow-clip is just to prevent the background image from clipping over the rounded borders
-    <div className="relative w-full h-full border-3 rounded-md overflow-clip" ref={ref}>
-      <Image draggable={false} fill={true} placeholder="blur" priority={true} src={EASEL_IMAGE} />
-      {/* TODO: decide whether to keep dynamic scale vs fixed stage sizing */}
-      <Stage
-        className="absolute left-0 right-0 top-0 bottom-0"
-        height={EASEL_IMAGE.height}
-        scale={scale}
-        width={EASEL_IMAGE.width}
-      >
-        <Layer>
-          {leds.map(({ color, setColor }, index) => {
-            const position = positions[index]
-            if (!position) return null
+    <div className="flex h-full w-full min-h-0 min-w-0 items-center justify-center">
+      {stageSize ? (
+        <div
+          className="relative overflow-clip rounded-2xl shadow-2xl"
+          style={{
+            height: stageSize.height,
+            width: stageSize.width,
+          }}
+        >
+          <Image
+            draggable={false}
+            fill={true}
+            placeholder="blur"
+            priority={true}
+            src={EASEL_IMAGE}
+          />
+          <Stage
+            className="absolute left-0 right-0 top-0 bottom-0"
+            height={EASEL_IMAGE.height}
+            scale={stageScale}
+            width={EASEL_IMAGE.width}
+          >
+            <Layer>
+              {leds.map(({ color, setColor }, index) => {
+                const position = positions[index]
+                if (!position) return null
 
-            return (
-              <LedGlow
-                color={color}
-                key={index}
-                x={position.x}
-                y={position.y}
-                onPointerMove={event => {
-                  if (event.evt.buttons > 0 && activeSplotch) {
-                    setColor(activeSplotch.color)
-                  }
-                }}
-              />
-            )
-          })}
-        </Layer>
-      </Stage>
+                return (
+                  <LedGlow
+                    color={color}
+                    key={index}
+                    x={position.x}
+                    y={position.y}
+                    onPointerMove={event => {
+                      if (event.evt.buttons > 0 && activeSplotch) {
+                        setColor(activeSplotch.color)
+                      }
+                    }}
+                  />
+                )
+              })}
+            </Layer>
+          </Stage>
+        </div>
+      ) : null}
     </div>
   )
 }
