@@ -3,8 +3,7 @@ import { createStore, type StateCreator, type StoreApi } from 'zustand'
 
 type StoreSet<T> = Parameters<StateCreator<T>>[0]
 type StoreGet<T> = Parameters<StateCreator<T>>[1]
-export type EmptyProps = Record<string, never>
-
+export type EmptyProps = object
 export type StoreBuilder<Store, ProviderProps = EmptyProps> = (
   set: StoreSet<Store>,
   get: StoreGet<Store>,

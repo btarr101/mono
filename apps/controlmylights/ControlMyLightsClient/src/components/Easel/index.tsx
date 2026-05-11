@@ -6,7 +6,7 @@ import { Circle, Layer, Stage } from 'react-konva'
 
 import { EASEL_IMAGE } from '../../constants'
 import { useEasel } from '../../contexts/EaselContext'
-import { usePalette } from '../../contexts/PaletteContext'
+import { usePaletteActiveSplotch } from '../../contexts/PaletteContext'
 import type { Color } from '../../types'
 
 export type EaselProps = {
@@ -31,9 +31,8 @@ const positions = Array.from({ length: 24 }).flatMap((_, row) =>
 )
 
 export const Easel = ({ stageSize }: EaselProps) => {
-  const { splotches } = usePalette()
-  const activeSplotch = splotches.find(({ active }) => active) ?? null
-  const { leds } = useEasel()
+  const { activeSplotch } = usePaletteActiveSplotch()
+  const { leds, setLed } = useEasel()
 
   const stageScale = useMemo(
     () =>
@@ -70,7 +69,7 @@ export const Easel = ({ stageSize }: EaselProps) => {
             width={EASEL_IMAGE.width}
           >
             <Layer>
-              {leds.map(({ color, setColor }, index) => {
+              {leds.map(({ color }, index) => {
                 const position = positions[index]
                 if (!position) return null
 
@@ -81,9 +80,10 @@ export const Easel = ({ stageSize }: EaselProps) => {
                     x={position.x}
                     y={position.y}
                     onPointerMove={event => {
-                      if (event.evt.buttons > 0 && activeSplotch) {
-                        setColor(activeSplotch.color)
-                      }
+                      if (!activeSplotch) return
+                      if (!event.evt.buttons) return
+
+                      setLed(index, activeSplotch.color)
                     }}
                   />
                 )

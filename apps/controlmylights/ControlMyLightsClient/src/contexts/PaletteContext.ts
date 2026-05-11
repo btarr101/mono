@@ -1,23 +1,23 @@
 import type { Color } from '../types'
 import { buildContext } from '../util/buildContext'
+import { buildUseStoreState } from '../util/buildContext/util'
 
 export type Splotch = {
-  readonly color: Color
-  readonly setColor: (color: Color) => void
-  readonly active: boolean
-  readonly setActive: () => void
+  color: Color
 }
 
 export type PaletteStore = {
-  readonly splotches: Splotch[]
-  readonly activeSplotch: Splotch | null
+  splotches: Splotch[]
+  activeSplotchIndex?: number
+  setSplotchColor: (index: number, color: Color) => void
+  setActiveSplotchIndex: (index: number) => void
 }
 
 export type PaletteProviderProps = {
   initialSplotchColors: Color[]
 }
 
-export const { StoreProvider: PaletteProvider, useStoreContext: usePalette } = buildContext<
+const { StoreProvider: PaletteProvider, useStoreApi: usePaletteApi } = buildContext<
   PaletteStore,
   PaletteProviderProps
 >((set, _, { initialSplotchColors }) => {
@@ -29,28 +29,44 @@ export const { StoreProvider: PaletteProvider, useStoreContext: usePalette } = b
       })),
     }))
 
-  const setActiveSplotch = (index: number) =>
-    set(({ splotches }) => {
-      const newSplotches = splotches.map((splotch, subIndex) => ({
-        ...splotch,
-        active: index === subIndex,
-      }))
+  const setActiveSplotchIndex = (index: number) => set({ activeSplotchIndex: index })
 
-      return {
-        activeSplotch: newSplotches.find(({ active }) => active) ?? null,
-        splotches: newSplotches,
-      }
-    })
-
-  const splotches = initialSplotchColors.map((color, index) => ({
+  const splotches = initialSplotchColors.map(color => ({
     color,
-    setColor: (newColor: Color) => setSplotchColor(index, newColor),
-    active: index === 0, // default the first splotch to active
-    setActive: () => setActiveSplotch(index),
   }))
 
   return {
-    activeSplotch: splotches.find(({ active }) => active) ?? null,
+    activeSplotchIndex: 0,
+    setActiveSplotchIndex,
+    setSplotchColor,
     splotches,
   }
 })
+
+const usePalette = buildUseStoreState(usePaletteApi)
+
+export { PaletteProvider, usePalette }
+
+export const usePaletteSplotches = () => usePalette(state => state.splotches)
+
+export const usePaletteActiveSplotch = () => {
+  const activeSplotchIndex = usePalette(state => state.activeSplotchIndex)
+  const splotches = usePaletteSplotches()
+
+  const activeSplotch = activeSplotchIndex !== undefined ? splotches[activeSplotchIndex] : undefined
+
+  return {
+    activeSplotchIndex,
+    activeSplotch,
+  }
+}
+
+export const usePaletteActions = () => {
+  const setActiveSpotchIndex = usePalette(state => state.setActiveSplotchIndex)
+  const setSplotchColor = usePalette(state => state.setSplotchColor)
+
+  return {
+    setActiveSpotchIndex,
+    setSplotchColor,
+  }
+}

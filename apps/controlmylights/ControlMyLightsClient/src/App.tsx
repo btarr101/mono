@@ -4,8 +4,10 @@ import useMeasure from 'react-use-measure'
 import { match } from 'ts-pattern'
 
 import { Easel } from './components/Easel'
+import { LedSyncher } from './components/LedSyncher'
 import { Palette } from './components/Palette'
 import { EASEL_IMAGE } from './constants'
+import { ApiProvider } from './contexts/ApiContext/ApiProvider'
 import { EaselProvider } from './contexts/EaselContext'
 import { PaletteProvider } from './contexts/PaletteContext'
 
@@ -15,9 +17,7 @@ const initialSplotchColors = Array.from({ length: 9 }).map(() => ({
   blue: Math.random() * 255,
 }))
 
-const initialLedAttributes = Array.from({ length: 24 * 48 }).map(() => ({
-  color: { red: 0, green: 0, blue: 0 },
-}))
+const initialLedColors = Array.from({ length: 24 * 48 }).map(() => ({ red: 0, green: 0, blue: 0 }))
 
 const Background = () => (
   <>
@@ -121,8 +121,11 @@ export const App = () => {
               >
                 <Palette orientation={orientation === 'horizontal' ? 'vertical' : 'horizontal'} />
               </div>
-              <EaselProvider initialLedAttributes={initialLedAttributes}>
+              <EaselProvider initialColors={initialLedColors}>
                 <Easel stageSize={easelStageSize} />
+                <ApiProvider>
+                  <LedSyncher />
+                </ApiProvider>
               </EaselProvider>
             </div>
           </div>

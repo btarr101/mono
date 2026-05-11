@@ -3,16 +3,20 @@ import 'react-beautiful-color/dist/react-beautiful-color.css'
 
 import { ColorPicker } from 'react-beautiful-color'
 
-import { usePalette } from '../../contexts/PaletteContext'
+import {
+  usePaletteActions,
+  usePaletteActiveSplotch,
+  usePaletteSplotches,
+} from '../../contexts/PaletteContext'
 
 export type PaletteProps = {
   orientation?: 'vertical' | 'horizontal'
 }
 
 export const Palette = ({ orientation = 'horizontal' }: PaletteProps) => {
-  // I have no idea why, but using activeSplotch here does not cause freezes,
-  // while using it with the easel does
-  const { activeSplotch, splotches } = usePalette()
+  const splotches = usePaletteSplotches()
+  const { activeSplotchIndex, activeSplotch } = usePaletteActiveSplotch()
+  const { setSplotchColor, setActiveSpotchIndex } = usePaletteActions()
 
   return (
     <div
@@ -34,12 +38,10 @@ export const Palette = ({ orientation = 'horizontal' }: PaletteProps) => {
               : undefined
           }
           onChange={color => {
-            const { r, g, b } = color.getRgb()
-            activeSplotch?.setColor({
-              red: r,
-              green: g,
-              blue: b,
-            })
+            if (activeSplotchIndex === undefined) return
+
+            const { r: red, g: green, b: blue } = color.getRgb()
+            setSplotchColor(activeSplotchIndex, { red, green, blue })
           }}
         >
           <ColorPicker.Saturation
@@ -55,12 +57,12 @@ export const Palette = ({ orientation = 'horizontal' }: PaletteProps) => {
       >
         {splotches.map((splotch, index) => (
           <div
-            className={`aspect-square border-5 border-white shadow-lg rounded-full cursor-pointer transition-transform ${splotch.active ? 'scale-110 outline-2 outline-black' : ''}`}
+            className={`aspect-square border-5 border-white shadow-lg rounded-full cursor-pointer transition-transform ${index === activeSplotchIndex ? 'scale-110 outline-2 outline-black' : ''}`}
             key={index}
             style={{
               backgroundColor: `rgb(${splotch.color.red},${splotch.color.green},${splotch.color.blue})`,
             }}
-            onClick={splotch.setActive}
+            onClick={() => setActiveSpotchIndex(index)}
           />
         ))}
       </div>

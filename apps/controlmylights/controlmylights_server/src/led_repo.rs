@@ -22,7 +22,7 @@ impl Color {
     };
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Debug)]
 pub struct Led {
     pub color: Color,
     pub last_updated: DateTime<Utc>,
@@ -49,6 +49,7 @@ impl From<Led> for [u8; 11] {
     }
 }
 
+#[derive(Debug)]
 pub struct LedSnapshot {
     pub generation: usize,
     pub leds: Vec<Led>,
