@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { Stage, type StageProps } from 'react-konva'
+import { Stage, type StageProps } from 'react-konva/lib/ReactKonvaCore'
 
 type ResponsiveStageProps = PropsWithChildren<{
   sceneWidth: number

@@ -1,8 +1,10 @@
+import 'konva/lib/shapes/Circle'
+
 import Image from '@son426/vite-image/react'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Vector2d } from 'konva/lib/types'
 import { useMemo } from 'react'
-import { Circle, Layer, Stage } from 'react-konva'
+import { Circle, Layer, Stage } from 'react-konva/lib/ReactKonvaCore'
 
 import { EASEL_IMAGE } from '../../constants'
 import { useEasel } from '../../contexts/EaselContext'

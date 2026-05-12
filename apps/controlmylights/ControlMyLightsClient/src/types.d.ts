@@ -3,3 +3,13 @@ export type Color = {
   green: number
   blue: number
 }
+
+export type LedLastUpdated = {
+  source: 'client' | 'server'
+  timestamp: Date
+}
+
+export type Led = {
+  color: Color
+  lastUpdated?: LedLastUpdated
+}

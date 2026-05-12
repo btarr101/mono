@@ -1,12 +1,13 @@
 import { chunk } from 'lodash-es'
 import { type PropsWithChildren, useCallback, useEffect, useState } from 'react'
 import { useWebSocket } from 'react-use-websocket/dist/lib/use-websocket.js'
+import { createStore } from 'zustand'
 
-import type { Color } from '../../types'
-import { ApiContext, type Led } from '.'
+import type { Color, Led } from '../../types'
+import { ApiContext, type LatestLedsStore } from '.'
 
 export const ApiProvider = ({ children }: PropsWithChildren) => {
-  const [latestLeds, setLatestLeds] = useState<Led[]>()
+  const [latestLedsStore] = useState(() => createStore<LatestLedsStore>()(() => ({})))
 
   const { sendMessage, lastMessage } = useWebSocket(
     `${import.meta.env.VITE_API_BASE_URL}/leds/ws`,
@@ -21,14 +22,8 @@ export const ApiProvider = ({ children }: PropsWithChildren) => {
     },
   )
 
-  const sendUpdate = useCallback(
+  const sendLedUpdate = useCallback(
     (id: number, color: Color) => {
-      console.log(import.meta.env.VITE_API_BASE_URL)
-      console.debug('Sending update...', {
-        id,
-        color,
-      })
-
       // ------------------------------------------------------
       // |  Byte 0 - Byte 1  |  Byte 2  |  Byte 3  |  Byte 4  |
       // ------------------------------------------------------
@@ -55,26 +50,27 @@ export const ApiProvider = ({ children }: PropsWithChildren) => {
         // |    R     |    G     |    B     |      Timestamp       |
         // ---------------------------------------------------------
         const dataView = new DataView(new Uint8Array(timestampBytes).buffer)
-        const lastUpdated = new Date(Number(dataView.getBigUint64(0, false)) * 1000)
+        const timestamp = new Date(Number(dataView.getBigUint64(0, false)) * 1000)
         return {
           color: { red: red ?? 0, green: green ?? 0, blue: blue ?? 0 },
-          lastUpdated,
-        }
+          lastUpdated: {
+            source: 'server',
+            timestamp,
+          },
+        } satisfies Led
       })
 
-      console.log({
-        nextLeds,
+      latestLedsStore.setState({
+        leds: nextLeds,
       })
-
-      setLatestLeds(nextLeds)
     })()
-  }, [lastMessage])
+  }, [latestLedsStore, lastMessage])
 
   return (
     <ApiContext.Provider
       value={{
-        latestLeds,
-        sendLedUpdate: sendUpdate,
+        latestLedsStore,
+        sendLedUpdate,
       }}
     >
       {children}
