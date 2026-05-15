@@ -20,6 +20,12 @@ impl Color {
         green: 255,
         blue: 255,
     };
+
+    pub const BLACK: Self = Self {
+        red: 0,
+        green: 0,
+        blue: 0,
+    };
 }
 
 #[derive(Clone, Copy, Default, Debug)]

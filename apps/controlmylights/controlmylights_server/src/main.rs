@@ -34,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
 
     let app = axum::Router::new()
         .nest("/api", api_router::get_router())
-        .with_state(Arc::new(LedRepo::new([Color::WHITE; 1152].into_iter())))
+        .with_state(Arc::new(LedRepo::new([Color::BLACK; 1152].into_iter())))
         .layer(
             CorsLayer::new()
                 .allow_methods(AllowMethods::any())
