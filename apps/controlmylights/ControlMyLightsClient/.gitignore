@@ -8,9 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-# keep dist folder so that controlmylightsserver can build,
-# but ignore everything else in it
-dist/*
+dist
 dist-ssr
 *.local
 

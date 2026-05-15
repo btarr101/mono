@@ -7,6 +7,7 @@ use rust_embed::Embed;
 
 #[derive(Embed)]
 #[folder = "../ControlMyLightsClient/dist"]
+#[allow_missing = true]
 struct ClientAssets;
 
 const INDEX_HTML: &str = "index.html";
