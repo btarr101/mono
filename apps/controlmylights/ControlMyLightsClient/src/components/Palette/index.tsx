@@ -65,6 +65,7 @@ export const Palette = ({ orientation = 'horizontal' }: PaletteProps) => {
             onClick={() => setActiveSpotchIndex(index)}
           />
         ))}
+        {/* TODO SLIDER HERE TO SELECT BRUSH SIZE */}
       </div>
     </div>
   )
