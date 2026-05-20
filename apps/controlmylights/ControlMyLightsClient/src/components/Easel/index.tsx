@@ -1,15 +1,16 @@
 import 'konva/lib/shapes/Circle'
 
 import Image from '@son426/vite-image/react'
-import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Vector2d } from 'konva/lib/types'
-import { useMemo } from 'react'
+import { memo, useCallback, useMemo, useRef, useState } from 'react'
 import { Circle, Layer, Stage } from 'react-konva/lib/ReactKonvaCore'
 
 import { EASEL_IMAGE } from '../../constants'
 import { useEasel } from '../../contexts/EaselContext'
 import { usePaletteActiveSplotch } from '../../contexts/PaletteContext'
-import type { Color } from '../../types'
+import { usePointerPrimaryUpdated } from '../../contexts/PointerContext'
+import type { Color, Position } from '../../types'
+import { divideVectors, getPositionsInStroke } from './util'
 
 export type EaselProps = {
   stageSize?: {
@@ -20,7 +21,7 @@ export type EaselProps = {
 }
 
 const pad = 32
-const positions = Array.from({ length: 24 }).flatMap((_, row) =>
+const positionsAndColors = Array.from({ length: 24 }).flatMap((_, row) =>
   Array.from({ length: 48 }).map((_, col) => ({
     color: {
       red: Math.random() * 255,
@@ -31,11 +32,14 @@ const positions = Array.from({ length: 24 }).flatMap((_, row) =>
     y: pad + ((EASEL_IMAGE.height - pad) / 24) * row,
   })),
 )
+const positions = positionsAndColors.map(({ x, y }) => ({ x, y }))
 
 export const Easel = ({ stageSize }: EaselProps) => {
   const { activeSplotch } = usePaletteActiveSplotch()
   const { leds, setLed } = useEasel()
+  const stageContainerRef = useRef<HTMLDivElement | null>(null)
 
+  // Scaling
   const stageScale = useMemo(
     () =>
       stageSize
@@ -47,11 +51,67 @@ export const Easel = ({ stageSize }: EaselProps) => {
     [stageSize],
   )
 
+  // Drawing
+  const previousPointerStagePositionRef = useRef<Vector2d | null>(null)
+
+  // State used for visuals ONLY
+  const [pointerStagePosition, setPointerStagePosition] = useState<Vector2d | null>(null)
+
+  const handlePaint = useCallback(
+    (primaryDown: boolean, position: Position | null) => {
+      if (!position) return
+
+      const containerRect = stageContainerRef.current?.getBoundingClientRect()
+      if (!containerRect) return
+
+      const stagePosition = divideVectors(
+        {
+          x: position.x - containerRect.left,
+          y: position.y - containerRect.top,
+        },
+        stageScale ?? { x: 1, y: 1 },
+      )
+
+      setPointerStagePosition(stagePosition)
+
+      if (!primaryDown) {
+        previousPointerStagePositionRef.current = null
+        return
+      }
+
+      if (!activeSplotch?.color) return
+
+      const previousPointerPosition = previousPointerStagePositionRef.current
+      previousPointerStagePositionRef.current = stagePosition
+
+      getPositionsInStroke(
+        positions,
+        previousPointerPosition ?? stagePosition,
+        stagePosition,
+      ).forEach(index => setLed(index, activeSplotch.color))
+    },
+    [activeSplotch, setLed, stageScale],
+  )
+
+  usePointerPrimaryUpdated(handlePaint)
+
+  const ledGlows = useMemo(
+    () =>
+      leds.map(({ color }, index) => {
+        const position = positionsAndColors[index]
+        if (!position) return null
+
+        return <LedGlow color={color} key={index} x={position.x} y={position.y} />
+      }),
+    [leds],
+  )
+
   return (
-    <div className="flex h-full w-full min-h-0 min-w-0 items-center justify-center">
+    <div className="flex h-full w-full min-h-0 min-w-0 items-center justify-center pointer-events-none">
       {stageSize ? (
         <div
           className="relative overflow-clip rounded-2xl shadow-2xl"
+          ref={stageContainerRef}
           style={{
             height: stageSize.height,
             width: stageSize.width,
@@ -71,25 +131,16 @@ export const Easel = ({ stageSize }: EaselProps) => {
             width={EASEL_IMAGE.width}
           >
             <Layer>
-              {leds.map(({ color }, index) => {
-                const position = positions[index]
-                if (!position) return null
-
-                return (
-                  <LedGlow
-                    color={color}
-                    key={index}
-                    x={position.x}
-                    y={position.y}
-                    onPointerMove={event => {
-                      if (!activeSplotch) return
-                      if (!event.evt.buttons) return
-
-                      setLed(index, activeSplotch.color)
-                    }}
-                  />
-                )
-              })}
+              {ledGlows}
+              {pointerStagePosition && (
+                <Circle
+                  radius={52}
+                  stroke="black"
+                  strokeWidth={4}
+                  x={pointerStagePosition.x}
+                  y={pointerStagePosition.y}
+                />
+              )}
             </Layer>
           </Stage>
         </div>
@@ -102,10 +153,9 @@ export type LedGlowProps = {
   color: Color
   x: number
   y: number
-  onPointerMove?: (event: KonvaEventObject<PointerEvent>) => void
 }
 
-const LedGlow = ({ color, x, y, onPointerMove }: LedGlowProps) => {
+const LedGlow = memo(({ color, x, y }: LedGlowProps) => {
   const brightness = Math.pow((color.red + color.green + color.blue) / (255 * 3), 0.5)
   return (
     <Circle
@@ -119,11 +169,12 @@ const LedGlow = ({ color, x, y, onPointerMove }: LedGlowProps) => {
       fillRadialGradientEndRadius={52}
       fillRadialGradientStartPoint={{ x: 0, y: 0 }}
       fillRadialGradientStartRadius={0}
-      listening={!!onPointerMove}
+      listening={false}
       radius={52}
       x={x}
       y={y}
-      onPointerMove={onPointerMove}
     />
   )
-}
+})
+
+LedGlow.displayName = 'LedGlow'

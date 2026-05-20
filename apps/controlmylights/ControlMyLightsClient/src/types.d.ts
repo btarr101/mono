@@ -13,3 +13,8 @@ export type Led = {
   color: Color
   lastUpdated?: LedLastUpdated
 }
+
+export type Position = {
+  x: number
+  y: number
+}

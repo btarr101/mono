@@ -10,6 +10,7 @@ import { EASEL_IMAGE } from './constants'
 import { ApiProvider } from './contexts/ApiContext/ApiProvider'
 import { EaselProvider } from './contexts/EaselContext'
 import { PaletteProvider } from './contexts/PaletteContext'
+import { PointerProvider } from './contexts/PointerContext'
 
 const initialSplotchColors = Array.from({ length: 9 }).map(() => ({
   red: Math.random() * 255,
@@ -93,10 +94,11 @@ export const App = () => {
   }, [orientation, layoutBounds.height, layoutBounds.width])
 
   return (
-    <>
+    <PointerProvider>
       <Background />
       <div className="flex h-full w-full max-w-full flex-col p-10 items-center">
         <Header />
+
         <PaletteProvider initialSplotchColors={initialSplotchColors}>
           <div
             className="h-full w-full flex items-center justify-center min-h-96 min-w-64"
@@ -131,6 +133,6 @@ export const App = () => {
           </div>
         </PaletteProvider>
       </div>
-    </>
+    </PointerProvider>
   )
 }

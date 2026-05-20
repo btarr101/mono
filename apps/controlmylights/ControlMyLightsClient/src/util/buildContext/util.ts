@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { type StoreApi, useStore } from 'zustand'
 
 export const buildUseStoreState =
@@ -11,5 +12,8 @@ export const buildUseStoreState =
 
 export const buildUseStoreSubscribe =
   <Store>(useStoreApi: () => StoreApi<Store>) =>
-  (listener: (state: Store, prevState: Store) => void) =>
-    useStoreApi().subscribe(listener)
+  (listener: (state: Store, prevState: Store) => void) => {
+    const storeApi = useStoreApi()
+
+    useEffect(() => storeApi.subscribe(listener), [listener, storeApi])
+  }
