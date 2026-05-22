@@ -7,7 +7,7 @@ export const buildContextAndHooks = <Store>() => {
   const useStoreApi = () => {
     const store = useContext(Context)
     if (!store) {
-      throw new Error(`Missing ${Context.name}`)
+      throw new Error(`Missing zustand context (gl figuring out which one!)`)
     }
 
     return store
