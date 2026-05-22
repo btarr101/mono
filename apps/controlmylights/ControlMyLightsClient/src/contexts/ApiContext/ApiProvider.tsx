@@ -10,7 +10,7 @@ export const ApiProvider = ({ children }: PropsWithChildren) => {
   const [latestLedsStore] = useState(() => createStore<LatestLedsStore>()(() => ({})))
 
   const { sendMessage, lastMessage } = useWebSocket(
-    `${import.meta.env.VITE_API_BASE_URL ?? ''}/leds/ws`,
+    `${import.meta.env.VITE_API_BASE_URL ?? '/api'}/leds/ws`,
     {
       disableJson: true,
       shouldReconnect: () => true,
