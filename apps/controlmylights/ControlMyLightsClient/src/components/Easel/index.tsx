@@ -10,7 +10,7 @@ import { useEasel } from '../../contexts/EaselContext'
 import { usePaletteActiveSplotch, usePaletteBrushScale } from '../../contexts/PaletteContext'
 import { usePointerPrimaryUpdated } from '../../contexts/PointerContext'
 import type { Color, Position } from '../../types'
-import { LED_HITBOX_RADIUS, LED_RADIUS, POSITIONS, POSITIONS_AND_COLORS } from './config'
+import { LED_HITBOX_RADIUS, LED_RADIUS, POSITIONS } from './config'
 import { divideVectors, getPositionsInStroke, lerp } from './util'
 
 export type EaselProps = {
@@ -89,7 +89,7 @@ export const Easel = ({ stageSize }: EaselProps) => {
   const ledGlows = useMemo(
     () =>
       leds.map(({ color }, index) => {
-        const position = POSITIONS_AND_COLORS[index]
+        const position = POSITIONS[index]
         if (!position) return null
 
         return <LedGlow color={color} key={index} x={position.x} y={position.y} />
