@@ -12,10 +12,14 @@ import { EaselProvider } from './contexts/EaselContext'
 import { PaletteProvider } from './contexts/PaletteContext'
 import { PointerProvider } from './contexts/PointerContext'
 
+// If I was a good developer these would be generated lazily depending on if colors
+// were already stored...
+//
+// But generating 9 random colors does not seem like much overhead so just gonna be lazy
 const initialSplotchColors = Array.from({ length: 9 }).map(() => ({
-  red: Math.random() * 255,
-  green: Math.random() * 255,
-  blue: Math.random() * 255,
+  red: Math.floor(Math.random() * 256),
+  green: Math.floor(Math.random() * 256),
+  blue: Math.floor(Math.random() * 256),
 }))
 
 const initialLedColors = Array.from({ length: 24 * 48 }).map(() => ({ red: 0, green: 0, blue: 0 }))
