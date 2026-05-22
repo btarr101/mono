@@ -100,7 +100,7 @@ export const App = () => {
   return (
     <PointerProvider>
       <Background />
-      <div className="flex h-full w-full max-w-full flex-col p-10 items-center">
+      <div className="flex h-full w-full max-w-full flex-col p-10 items-center touch-none">
         <Header />
         <PaletteProvider initialSplotchColors={initialSplotchColors}>
           <div

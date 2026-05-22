@@ -98,7 +98,7 @@ export const Easel = ({ stageSize }: EaselProps) => {
   )
 
   return (
-    <div className="items-center justify-center pointer-events-none touch-none select-none overscroll-none">
+    <div className="items-center justify-center  select-none overscroll-none touch-none">
       {stageSize ? (
         <div
           className="relative overflow-clip rounded-2xl shadow-2xl"

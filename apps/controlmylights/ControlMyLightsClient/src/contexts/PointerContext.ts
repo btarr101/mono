@@ -26,23 +26,42 @@ const { StoreProvider: PointerStoreProvider, useStoreApi: usePointerApi } =
   }))
 
 const PointerBindings = () => {
+  const pointerApi = usePointerApi()
   const { setPrimaryDown, setPosition } = useStore(usePointerApi())
 
   useLayoutEffect(() => {
     const onPointerMove = (event: PointerEvent) =>
-      setPosition({
-        x: event.clientX,
-        y: event.clientY,
+      pointerApi.setState({
+        position: {
+          x: event.clientX,
+          y: event.clientY,
+        },
       })
-    const onPointerDown = () => setPrimaryDown(true)
-    const onPointerUp = () => setPrimaryDown(false)
-    const onPointerCancel = () => setPrimaryDown(false)
+    const onPointerDown = (event: PointerEvent) =>
+      pointerApi.setState({
+        primaryDown: true,
+        position: {
+          x: event.clientX,
+          y: event.clientY,
+        },
+      })
+    const onPointerUp = (event: PointerEvent) =>
+      pointerApi.setState({
+        primaryDown: false,
+        position: {
+          x: event.clientX,
+          y: event.clientY,
+        },
+      })
+    const onPointerCancel = () => {
+      setPrimaryDown(false)
+    }
     const onBlur = () => setPrimaryDown(false)
 
     window.addEventListener('pointermove', onPointerMove, { passive: true })
     window.addEventListener('pointerdown', onPointerDown, { passive: true })
     window.addEventListener('pointerup', onPointerUp, { passive: true })
-    window.addEventListener('pointercancel', onPointerCancel, { passive: true })
+    window.addEventListener('pointercancel', onPointerCancel, { passive: false })
     window.addEventListener('blur', onBlur)
 
     return () => {
@@ -52,7 +71,7 @@ const PointerBindings = () => {
       window.removeEventListener('pointercancel', onPointerCancel)
       window.removeEventListener('blur', onBlur)
     }
-  }, [setPosition, setPrimaryDown])
+  }, [pointerApi, setPosition, setPrimaryDown])
 
   return null
 }
