@@ -8,6 +8,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            package.json
+            pnpm-lock.yaml
+            pnpm-workspace.yaml
+            Cargo.toml
+            Cargo.lock
+            apps/controlmylights
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: |
+            - cwd: ./
+              args: [--frozen-lockfile, --filter, "controlmylightsclient"]
 
       - uses: dtolnay/rust-toolchain@stable
 
