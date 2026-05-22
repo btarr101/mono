@@ -38,18 +38,14 @@ export const Easel = ({ stageSize }: EaselProps) => {
     previousBrushRadius.current = brushRadius
 
     // The guard above keeps this from creating infinite re-renders
-
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRenderBrushScaleGuide(true)
-  }, [brushRadius])
-  useEffect(() => {
-    if (!renderBrushScaleGuide) return
+
     const timer = setTimeout(() => {
       setRenderBrushScaleGuide(false)
     }, 3000)
-
     return () => clearTimeout(timer)
-  }, [renderBrushScaleGuide])
+  }, [brushRadius])
 
   const stageContainerRef = useRef<HTMLDivElement | null>(null)
 
