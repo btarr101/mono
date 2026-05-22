@@ -1,7 +1,8 @@
 use std::{path::Path, process::Command};
 
 fn main() {
-    if !cfg!(debug_assertions) {
+    println!("cargo:rerun-if-changed=ALWAYS");
+    if cfg!(debug_assertions) {
         return;
     }
 
@@ -9,8 +10,6 @@ fn main() {
         .parent()
         .expect("parent")
         .join("ControlMyLightsClient");
-
-    dbg!(&client_dir);
 
     let output = Command::new("pnpm")
         .arg("build")
