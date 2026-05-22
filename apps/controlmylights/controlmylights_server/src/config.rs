@@ -1,5 +1,3 @@
-use std::{env, path::PathBuf};
-
 use serde::Deserialize;
 use serde_inline_default::serde_inline_default;
 
@@ -8,8 +6,6 @@ use serde_inline_default::serde_inline_default;
 pub struct Config {
     #[serde_inline_default("127.0.0.1:3000".to_string())]
     pub bind_address: String,
-    #[serde_inline_default(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("public"))]
-    pub public_dir: PathBuf,
     #[serde_inline_default(if cfg!(debug_assertions) { "dev".to_string() } else { "prod".to_string() })]
     pub stage: String,
 }

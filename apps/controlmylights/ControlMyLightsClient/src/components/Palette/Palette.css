@@ -1,0 +1,18 @@
+.palette-picker {
+  box-shadow: none !important;
+}
+
+.palette-picker .react-colorful-pointer {
+  box-shadow: none !important;
+  outline: 2px solid black;
+  outline-offset: 0;
+}
+
+.palette-picker.bg-white {
+  background-color: transparent !important;
+}
+
+.palette-picker [aria-label='Color'] > .rounded-b-none {
+  border-bottom-left-radius: inherit !important;
+  border-bottom-right-radius: inherit !important;
+}

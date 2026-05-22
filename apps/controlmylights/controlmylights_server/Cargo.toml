@@ -8,12 +8,15 @@ anyhow = "1.0.102"
 axum = { version = "0.8.8", features = ["ws"] }
 chrono = "0.4.44"
 futures = "0.3.32"
+mime_guess = "2.0.5"
+percent-encoding = "2.3.1"
+rust-embed = "8.11.0"
 serde = "1.0.228"
-serde-envfile = "0.3.0"
+serde-envfile = "0.4.0"
 serde-inline-default = "1.0.1"
 thiserror = "2.0.18"
 tokio = { version = "1.50.0", features = ["rt-multi-thread"] }
-tower-http = { version = "0.6.8", features = ["fs", "trace", "cors"] }
+tower-http = { version = "0.6.8", features = ["trace", "cors"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = [
 	"fmt",
