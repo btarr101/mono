@@ -9,8 +9,10 @@ export type Splotch = {
 export type PaletteStore = {
   splotches: Splotch[]
   activeSplotchIndex?: number
+  brushScale: number
   setSplotchColor: (index: number, color: Color) => void
   setActiveSplotchIndex: (index: number) => void
+  setBrushScale: (scale: number) => void
 }
 
 export type PaletteProviderProps = {
@@ -31,15 +33,19 @@ const { StoreProvider: PaletteProvider, useStoreApi: usePaletteApi } = buildCont
 
   const setActiveSplotchIndex = (index: number) => set({ activeSplotchIndex: index })
 
+  const setBrushScale = (brushScale: number) => set({ brushScale })
+
   const splotches = initialSplotchColors.map(color => ({
     color,
   }))
 
   return {
+    splotches,
     activeSplotchIndex: 0,
+    brushScale: 50,
     setActiveSplotchIndex,
     setSplotchColor,
-    splotches,
+    setBrushScale,
   }
 })
 
@@ -64,9 +70,13 @@ export const usePaletteActiveSplotch = () => {
 export const usePaletteActions = () => {
   const setActiveSpotchIndex = usePalette(state => state.setActiveSplotchIndex)
   const setSplotchColor = usePalette(state => state.setSplotchColor)
+  const setBrushScale = usePalette(state => state.setBrushScale)
 
   return {
     setActiveSpotchIndex,
     setSplotchColor,
+    setBrushScale,
   }
 }
+
+export const usePaletteBrushScale = () => usePalette(state => state.brushScale)

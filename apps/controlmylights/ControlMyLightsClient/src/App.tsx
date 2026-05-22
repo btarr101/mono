@@ -33,7 +33,7 @@ const Background = () => (
 )
 
 const Header = () => (
-  <div className="flex flex-row flex-10 items-center">
+  <div className="flex flex-row flex-10 items-center m-4">
     <div className="flex flex-col items-end justify-center gap-3 h-full">
       <div className="w-8 h-2 bg-red-400/70 rotate-10 rounded-full" />
       <div className="w-10 h-2 bg-green-400/70 rotate-[-5deg] rounded-full" />
@@ -98,7 +98,6 @@ export const App = () => {
       <Background />
       <div className="flex h-full w-full max-w-full flex-col p-10 items-center">
         <Header />
-
         <PaletteProvider initialSplotchColors={initialSplotchColors}>
           <div
             className="h-full w-full flex items-center justify-center min-h-96 min-w-64"
@@ -109,17 +108,10 @@ export const App = () => {
             >
               <div
                 className="shrink-0 p-4 bg-slate-50 shadow-2xl rounded-2xl"
-                style={match(orientation)
-                  .returnType<React.CSSProperties>()
-                  .with('horizontal', () => ({
-                    height: easelStageSize?.height,
-                    width: 'min-content',
-                  }))
-                  .with('vertical', () => ({
-                    width: easelStageSize?.width,
-                    height: 'min-content',
-                  }))
-                  .exhaustive()}
+                style={{
+                  height: orientation === 'horizontal' ? easelStageSize?.height : 'min-content',
+                  width: orientation === 'vertical' ? easelStageSize?.width : 'min-content',
+                }}
               >
                 <Palette orientation={orientation === 'horizontal' ? 'vertical' : 'horizontal'} />
               </div>

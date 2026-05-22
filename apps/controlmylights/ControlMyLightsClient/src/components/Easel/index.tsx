@@ -7,10 +7,11 @@ import { Circle, Layer, Stage } from 'react-konva/lib/ReactKonvaCore'
 
 import { EASEL_IMAGE } from '../../constants'
 import { useEasel } from '../../contexts/EaselContext'
-import { usePaletteActiveSplotch } from '../../contexts/PaletteContext'
+import { usePaletteActiveSplotch, usePaletteBrushScale } from '../../contexts/PaletteContext'
 import { usePointerPrimaryUpdated } from '../../contexts/PointerContext'
 import type { Color, Position } from '../../types'
-import { divideVectors, getPositionsInStroke } from './util'
+import { LED_HITBOX_RADIUS, LED_RADIUS, POSITIONS, POSITIONS_AND_COLORS } from './config'
+import { divideVectors, getPositionsInStroke, lerp } from './util'
 
 export type EaselProps = {
   stageSize?: {
@@ -20,23 +21,12 @@ export type EaselProps = {
   }
 }
 
-const pad = 32
-const positionsAndColors = Array.from({ length: 24 }).flatMap((_, row) =>
-  Array.from({ length: 48 }).map((_, col) => ({
-    color: {
-      red: Math.random() * 255,
-      green: Math.random() * 255,
-      blue: Math.random() * 255,
-    },
-    x: pad + ((EASEL_IMAGE.width - pad) / 48) * col,
-    y: pad + ((EASEL_IMAGE.height - pad) / 24) * row,
-  })),
-)
-const positions = positionsAndColors.map(({ x, y }) => ({ x, y }))
-
 export const Easel = ({ stageSize }: EaselProps) => {
   const { activeSplotch } = usePaletteActiveSplotch()
   const { leds, setLed } = useEasel()
+  const brushScale = usePaletteBrushScale()
+  const brushRadius = lerp(LED_RADIUS / 4, LED_RADIUS * 2, brushScale / 100)
+
   const stageContainerRef = useRef<HTMLDivElement | null>(null)
 
   // Scaling
@@ -85,12 +75,13 @@ export const Easel = ({ stageSize }: EaselProps) => {
       previousPointerStagePositionRef.current = stagePosition
 
       getPositionsInStroke(
-        positions,
+        POSITIONS,
         previousPointerPosition ?? stagePosition,
         stagePosition,
+        brushRadius + LED_HITBOX_RADIUS,
       ).forEach(index => setLed(index, activeSplotch.color))
     },
-    [activeSplotch, setLed, stageScale],
+    [activeSplotch, setLed, stageScale, brushRadius],
   )
 
   usePointerPrimaryUpdated(handlePaint)
@@ -98,7 +89,7 @@ export const Easel = ({ stageSize }: EaselProps) => {
   const ledGlows = useMemo(
     () =>
       leds.map(({ color }, index) => {
-        const position = positionsAndColors[index]
+        const position = POSITIONS_AND_COLORS[index]
         if (!position) return null
 
         return <LedGlow color={color} key={index} x={position.x} y={position.y} />
@@ -107,7 +98,7 @@ export const Easel = ({ stageSize }: EaselProps) => {
   )
 
   return (
-    <div className="flex h-full w-full min-h-0 min-w-0 items-center justify-center pointer-events-none">
+    <div className="items-center justify-center pointer-events-none">
       {stageSize ? (
         <div
           className="relative overflow-clip rounded-2xl shadow-2xl"
@@ -134,7 +125,7 @@ export const Easel = ({ stageSize }: EaselProps) => {
               {ledGlows}
               {pointerStagePosition && (
                 <Circle
-                  radius={52}
+                  radius={brushRadius}
                   stroke="black"
                   strokeWidth={4}
                   x={pointerStagePosition.x}
@@ -158,22 +149,26 @@ export type LedGlowProps = {
 const LedGlow = memo(({ color, x, y }: LedGlowProps) => {
   const brightness = Math.pow((color.red + color.green + color.blue) / (255 * 3), 0.5)
   return (
-    <Circle
-      fillRadialGradientColorStops={[
-        0,
-        `rgba(${color.red}, ${color.green}, ${color.blue}, ${brightness})`,
-        1,
-        `rgba(${color.red}, ${color.green}, ${color.blue}, 0)`,
-      ]}
-      fillRadialGradientEndPoint={{ x: 0, y: 0 }}
-      fillRadialGradientEndRadius={52}
-      fillRadialGradientStartPoint={{ x: 0, y: 0 }}
-      fillRadialGradientStartRadius={0}
-      listening={false}
-      radius={52}
-      x={x}
-      y={y}
-    />
+    <>
+      {/* Uncomment below for debug */}
+      {/* <Circle radius={LED_HITBOX_RADIUS} stroke="black" strokeWidth={4} x={x} y={y} /> */}
+      <Circle
+        fillRadialGradientColorStops={[
+          0,
+          `rgba(${color.red}, ${color.green}, ${color.blue}, ${brightness})`,
+          1,
+          `rgba(${color.red}, ${color.green}, ${color.blue}, 0)`,
+        ]}
+        fillRadialGradientEndPoint={{ x: 0, y: 0 }}
+        fillRadialGradientEndRadius={LED_RADIUS}
+        fillRadialGradientStartPoint={{ x: 0, y: 0 }}
+        fillRadialGradientStartRadius={0}
+        listening={false}
+        radius={LED_RADIUS}
+        x={x}
+        y={y}
+      />
+    </>
   )
 })
 

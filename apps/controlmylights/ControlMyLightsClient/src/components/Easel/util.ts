@@ -4,11 +4,11 @@ export const getPositionsInStroke = (
   positions: Position[],
   strokeStart: Position,
   strokeEnd: Position,
-  brushWidth = 52,
+  maxDistance = 52,
 ) =>
   positions.flatMap((ledPosition, index) => {
     const distance = distanceFromPointToLineSegment(ledPosition, strokeStart, strokeEnd)
-    return distance <= brushWidth ? [index] : []
+    return distance <= maxDistance ? [index] : []
   })
 
 export const distanceFromPointToLineSegment = (
@@ -41,3 +41,5 @@ export const divideVectors = (a: Position, b: Position) => ({
   x: a.x / b.x,
   y: a.y / b.y,
 })
+
+export const lerp = (a: number, b: number, ratio: number) => a + (b - a) * ratio
