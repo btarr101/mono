@@ -7,6 +7,8 @@ jobs:
     name: 🔨 Build controlmylights server
     runs-on: ubuntu-latest
     steps:
+      # TODO: Need to check out every rust project atm, need to find
+      # a way to seperate rust projects or build up the list dynamically
       - uses: actions/checkout@v5
         with:
           sparse-checkout: |
@@ -15,7 +17,8 @@ jobs:
             pnpm-workspace.yaml
             Cargo.toml
             Cargo.lock
-            apps/controlmylights
+            apps
+            libs
 
       - uses: pnpm/action-setup@v4
         with:
