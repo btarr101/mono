@@ -1,5 +1,4 @@
 import { createElement, type PropsWithChildren, useLayoutEffect } from 'react'
-import { useStore } from 'zustand'
 
 import type { Position } from '../types'
 import { buildContext } from '../util/buildContext'
@@ -7,37 +6,46 @@ import { buildUseStoreState, buildUseStoreSubscribe } from '../util/buildContext
 
 export type PointerStore = {
   primaryDown: boolean
-  setPrimaryDown: (down: boolean) => void
   position: Position | null
-  setPosition: (position: Position) => void
 }
 
 export type PointerUpdatedListener = (primaryDown: boolean, position: Position | null) => void
 
 const { StoreProvider: PointerStoreProvider, useStoreApi: usePointerApi } =
-  buildContext<PointerStore>(set => ({
+  buildContext<PointerStore>(() => ({
     primaryDown: false,
-    setPrimaryDown: primaryDown =>
-      set({
-        primaryDown,
-      }),
     position: null,
-    setPosition: position => set({ position }),
   }))
 
 const PointerBindings = () => {
-  const { setPrimaryDown, setPosition } = useStore(usePointerApi())
+  const pointerApi = usePointerApi()
 
   useLayoutEffect(() => {
     const onPointerMove = (event: PointerEvent) =>
-      setPosition({
-        x: event.clientX,
-        y: event.clientY,
+      pointerApi.setState({
+        position: {
+          x: event.clientX,
+          y: event.clientY,
+        },
       })
-    const onPointerDown = () => setPrimaryDown(true)
-    const onPointerUp = () => setPrimaryDown(false)
-    const onPointerCancel = () => setPrimaryDown(false)
-    const onBlur = () => setPrimaryDown(false)
+    const onPointerDown = (event: PointerEvent) =>
+      pointerApi.setState({
+        primaryDown: true,
+        position: {
+          x: event.clientX,
+          y: event.clientY,
+        },
+      })
+    const onPointerUp = (event: PointerEvent) =>
+      pointerApi.setState({
+        primaryDown: false,
+        position: {
+          x: event.clientX,
+          y: event.clientY,
+        },
+      })
+    const onPointerCancel = () => pointerApi.setState({ primaryDown: false })
+    const onBlur = () => pointerApi.setState({ primaryDown: false })
 
     window.addEventListener('pointermove', onPointerMove, { passive: true })
     window.addEventListener('pointerdown', onPointerDown, { passive: true })
@@ -52,7 +60,7 @@ const PointerBindings = () => {
       window.removeEventListener('pointercancel', onPointerCancel)
       window.removeEventListener('blur', onBlur)
     }
-  }, [setPosition, setPrimaryDown])
+  }, [pointerApi])
 
   return null
 }

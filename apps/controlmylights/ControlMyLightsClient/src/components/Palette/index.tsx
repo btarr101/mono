@@ -65,7 +65,7 @@ export const Palette = ({ orientation = 'horizontal' }: PaletteProps) => {
               min={0}
               type="range"
               value={brushScale}
-              onChange={event => setBrushScale(parseInt(event.target.value))}
+              onChange={event => setBrushScale(Number(event.target.value))}
             />
           </div>
         </div>

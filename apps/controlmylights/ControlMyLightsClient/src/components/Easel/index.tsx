@@ -1,11 +1,13 @@
 import 'konva/lib/shapes/Circle'
+import 'konva/lib/shapes/Image'
 
 import Image from '@son426/vite-image/react'
 import type { Vector2d } from 'konva/lib/types'
-import { memo, useCallback, useMemo, useRef, useState } from 'react'
-import { Circle, Layer, Stage } from 'react-konva/lib/ReactKonvaCore'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Circle, Image as KonvaImage, Layer, Stage } from 'react-konva/lib/ReactKonvaCore'
+import useImage from 'use-image'
 
-import { EASEL_IMAGE } from '../../constants'
+import { BRUSH_ICON, EASEL_IMAGE } from '../../constants'
 import { useEasel } from '../../contexts/EaselContext'
 import { usePaletteActiveSplotch, usePaletteBrushScale } from '../../contexts/PaletteContext'
 import { usePointerPrimaryUpdated } from '../../contexts/PointerContext'
@@ -26,6 +28,24 @@ export const Easel = ({ stageSize }: EaselProps) => {
   const { leds, setLed } = useEasel()
   const brushScale = usePaletteBrushScale()
   const brushRadius = lerp(LED_RADIUS / 4, LED_RADIUS * 2, brushScale / 100)
+
+  const previousBrushRadius = useRef(brushRadius)
+  const [renderBrushScaleGuide, setRenderBrushScaleGuide] = useState(false)
+  const [brushIconImage] = useImage(BRUSH_ICON.srcSet ?? BRUSH_ICON.src)
+
+  useEffect(() => {
+    if (previousBrushRadius.current === brushRadius) return
+    previousBrushRadius.current = brushRadius
+
+    // The guard above keeps this from creating infinite re-renders
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRenderBrushScaleGuide(true)
+
+    const timer = setTimeout(() => {
+      setRenderBrushScaleGuide(false)
+    }, 3000)
+    return () => clearTimeout(timer)
+  }, [brushRadius])
 
   const stageContainerRef = useRef<HTMLDivElement | null>(null)
 
@@ -98,7 +118,7 @@ export const Easel = ({ stageSize }: EaselProps) => {
   )
 
   return (
-    <div className="items-center justify-center pointer-events-none">
+    <div className="items-center justify-center  select-none overscroll-none touch-none">
       {stageSize ? (
         <div
           className="relative overflow-clip rounded-2xl shadow-2xl"
@@ -131,6 +151,25 @@ export const Easel = ({ stageSize }: EaselProps) => {
                   x={pointerStagePosition.x}
                   y={pointerStagePosition.y}
                 />
+              )}
+              {renderBrushScaleGuide && (
+                <>
+                  <Circle
+                    fill="white"
+                    radius={brushRadius}
+                    stroke="black"
+                    strokeWidth={4}
+                    x={EASEL_IMAGE.width / 2}
+                    y={EASEL_IMAGE.height / 2}
+                  />
+                  <KonvaImage
+                    height={brushRadius}
+                    image={brushIconImage}
+                    width={brushRadius}
+                    x={EASEL_IMAGE.width / 2 - brushRadius / 2}
+                    y={EASEL_IMAGE.height / 2 - brushRadius / 2}
+                  />
+                </>
               )}
             </Layer>
           </Stage>
