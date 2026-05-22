@@ -1,5 +1,6 @@
+import BRUSH_ICON from './assets/icons/brush.svg?vite-image'
 import EASEL_IMAGE from './assets/panel.jpg?vite-image'
-export { EASEL_IMAGE }
+export { BRUSH_ICON, EASEL_IMAGE }
 
 const getCombinedAspectDesktopString = (imageWidth: number, imageHeight: number) => {
   const numerator = imageHeight + 2 * imageWidth
