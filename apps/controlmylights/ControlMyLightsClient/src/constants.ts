@@ -36,6 +36,3 @@ export const COMBINED_ASPECT_MOBILE = getCombinedAspectMobileString(
   EASEL_IMAGE.width,
   EASEL_IMAGE.height,
 )
-
-console.log(COMBINED_ASPECT_MOBILE)
-console.log(COMBINED_ASPECT_DESKTOP)
