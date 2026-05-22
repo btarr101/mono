@@ -61,7 +61,7 @@ const PointerBindings = () => {
     window.addEventListener('pointermove', onPointerMove, { passive: true })
     window.addEventListener('pointerdown', onPointerDown, { passive: true })
     window.addEventListener('pointerup', onPointerUp, { passive: true })
-    window.addEventListener('pointercancel', onPointerCancel, { passive: false })
+    window.addEventListener('pointercancel', onPointerCancel, { passive: true })
     window.addEventListener('blur', onBlur)
 
     return () => {
