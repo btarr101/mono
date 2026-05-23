@@ -1,9 +1,0 @@
-[workspace]
-resolver = "2"
-members = [
-	"libs/clockwork_ecs",
-	"libs/clockwork_tuples",
-	"apps/pong",
-	"libs/clockwork_renderer",
-	"apps/controlmylights/controlmylights_server",
-]

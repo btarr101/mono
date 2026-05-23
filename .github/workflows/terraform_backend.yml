@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          sparse-checkout: services/terraform-backend
+          sparse-checkout: public/services/terraform-backend
 
       - uses: pnpm/action-setup@v4
 
@@ -26,7 +26,7 @@ jobs:
       - run: npm install -g aws-cdk
 
       - run: pnpm install
-        working-directory: services/terraform-backend
+        working-directory: public/services/terraform-backend
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -34,4 +34,4 @@ jobs:
           aws-region: us-west-1
 
       - run: cdk deploy --require-approval never
-        working-directory: services/terraform-backend
+        working-directory: public/services/terraform-backend

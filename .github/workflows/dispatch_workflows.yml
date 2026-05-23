@@ -30,16 +30,16 @@ jobs:
           base: ${{ github.ref_name }}
           filters: |
             terraform_backend:
-              - 'services/terraform-backend/**'
+              - 'public/services/terraform-backend/**'
               - '.github/workflows/terraform_backend.yml'
             btarr_xyz:
-              - 'services/btarr.xyz/**'
+              - 'public/services/btarr.xyz/**'
               - '.github/workflows/btarr_xyz.yml'
             stack_task:
-              - 'apps/StackTask/**'
+              - 'public/apps/StackTask/**'
               - '.github/workflows/stack_task.yml'
             controlmylights:
-              - 'apps/controlmylights/**'
+              - 'public/apps/controlmylights/**'
               - '.github/workflows/controlmylights.yml'
 
 
