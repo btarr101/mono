@@ -16,6 +16,8 @@ jobs:
         with:
           sparse-checkout: |
             public/package.json
+            public/pnpm-lock.yaml
+            public/pnpm-workspace.yaml
             public/services/terraform-backend
 
       - uses: pnpm/action-setup@v4
@@ -26,6 +28,7 @@ jobs:
         with:
           node-version: 22
           cache: "pnpm"
+          cache-dependency-path: public/pnpm-lock.yaml
 
       - run: npm install -g aws-cdk
 
