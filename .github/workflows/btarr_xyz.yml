@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: services/btarr.xyz
+          sparse-checkout: public/services/btarr.xyz
 
       - uses: hashicorp/setup-terraform@v4
 
@@ -37,7 +37,7 @@ jobs:
           aws-region: us-west-1
 
       - name: Deploy btarr.xyz
-        working-directory: services/btarr.xyz
+        working-directory: public/services/btarr.xyz
         env:
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
           DEPLOYER_SSH_PUBLIC_KEY: ${{ vars.DEPLOYER_SSH_PUBLIC_KEY }}

@@ -12,18 +12,19 @@ jobs:
       - uses: actions/checkout@v5
         with:
           sparse-checkout: |
-            package.json
-            pnpm-lock.yaml
-            pnpm-workspace.yaml
-            Cargo.toml
-            Cargo.lock
-            apps
-            libs
+            public/package.json
+            public/pnpm-lock.yaml
+            public/pnpm-workspace.yaml
+            public/Cargo.toml
+            public/Cargo.lock
+            public/apps
+            public/libs
 
       - uses: pnpm/action-setup@v4
         with:
+          package_json_file: public/package.json
           run_install: |
-            - cwd: ./
+            - cwd: ./public
               args: [--frozen-lockfile, --filter, "controlmylightsclient"]
 
       - uses: dtolnay/rust-toolchain@stable
@@ -34,15 +35,15 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-          key: ${{ runner.os }}-controlmylightsv2-${{ hashFiles('Cargo.lock') }}
+          key: ${{ runner.os }}-controlmylightsv2-${{ hashFiles('public/Cargo.lock') }}
 
       - run: cargo build --verbose --release --locked
-        working-directory: ./apps/controlmylights/controlmylights_server
+        working-directory: ./public/apps/controlmylights/controlmylights_server
 
       - uses: actions/upload-artifact@v4
         with:
           name: controlmylights_server
-          path: ./target/release/controlmylights_server
+          path: ./public/target/release/controlmylights_server
 
   deploy:
     name: 🚀 Deploy controlmylights server

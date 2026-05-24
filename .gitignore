@@ -3,3 +3,4 @@ target
 .env
 .envrc
 node_modules
+.vscode
