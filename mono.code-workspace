@@ -1,0 +1,31 @@
+{
+	"folders": [
+		{
+			"name": "mono",
+			"path": "."
+		},
+		{
+			"name": "controlmylights_arduino_client",
+			"path": "public/apps/controlmylights/controlmylights_arduino_client"
+		},
+	],
+	"settings": {
+		"files.insertFinalNewline": true,
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.fixAll.eslint": "always"
+		},
+		"eslint.useFlatConfig": true,
+		"eslint.workingDirectories": [
+			{
+				"mode": "auto"
+			}
+		],
+		"eslint.validate": [
+			"javascript",
+			"javascriptreact",
+			"typescript",
+			"typescriptreact"
+		]
+	}
+}
