@@ -13,6 +13,9 @@ export const ApiProvider = ({ children }: PropsWithChildren) => {
     `${import.meta.env.VITE_API_BASE_URL ?? '/api'}/leds/ws`,
     {
       disableJson: true,
+      retryOnError: true,
+      reconnectAttempts: 20,
+      reconnectInterval: attemptNumber => Math.min(1000 * 2 ** attemptNumber, 10000),
       shouldReconnect: () => true,
       heartbeat: {
         interval: 60000,

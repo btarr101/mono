@@ -38,7 +38,6 @@ export const Easel = ({ stageSize }: EaselProps) => {
     previousBrushRadius.current = brushRadius
 
     // The guard above keeps this from creating infinite re-renders
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRenderBrushScaleGuide(true)
 
     const timer = setTimeout(() => {
@@ -112,7 +111,7 @@ export const Easel = ({ stageSize }: EaselProps) => {
         const position = POSITIONS[index]
         if (!position) return null
 
-        return <LedGlow color={color} key={index} x={position.x} y={position.y} />
+        return <LedGlow color={color} index={index} key={index} x={position.x} y={position.y} />
       }),
     [leds],
   )
@@ -183,14 +182,13 @@ export type LedGlowProps = {
   color: Color
   x: number
   y: number
+  index?: number
 }
 
 const LedGlow = memo(({ color, x, y }: LedGlowProps) => {
   const brightness = Math.pow((color.red + color.green + color.blue) / (255 * 3), 0.5)
   return (
     <>
-      {/* Uncomment below for debug */}
-      {/* <Circle radius={LED_HITBOX_RADIUS} stroke="black" strokeWidth={4} x={x} y={y} /> */}
       <Circle
         fillRadialGradientColorStops={[
           0,
