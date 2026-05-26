@@ -1,11 +1,6 @@
-import { EASEL_IMAGE } from '../../constants'
-
 export const PAD = 32
-export const LED_RADIUS = 52
+export const LED_RADIUS = 25
 export const LED_HITBOX_RADIUS = 12
-export const POSITIONS = Array.from({ length: 24 }).flatMap((_, row) =>
-  Array.from({ length: 48 }).map((_, col) => ({
-    x: PAD + ((EASEL_IMAGE.width - PAD) / 48) * col,
-    y: PAD + ((EASEL_IMAGE.height - PAD) / 24) * row,
-  })),
-)
+import POSITIONS from './positions.json'
+
+export { POSITIONS }
