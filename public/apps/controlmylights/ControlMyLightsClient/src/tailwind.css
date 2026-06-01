@@ -1,6 +1,5 @@
 @import 'tailwindcss';
-@plugin "tailwindcss-bg-patterns";
-
+/* 
 @font-face {
   font-family: 'TitleFont';
   src: url('./assets/fonts/Melon\ Camp.otf') format('opentype');
@@ -8,4 +7,4 @@
 
 @theme {
   --font-custom: 'TitleFont', sans-serif;
-}
+} */
