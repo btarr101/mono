@@ -1,15 +1,43 @@
-import { useState } from 'react'
-import { createBrowserRouter } from 'react-router'
+import '@mantine/core/styles.css'
+
+import { MantineProvider } from '@mantine/core'
+import { createBrowserRouter, RouterProvider } from 'react-router'
+
+import { Layout } from './Layout'
+import { Home } from './pages/Home'
+import { theme } from './theme'
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <></>,
+    Component: Layout,
+    children: [
+      {
+        index: true,
+        Component: Home,
+      },
+      {
+        path: '/browse',
+        Component: Home,
+      },
+      {
+        path: '/analyze',
+        Component: Home,
+      },
+      {
+        path: '/community',
+        Component: Home,
+      },
+      {
+        path: '/about',
+        Component: Home,
+      },
+    ],
   },
 ])
 
-export const App = () => {
-  const [count, setCount] = useState(0)
-
-  return <></>
-}
+export const App = () => (
+  <MantineProvider theme={theme}>
+    <RouterProvider router={router} />
+  </MantineProvider>
+)
