@@ -30,16 +30,6 @@ export const theme = createTheme({
     fontWeight: '800',
   },
 
-  radius: {
-    xs: '0',
-    sm: '0',
-    md: '0',
-    lg: '0',
-    xl: '0',
-  },
-
-  defaultRadius: '0',
-
   components: {
     NavLink: {
       defaultProps: {
@@ -47,32 +37,32 @@ export const theme = createTheme({
       },
     },
 
-    Paper: {
-      defaultProps: {
-        shadow: undefined,
-        radius: 0,
-        withBorder: true,
-      },
-    },
+    // Paper: {
+    //   defaultProps: {
+    //     shadow: undefined,
+    //     radius: 0,
+    //     withBorder: true,
+    //   },
+    // },
 
-    Card: {
-      styles: {
-        root: {
-          border: '3px solid #111',
-          boxShadow: '6px 6px 0px #111',
-        },
-      },
-    },
+    // Card: {
+    //   styles: {
+    //     root: {
+    //       border: '3px solid #111',
+    //       // boxShadow: '6px 6px 0px #111',
+    //     },
+    //   },
+    // },
 
-    Button: {
-      styles: {
-        root: {
-          border: '3px solid #111',
-          boxShadow: '4px 4px 0px #111',
-          fontWeight: 700,
-        },
-      },
-    },
+    // Button: {
+    //   styles: {
+    //     root: {
+    //       border: '3px solid #111',
+    //       boxShadow: '4px 4px 0px #111',
+    //       fontWeight: 700,
+    //     },
+    //   },
+    // },
 
     TextInput: {
       styles: {

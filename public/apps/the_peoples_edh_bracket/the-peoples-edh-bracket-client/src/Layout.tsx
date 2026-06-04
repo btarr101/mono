@@ -27,27 +27,27 @@ export const Layout = () => (
       <NavLink
         label="Home"
         leftSection={<HouseIcon />}
-        renderRoot={props => <RouterNavLink end to="/" {...props} />}
+        renderRoot={props => <RouterNavLink to="/" {...props} />}
       />
       <NavLink
         label="Browse"
         leftSection={<MagnifyingGlassIcon />}
-        renderRoot={props => <RouterNavLink end to="/browse" {...props} />}
+        renderRoot={props => <RouterNavLink to="/browse" {...props} />}
       />
       <NavLink
         label="Analyze"
         leftSection={<ChartLineIcon />}
-        renderRoot={props => <RouterNavLink end to="/analyze" {...props} />}
+        renderRoot={props => <RouterNavLink to="/analyze" {...props} />}
       />
       <NavLink
         label="Community"
         leftSection={<UsersThreeIcon />}
-        renderRoot={props => <RouterNavLink end to="/community" {...props} />}
+        renderRoot={props => <RouterNavLink to="/community" {...props} />}
       />
       <NavLink
         label="About"
         leftSection={<InfoIcon />}
-        renderRoot={props => <RouterNavLink end to="/about" {...props} />}
+        renderRoot={props => <RouterNavLink to="/about" {...props} />}
       />
     </AppShell.Navbar>
     <AppShell.Main>

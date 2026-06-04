@@ -1,21 +1,22 @@
 import {
   Autocomplete,
-  Badge,
   Button,
-  Card,
   Divider,
   Group,
-  Image,
   NumberFormatter,
+  ScrollArea,
   Stack,
   Text,
   Title,
 } from '@mantine/core'
 import { FireIcon, MagnifyingGlassIcon } from '@phosphor-icons/react'
+import { Link } from 'react-router'
+
+import { MtgCardButton } from '../components/MtgCardButton'
 
 const TEMP_CARDS = ['Black Lotus', 'Storm Crow', 'Eddymurk Crab']
 
-export const Home = () => (
+export const HomePage = () => (
   <Stack h="100dvh" justify="stretch" p="xl" w="100%">
     <Hero />
     <Divider />
@@ -80,34 +81,31 @@ const Stat = ({ value, label }: StatProps) => {
 
 const Trending = () => (
   <Stack gap="lg" style={{ flex: 1, minHeight: 0 }}>
-    <Group c="orange" gap="xs">
-      <FireIcon size={32} />
-      <Title size="2rem">Trending</Title>
+    <Group justify="space-between">
+      <Group c="orange" gap="xs">
+        <FireIcon size={32} />
+        <Title size="2rem">Trending</Title>
+      </Group>
+      <Button component={Link} to={{ pathname: 'browse', search: '?sort=trending' }}>
+        View All
+      </Button>
     </Group>
-    <Group align="stretch" style={{ flex: 1, minHeight: 0 }} wrap="nowrap">
-      <MtgCard />
-    </Group>
+
+    <ScrollArea mih={'fit-content'} scrollbars="x" style={{ flex: 1 }} w={'100%'}>
+      <Group
+        h={'100%'}
+        justify={'space-evenly'}
+        mih={'fit-content'}
+        style={{ flex: 1, minHeight: 0 }}
+        w={'100%'}
+        wrap="nowrap"
+      >
+        <MtgCardButton />
+        <MtgCardButton />
+        <MtgCardButton />
+        <MtgCardButton />
+        <MtgCardButton />
+      </Group>
+    </ScrollArea>
   </Stack>
-)
-
-const MtgCard = () => (
-  <Card
-    h="100%"
-    padding="lg"
-    shadow="sm"
-    style={{ display: 'flex', flexDirection: 'column' }}
-    w="auto"
-  >
-    <Card.Section style={{ flex: 1, minHeight: 0 }}>
-      <Image
-        src="https://cards.scryfall.io/large/front/0/3/036ef8c9-72ac-46ce-af07-83b79d736538.jpg?1562730661"
-        style={{ aspectRatio: '672 / 936', height: '100%', width: 'auto' }}
-      />
-    </Card.Section>
-
-    <Group justify="space-between" mb="xs" mt="md">
-      <Text fw={500}>Norway Fjord Adventures</Text>
-      <Badge color="pink">On Sale</Badge>
-    </Group>
-  </Card>
 )
