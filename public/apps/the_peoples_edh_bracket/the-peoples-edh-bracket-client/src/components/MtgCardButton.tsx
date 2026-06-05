@@ -19,13 +19,12 @@ export const MtgCardButton = () => (
     style={{
       overflow: 'clip',
       aspectRatio: '672 / 936',
-      minHeight: 'fit-content',
-      height: '100%',
+      width: 'fit-content',
     }}
   >
-    <Stack align="center" h="100%" justify="end" p="sm">
+    <Stack align="center" h="100%" justify="end" p="md">
       <Center>
-        <Paper withBorder p="md" radius="lg" shadow="xl">
+        <Paper withBorder p="md" radius="lg" shadow="xl" w="fit-content">
           <Stack gap={'xs'}>
             <Group wrap="nowrap">
               <Title order={4} textWrap="nowrap">

@@ -4,10 +4,11 @@
 			"name": "mono",
 			"path": "."
 		},
-		{
-			"name": "controlmylights_arduino_client",
-			"path": "public/apps/controlmylights/controlmylights_arduino_client"
-		},
+		// Uncomment if working on arduino client
+		// {
+		// 	"name": "controlmylights_arduino_client",
+		// 	"path": "public/apps/controlmylights/controlmylights_arduino_client"
+		// },
 	],
 	"settings": {
 		"files.insertFinalNewline": true,
