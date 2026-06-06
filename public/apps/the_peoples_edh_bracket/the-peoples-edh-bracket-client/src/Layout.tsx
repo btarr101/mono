@@ -7,51 +7,56 @@ import {
   MagnifyingGlassIcon,
   UsersThreeIcon,
 } from '@phosphor-icons/react'
+import { NuqsAdapter } from 'nuqs/adapters/react-router/v7'
+import { ScrollRestoration } from 'react-router'
 import { Outlet } from 'react-router'
 import { NavLink as RouterNavLink } from 'react-router'
 
 export const Layout = () => (
-  <AppShell navbar={{ breakpoint: 'xs', width: 280 }} padding={0}>
-    <AppShell.Navbar style={{ overflowY: 'auto' }}>
-      <Stack align="center" gap="xs" p="lg">
-        <HandFistIcon size={96} />
-        <Title ta="center">
-          the people{"'"}s
-          <br />
-          <Text inherit c="var(--mantine-primary-color-filled)" component="span">
-            (edh)
-          </Text>{' '}
-          bracket
-        </Title>
-      </Stack>
-      <NavLink
-        label="Home"
-        leftSection={<HouseIcon />}
-        renderRoot={props => <RouterNavLink to="/" {...props} />}
-      />
-      <NavLink
-        label="Browse"
-        leftSection={<MagnifyingGlassIcon />}
-        renderRoot={props => <RouterNavLink to="/browse" {...props} />}
-      />
-      <NavLink
-        label="Analyze"
-        leftSection={<ChartLineIcon />}
-        renderRoot={props => <RouterNavLink to="/analyze" {...props} />}
-      />
-      <NavLink
-        label="Community"
-        leftSection={<UsersThreeIcon />}
-        renderRoot={props => <RouterNavLink to="/community" {...props} />}
-      />
-      <NavLink
-        label="About"
-        leftSection={<InfoIcon />}
-        renderRoot={props => <RouterNavLink to="/about" {...props} />}
-      />
-    </AppShell.Navbar>
-    <AppShell.Main>
-      <Outlet />
-    </AppShell.Main>
-  </AppShell>
+  <NuqsAdapter>
+    <AppShell navbar={{ breakpoint: 'xs', width: 280 }} padding={0}>
+      <AppShell.Navbar style={{ overflowY: 'auto' }}>
+        <Stack align="center" gap="xs" p="lg">
+          <HandFistIcon size={96} />
+          <Title ta="center">
+            the people{"'"}s
+            <br />
+            <Text inherit c="var(--mantine-primary-color-filled)" component="span">
+              (edh)
+            </Text>{' '}
+            bracket
+          </Title>
+        </Stack>
+        <NavLink
+          label="Home"
+          leftSection={<HouseIcon />}
+          renderRoot={props => <RouterNavLink to="/" {...props} />}
+        />
+        <NavLink
+          label="Browse"
+          leftSection={<MagnifyingGlassIcon />}
+          renderRoot={props => <RouterNavLink to="/browse" {...props} />}
+        />
+        <NavLink
+          label="Analyze"
+          leftSection={<ChartLineIcon />}
+          renderRoot={props => <RouterNavLink to="/analyze" {...props} />}
+        />
+        <NavLink
+          label="Community"
+          leftSection={<UsersThreeIcon />}
+          renderRoot={props => <RouterNavLink to="/community" {...props} />}
+        />
+        <NavLink
+          label="About"
+          leftSection={<InfoIcon />}
+          renderRoot={props => <RouterNavLink to="/about" {...props} />}
+        />
+      </AppShell.Navbar>
+      <AppShell.Main>
+        <Outlet />
+      </AppShell.Main>
+      <ScrollRestoration />
+    </AppShell>
+  </NuqsAdapter>
 )

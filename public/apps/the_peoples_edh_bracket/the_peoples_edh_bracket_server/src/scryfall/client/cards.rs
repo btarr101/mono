@@ -5,9 +5,9 @@ use crate::scryfall::{
     models::{ScryfallCard, ScryfallList},
 };
 
-pub struct ScryfallCardsRequestBuilder<'a, 'b> {
+pub struct ScryfallCardsRequestBuilder<'a> {
     base_url: String,
-    client: &'b ScryfallClient<'a>,
+    client: &'a ScryfallClient,
 }
 
 #[derive(Serialize)]
@@ -25,8 +25,8 @@ pub struct ScryfallCardsCollectionEntry<'a> {
     pub oracle_id: &'a uuid::Uuid,
 }
 
-impl<'a, 'b> ScryfallCardsRequestBuilder<'a, 'b> {
-    pub(super) fn new(client: &'b ScryfallClient<'a>) -> Self {
+impl<'a> ScryfallCardsRequestBuilder<'a> {
+    pub(super) fn new(client: &'a ScryfallClient) -> Self {
         Self {
             client,
             base_url: format!("{}/cards", client.base_url),

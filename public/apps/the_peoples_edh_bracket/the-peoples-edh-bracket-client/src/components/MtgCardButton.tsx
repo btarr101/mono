@@ -12,10 +12,19 @@ import {
 } from '@mantine/core'
 import { Link } from 'react-router'
 
-export const MtgCardButton = () => (
+import type { Card } from '../types/bindings/Card'
+
+export type MtgCardButtonProps = {
+  card: Card
+}
+
+export const MtgCardButton = ({ card }: MtgCardButtonProps) => (
   <BackgroundImage
     radius="lg"
-    src="https://cards.scryfall.io/large/front/0/3/036ef8c9-72ac-46ce-af07-83b79d736538.jpg?1562730661"
+    src={
+      card.image_uri ||
+      'https://cards.scryfall.io/large/front/0/3/036ef8c9-72ac-46ce-af07-83b79d736538.jpg?1562730661'
+    }
     style={{
       overflow: 'clip',
       aspectRatio: '672 / 936',
@@ -39,7 +48,7 @@ export const MtgCardButton = () => (
               <Text c="dimmed" size="xs">
                 <NumberFormatter suffix={' ratings'} value={23} />
               </Text>
-              <Anchor component={Link} flex={1} ta="center" to="/browse/foo">
+              <Anchor component={Link} flex={1} ta="center" to={`/browse/${card.oracle_id}`}>
                 View
               </Anchor>
             </Group>

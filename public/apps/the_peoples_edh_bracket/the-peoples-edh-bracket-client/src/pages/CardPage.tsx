@@ -30,12 +30,14 @@ import {
   PushPinIcon,
   ShareIcon,
 } from '@phosphor-icons/react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLoaderData, useNavigate } from 'react-router'
 
+import type { Card as MtgCard } from '../types/bindings/Card'
 import { safeNavigate } from '../util'
 
 export const CardPage = () => {
   const navigate = useNavigate()
+  const { card } = useLoaderData<{ card: MtgCard }>()
 
   return (
     <Stack gap="xl" h="100dvh" justify="stretch" p="xl" w="100%">
@@ -43,8 +45,8 @@ export const CardPage = () => {
         {'<-'} Back
       </Anchor>
       <Group align="start">
-        <CardSection />
-        <InfoSection />
+        <CardSection card={card} />
+        <InfoSection card={card} />
       </Group>
       <Stack gap="sm">
         <Alert
@@ -60,7 +62,11 @@ export const CardPage = () => {
   )
 }
 
-const CardSection = () => (
+type CardSectionProps = {
+  card: MtgCard
+}
+
+const CardSection = ({ card }: CardSectionProps) => (
   <Stack align="center" flex={1} h="100%" miw="fit-content">
     <Paper
       radius={'15px'}
@@ -70,7 +76,10 @@ const CardSection = () => (
       }}
     >
       <Image
-        src="https://cards.scryfall.io/large/front/0/3/036ef8c9-72ac-46ce-af07-83b79d736538.jpg?1562730661"
+        src={
+          card.image_uri ||
+          'https://cards.scryfall.io/large/front/0/3/036ef8c9-72ac-46ce-af07-83b79d736538.jpg?1562730661'
+        }
         w={320}
       />
     </Paper>
@@ -88,9 +97,13 @@ const CardSection = () => (
   </Stack>
 )
 
-const InfoSection = () => (
+type InfoSectionProps = {
+  card: MtgCard
+}
+
+const InfoSection = ({ card }: InfoSectionProps) => (
   <Stack flex={3} h={'100%'}>
-    <Title order={1}>Storm Crow</Title>
+    <Title order={1}>{card.name}</Title>
     <Text c="dimmed" maw={540} size="xl">
       Community Power Score
     </Text>

@@ -14,6 +14,26 @@ pub struct ScryfallCard {
     pub oracle_id: uuid::Uuid,
     pub name: String,
     pub image_uris: Option<ScryfallImageUris>,
+    pub legalities: ScryfallLegalities,
+    pub card_faces: Option<Vec<ScryfallCardFace>>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ScryfallCardFace {
+    pub image_uris: Option<ScryfallImageUris>,
+}
+
+impl ScryfallCard {
+    pub fn mediumest_image_uri(&self) -> Option<&str> {
+        self.image_uris
+            .as_ref()
+            .and_then(|image_uris| image_uris.mediumest())
+            .or(self.card_faces.as_ref().and_then(|faces| {
+                faces
+                    .iter()
+                    .find_map(|face| face.image_uris.as_ref().and_then(|image_uris| image_uris.mediumest()))
+            }))
+    }
 }
 
 #[derive(Deserialize, Debug, Serialize)]
@@ -24,6 +44,20 @@ pub struct ScryfallImageUris {
     small: Option<String>,
 }
 
+#[derive(Deserialize, Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ScryfallLegality {
+    Legal,
+    NotLegal,
+    Restricted,
+    Banned,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct ScryfallLegalities {
+    pub commander: ScryfallLegality,
+}
+
 impl ScryfallImageUris {
     pub fn mediumest(&self) -> Option<&str> {
         self.normal
@@ -32,4 +66,12 @@ impl ScryfallImageUris {
             .or(self.large.as_deref())
             .or(self.png.as_deref())
     }
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct ScryfallBulkDataMeta {
+    #[serde(rename = "type")]
+    pub ty: String,
+    pub download_uri: String,
+    pub size: usize,
 }

@@ -1,14 +1,15 @@
-use crate::scryfall::client::cards::ScryfallCardsRequestBuilder;
+use crate::scryfall::client::{bulk_data::ScryfallBulkDataRequestBuilder, cards::ScryfallCardsRequestBuilder};
 
+pub mod bulk_data;
 pub mod cards;
 
 #[derive(Clone)]
-pub struct ScryfallClient<'a> {
-    pub base_url: &'a str,
+pub struct ScryfallClient {
+    pub base_url: &'static str,
     pub request_client: reqwest::Client,
 }
 
-impl<'a> Default for ScryfallClient<'a> {
+impl Default for ScryfallClient {
     fn default() -> Self {
         let request_client = reqwest::Client::builder()
             .user_agent("the-peoples-edh-bracket/0.1")
@@ -27,10 +28,11 @@ impl<'a> Default for ScryfallClient<'a> {
     }
 }
 
-impl<'a> ScryfallClient<'a> {
+impl ScryfallClient {
     pub fn new() -> Self { Self::default() }
 
-    pub fn cards<'b>(&'b self) -> ScryfallCardsRequestBuilder<'a, 'b> { ScryfallCardsRequestBuilder::new(self) }
+    pub fn cards(&self) -> ScryfallCardsRequestBuilder<'_> { ScryfallCardsRequestBuilder::new(self) }
+    pub fn bulk_data(&self) -> ScryfallBulkDataRequestBuilder<'_> { ScryfallBulkDataRequestBuilder::new(self) }
 }
 
 #[cfg(test)]
@@ -45,7 +47,7 @@ mod test {
     #[tokio::test]
     async fn test_cards_search() {
         let client = ScryfallClient::new();
-        let list = client.cards().search(ScryfallCardsSearchParams { q: "jace" }).await.unwrap();
+        let list = client.cards().search(ScryfallCardsSearchParams { q: "" }).await.unwrap();
 
         dbg!("{:?}", &list);
 
@@ -60,7 +62,7 @@ mod test {
             .collection(ScryfallCardsCollectionParams {
                 identifiers: &[
                     ScryfallCardsCollectionEntry {
-                        oracle_id: &uuid!("9aa0d3cc-0785-4b37-a495-33f4bf4114ef"),
+                        oracle_id: &uuid!("96e5d4a1-e59f-4140-823f-a17e15ee5d8d"),
                     },
                     ScryfallCardsCollectionEntry {
                         oracle_id: &uuid!("ec17b9db-dd80-4b46-a1b5-215f26bf6498"),
@@ -73,5 +75,18 @@ mod test {
         dbg!("{:?}", &list);
 
         assert!(!list.data.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_bulk_data() {
+        let client = ScryfallClient::new();
+        client
+            .bulk_data()
+            .ty("oracle-cards")
+            .await
+            .unwrap()
+            .stream_to_file(format!("{}/tmp.json", env!("CARGO_MANIFEST_DIR")))
+            .await
+            .unwrap();
     }
 }

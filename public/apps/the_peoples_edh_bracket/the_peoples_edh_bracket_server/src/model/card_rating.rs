@@ -1,18 +1,8 @@
 use bigdecimal::BigDecimal;
 use serde::Serialize;
 
-#[derive(sqlx::FromRow, Serialize)]
-pub struct Person {
-    pub uuid: uuid::Uuid,
-}
-
-#[derive(sqlx::FromRow, Serialize)]
-pub struct Card {
-    pub oracle_id: uuid::Uuid,
-    pub name: String,
-    pub image_uri: Option<String>,
-}
-
+#[derive(ts_rs::TS)]
+#[ts(export)]
 #[derive(sqlx::FromRow, Serialize)]
 pub struct CardRating {
     pub uuid: uuid::Uuid,

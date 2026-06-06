@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 CREATE TABLE IF NOT EXISTS person (
   uuid UUID PRIMARY KEY DEFAULT gen_random_uuid()
 );
@@ -5,7 +7,8 @@ CREATE TABLE IF NOT EXISTS person (
 CREATE TABLE IF NOT EXISTS card (
   oracle_id UUID PRIMARY KEY,
   name TEXT NOT NULL,
-  image_uri TEXT
+  image_uri TEXT,
+  legality TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS card_rating (
