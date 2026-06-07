@@ -3,8 +3,10 @@ import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useDebouncedValue } from '@tanstack/react-pacer'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 
-import { MtgCardButton } from '../components/MtgCardButton'
+import { MtgCardButton, MtgCardButtonGhost } from '../components/MtgCardButton'
 import { useCards, useSearchCards } from '../hooks/useCards'
+
+const PAGE_SIZE = 50
 
 export const BrowsePage = () => {
   const [q, setQ] = useQueryState('q')
@@ -15,20 +17,20 @@ export const BrowsePage = () => {
     parseAsStringLiteral(['highest_rated', 'lowest_rated']),
   )
 
-  const { data: allCards, isLoading: allCardsLoading } = useCards({
-    q: q || null,
+  const searchCards = useSearchCards(q || null)
+  const { data, isLoading, isFetching } = useCards({
+    q: debouncedQ || null,
     sort,
-    page_size: 10,
+    page_size: PAGE_SIZE,
   })
-  const cards = useSearchCards(debouncedQ || null)
 
   return (
     <Stack h="100dvh" p="xl" w="100%">
       <Group w={'100%'}>
         <Autocomplete
-          data={allCards?.pages.flat().map(({ name }) => name)}
+          data={searchCards.data?.pages.flat().map(({ name }) => name)}
           filter={({ options }) => options}
-          loading={allCardsLoading}
+          loading={isFetching}
           placeholder="Search for a card..."
           rightSection={<MagnifyingGlassIcon />}
           style={{
@@ -54,9 +56,9 @@ export const BrowsePage = () => {
         />
       </Group>
       <Flex gap={'lg'} justify={'center'} wrap={'wrap'}>
-        {cards.data?.pages.flat().map((card, index) => (
-          <MtgCardButton card={card} key={index} />
-        ))}
+        {isLoading
+          ? Array.from({ length: PAGE_SIZE }).map((_, index) => <MtgCardButtonGhost key={index} />)
+          : data?.pages.flat().map(card => <MtgCardButton card={card} key={card.oracle_id} />)}
       </Flex>
     </Stack>
   )

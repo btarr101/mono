@@ -1,5 +1,5 @@
 use tower_http::{
-    cors::{AllowMethods, AllowOrigin, CorsLayer},
+    cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer},
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
 };
 use tracing::info;
@@ -13,7 +13,8 @@ pub async fn server(state: AppState, config: Config) -> anyhow::Result<()> {
         .layer(
             CorsLayer::new()
                 .allow_methods(AllowMethods::any())
-                .allow_origin(AllowOrigin::any()),
+                .allow_origin(AllowOrigin::any())
+                .allow_headers(AllowHeaders::any()),
         )
         .layer(
             TraceLayer::new_for_http()

@@ -1,18 +1,14 @@
 import { AreaChart } from '@mantine/charts'
 import {
-  ActionIcon,
   Alert,
   Anchor,
-  Avatar,
   Box,
   Button,
   Card,
   Center,
   Divider,
   Group,
-  Image,
   Indicator,
-  Menu,
   NumberFormatter,
   NumberInput,
   Paper,
@@ -23,21 +19,64 @@ import {
   Textarea,
   Title,
 } from '@mantine/core'
-import {
-  ArrowSquareOutIcon,
-  CaretDownIcon,
-  InfoIcon,
-  PushPinIcon,
-  ShareIcon,
-} from '@phosphor-icons/react'
+import { hasLength, useForm } from '@mantine/form'
+import { ArrowSquareOutIcon, InfoIcon, ShareIcon } from '@phosphor-icons/react'
+import { useQueryState } from 'nuqs'
 import { Link, useLoaderData, useNavigate } from 'react-router'
 
+import { LoadingImage } from '../components/LoadingImage'
+import { Rating, RatingGhost } from '../components/Rating'
+import { usePersonUUID } from '../hooks/useAuth'
+import {
+  useMyCardRating,
+  usePatchRating,
+  usePostRating,
+  useRating,
+  useRatings,
+} from '../hooks/useRatings'
 import type { Card as MtgCard } from '../types/bindings/Card'
+import type { CardRating } from '../types/bindings/CardRating'
 import { safeNavigate } from '../util'
+
+type SaveRatingParams = {
+  points: number | null
+  reason: string | null
+}
 
 export const CardPage = () => {
   const navigate = useNavigate()
   const { card } = useLoaderData<{ card: MtgCard }>()
+
+  const personUUID = usePersonUUID()
+  const { data: ratings, isPending: ratingsPending } = useRatings({
+    card_oracle_id: card.oracle_id,
+    rater_person_uuid: null,
+    page_size: 10,
+  })
+  const { data: myRating, isPending: myRatingPending } = useMyCardRating(card.oracle_id)
+  const [pinned, setPinned] = useQueryState('pinned', {
+    clearOnDefault: true,
+  })
+  const pinnedRating = useRating(pinned)
+
+  const { mutateAsync: postRating } = usePostRating()
+  const { mutateAsync: patchRating } = usePatchRating()
+  const saveRating = async ({ points, reason }: SaveRatingParams) => {
+    const pointsAndReason = {
+      points: (points ?? 0.0).toString(),
+      reason,
+    }
+
+    await (myRating
+      ? patchRating({
+          uuid: myRating.uuid,
+          ...pointsAndReason,
+        })
+      : postRating({
+          card_oracle_id: card.oracle_id,
+          ...pointsAndReason,
+        }))
+  }
 
   return (
     <Stack gap="xl" h="100dvh" justify="stretch" p="xl" w="100%">
@@ -48,16 +87,68 @@ export const CardPage = () => {
         <CardSection card={card} />
         <InfoSection card={card} />
       </Group>
-      <Stack gap="sm">
-        <Alert
-          color="orange"
-          icon={<InfoIcon />}
-          title="You haven't rated this card yet."
-          variant="light"
-        />
-        <RatingInput />
+      {personUUID && (
+        <Stack gap="sm">
+          {myRatingPending ? (
+            <RatingGhost />
+          ) : (
+            <>
+              {!myRating && (
+                <Alert
+                  color="orange"
+                  icon={<InfoIcon />}
+                  title="You haven't rated this card yet."
+                  variant="light"
+                />
+              )}
+              <RatingInput rating={myRating ?? null} onSave={saveRating} />
+            </>
+          )}
+        </Stack>
+      )}
+      <Stack pb="lg">
+        <Group w={'100%'}>
+          <Title order={1}>Community Ratings</Title>
+          <Select
+            allowDeselect={false}
+            data={['👍 Most Liked', '👎 Most Disliked', '🔥 Most Controversial', '⏲️ Most Recent']}
+            defaultValue="👍 Most Liked"
+            placeholder="sort by"
+          />
+        </Group>
+        <Stack gap="xl">
+          {pinned &&
+            (pinnedRating.isPending ? (
+              <RatingGhost />
+            ) : (
+              pinnedRating.data && (
+                <Rating
+                  key={pinnedRating.data.uuid}
+                  pinned={true}
+                  rating={pinnedRating.data}
+                  onPin={() => setPinned(null)}
+                />
+              )
+            ))}
+          {ratingsPending ? (
+            <RatingGhost />
+          ) : (
+            ratings?.pages
+              .flat()
+              .flatMap(rating =>
+                rating.rater_person_uuid === personUUID || rating.uuid === pinned
+                  ? []
+                  : [
+                      <Rating
+                        key={rating.uuid}
+                        rating={rating}
+                        onPin={() => setPinned(rating.uuid)}
+                      />,
+                    ],
+              )
+          )}
+        </Stack>
       </Stack>
-      <RatingsSection />
     </Stack>
   )
 }
@@ -75,7 +166,7 @@ const CardSection = ({ card }: CardSectionProps) => (
         overflow: 'clip',
       }}
     >
-      <Image
+      <LoadingImage
         src={
           card.image_uri ||
           'https://cards.scryfall.io/large/front/0/3/036ef8c9-72ac-46ce-af07-83b79d736538.jpg?1562730661'
@@ -167,156 +258,122 @@ const InfoSection = ({ card }: InfoSectionProps) => (
   </Stack>
 )
 
-const RatingsSection = () => (
-  <Stack pb="lg">
-    <Group w={'100%'}>
-      <Title order={1}>Community Ratings</Title>
-      <Select
-        allowDeselect={false}
-        data={['👍 Most Liked', '👎 Most Disliked', '🔥 Most Controversial', '⏲️ Most Recent']}
-        defaultValue="👍 Most Liked"
-        placeholder="sort by"
-      />
-    </Group>
-    <Stack gap="xl">
-      <Rating pinned={true} />
-      <Rating />
-    </Stack>
-  </Stack>
-)
-
-const RatingInput = () => (
-  <Indicator
-    color="transparent"
-    label={
-      <Box pos={'relative'} w={0}>
-        <Group pos="absolute" right={0} style={{ transform: 'translate(10%, -50%)' }} wrap="nowrap">
-          <Button.Group>
-            <Button size="compact-md" style={{ pointerEvents: 'none' }} variant="default">
-              10 👍
-            </Button>
-            <Button size="compact-md" style={{ pointerEvents: 'none' }} variant="default">
-              5 👎
-            </Button>
-            <Button size="compact-md" variant="default">
-              <ShareIcon />
-            </Button>
-          </Button.Group>
-          <Button miw={'fit-content'}>Save</Button>
-        </Group>
-      </Box>
-    }
-    position="bottom-end"
-    size={32}
-  >
-    <Card withBorder orientation="horizontal" padding="sm">
-      <Card.Section withBorder mih={'125px'} p="md" style={{ alignSelf: 'stretch' }}>
-        <Center h="100%">
-          <Group wrap="nowrap">
-            <Title order={2} textWrap="nowrap">
-              <NumberFormatter suffix={' pts'} value={10} />
-            </Title>
-            <Divider orientation="vertical" />
-            <NumberInput
-              placeholder="0 ppts"
-              size="lg"
-              styles={{
-                input: {
-                  fieldSizing: 'content',
-                  paddingRight:
-                    'calc(var(--input-right-section-width) + var(--mantine-spacing-md))',
-                },
-              }}
-              suffix=" ppts"
-            />
-          </Group>
-        </Center>
-      </Card.Section>
-      <Card.Section flex={1}>
-        <Textarea
-          autosize
-          placeholder="Enter a reason..."
-          styles={{
-            input: {
-              border: 'none',
-              borderRadius: 0,
-              fontSize: 'var(--mantine-font-size-md)',
-              padding: 'var(--mantine-spacing-md)',
-              resize: 'none',
-            },
-          }}
-          w="100%"
-        />
-      </Card.Section>
-    </Card>
-  </Indicator>
-)
-
-type RatingProps = {
-  pinned?: boolean
+type RatingInputProps = {
+  rating: CardRating | null
+  onSave: (values: { points: number | null; reason: string | null }) => Promise<void>
 }
 
-const Rating = ({ pinned }: RatingProps) => (
-  <Box pos="relative">
-    <Indicator
-      color="transparent"
-      label={
-        <Box pos={'relative'} w={0}>
-          <Button.Group pos="absolute" right={0} style={{ transform: 'translate(10%, -50%)' }}>
-            <Button size="compact-md" variant="light">
-              10 👍
-            </Button>
-            <Button size="compact-md" variant="default">
-              5 👎
-            </Button>
-            <Button size="compact-md" variant="default">
-              <ShareIcon />
-            </Button>
-            <Button size="compact-md" variant={pinned ? 'filled' : 'default'}>
-              <PushPinIcon />
-            </Button>
-          </Button.Group>
-        </Box>
-      }
-      position="bottom-end"
-      size={32}
+const RatingInput = ({ rating, onSave }: RatingInputProps) => {
+  const form = useForm({
+    mode: 'controlled',
+    initialValues: {
+      points: rating ? Number(rating.points) : null, // todo: look into bigfloat impls
+      reason: rating?.reason ?? null,
+    },
+    validate: {
+      reason: hasLength({ max: 300 }, 'Reason must be less 300 characters or less'),
+    },
+  })
+
+  return (
+    <form
+      onSubmit={form.onSubmit(async values => {
+        await onSave(values)
+        form.resetDirty(values)
+      })}
     >
-      <Card withBorder orientation="horizontal" padding="sm">
-        <Card.Section withBorder p="md">
-          <Center h="100%">
-            <Stack align="start" gap={'lg'}>
+      <Indicator
+        color="transparent"
+        label={
+          <Box pos={'relative'} w={0}>
+            <Group
+              pos="absolute"
+              right={0}
+              style={{ transform: 'translate(10%, -50%)' }}
+              wrap="nowrap"
+            >
+              {rating !== null && (
+                <Button.Group>
+                  <Button
+                    disabled
+                    size="compact-md"
+                    style={{ pointerEvents: 'none' }}
+                    variant="default"
+                  >
+                    10 👍
+                  </Button>
+                  <Button
+                    disabled
+                    size="compact-md"
+                    style={{ pointerEvents: 'none' }}
+                    variant="default"
+                  >
+                    5 👎
+                  </Button>
+                  <Button size="compact-md" variant="default">
+                    <ShareIcon />
+                  </Button>
+                </Button.Group>
+              )}
+              <Button
+                disabled={!form.isDirty()}
+                loading={form.submitting}
+                miw={'fit-content'}
+                type="submit"
+              >
+                Save
+              </Button>
+            </Group>
+          </Box>
+        }
+        position="bottom-end"
+        size={32}
+      >
+        <Card withBorder orientation="horizontal" padding="sm">
+          <Card.Section withBorder mih={'125px'} p="md" style={{ alignSelf: 'stretch' }}>
+            <Center h="100%">
               <Group wrap="nowrap">
                 <Title order={2} textWrap="nowrap">
                   <NumberFormatter suffix={' pts'} value={10} />
                 </Title>
                 <Divider orientation="vertical" />
-                <Title c="dimmed" order={4} textWrap="nowrap">
-                  <NumberFormatter suffix={' ppts'} value={3.5} />
-                </Title>
+                <NumberInput
+                  key={form.key('points')}
+                  placeholder="0 ppts"
+                  size="lg"
+                  styles={{
+                    input: {
+                      fieldSizing: 'content',
+                      paddingRight:
+                        'calc(var(--input-right-section-width) + var(--mantine-spacing-md))',
+                    },
+                  }}
+                  suffix=" ppts"
+                  {...form.getInputProps('points')}
+                />
               </Group>
-              <Group gap="sm">
-                <Avatar name="Benjamin Tarr" size="md" />
-                <Group gap={0}>
-                  <Text size="md">Benjamin Tarr</Text>
-                  <Menu position="bottom-end">
-                    <Menu.Target>
-                      <ActionIcon variant="transparent">
-                        <CaretDownIcon />
-                      </ActionIcon>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      <Menu.Item>View Profile</Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
-                </Group>
-              </Group>
-            </Stack>
-          </Center>
-        </Card.Section>
-        <Card.Section p="md">
-          <Text>This card can be pitched to force of will so it gets the dub.</Text>
-        </Card.Section>
-      </Card>
-    </Indicator>
-  </Box>
-)
+            </Center>
+          </Card.Section>
+          <Card.Section flex={1}>
+            <Textarea
+              autosize
+              key={form.key('reason')}
+              placeholder="Enter a reason..."
+              styles={{
+                input: {
+                  border: 'none',
+                  borderRadius: 0,
+                  fontSize: 'var(--mantine-font-size-md)',
+                  padding: 'var(--mantine-spacing-md)',
+                  resize: 'none',
+                },
+              }}
+              w="100%"
+              {...form.getInputProps('reason')}
+            />
+          </Card.Section>
+        </Card>
+      </Indicator>
+    </form>
+  )
+}

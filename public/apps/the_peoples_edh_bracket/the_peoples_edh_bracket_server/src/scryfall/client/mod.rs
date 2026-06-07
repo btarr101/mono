@@ -47,7 +47,11 @@ mod test {
     #[tokio::test]
     async fn test_cards_search() {
         let client = ScryfallClient::new();
-        let list = client.cards().search(ScryfallCardsSearchParams { q: "" }).await.unwrap();
+        let list = client
+            .cards()
+            .search(ScryfallCardsSearchParams { q: "emrakul" })
+            .await
+            .unwrap();
 
         dbg!("{:?}", &list);
 
@@ -80,13 +84,6 @@ mod test {
     #[tokio::test]
     async fn test_bulk_data() {
         let client = ScryfallClient::new();
-        client
-            .bulk_data()
-            .ty("oracle-cards")
-            .await
-            .unwrap()
-            .stream_to_file(format!("{}/tmp.json", env!("CARGO_MANIFEST_DIR")))
-            .await
-            .unwrap();
+        client.bulk_data().ty("oracle-cards").await.unwrap();
     }
 }

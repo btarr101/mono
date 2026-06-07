@@ -12,9 +12,10 @@ import {
 import { useForm } from '@mantine/form'
 import { FireIcon, MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useDebouncedValue } from '@tanstack/react-pacer'
+import { Suspense } from 'react'
 import { Link, useNavigate } from 'react-router'
 
-import { MtgCardButton } from '../components/MtgCardButton'
+import { MtgCardButton, MtgCardButtonGhost } from '../components/MtgCardButton'
 import { useSearchCards, useSuspenseCards } from '../hooks/useCards'
 
 export const HomePage = () => (
@@ -105,35 +106,47 @@ const Stat = ({ value, label }: StatProps) => {
   )
 }
 
-const Trending = () => {
+const Trending = () => (
+  <Stack gap="lg" style={{ flex: 1, minHeight: 0 }}>
+    <Group justify="space-between">
+      <Group c="orange" gap="xs">
+        <FireIcon size={32} />
+        <Title size="2rem">Trending</Title>
+      </Group>
+      <Button component={Link} to={{ pathname: 'browse', search: '?sort=trending' }}>
+        View All
+      </Button>
+    </Group>
+
+    <ScrollArea mih={'fit-content'} scrollbars="x" style={{ flex: 1 }} w={'100%'}>
+      <Group
+        h={'100%'}
+        justify={'space-evenly'}
+        mih={'fit-content'}
+        style={{ flex: 1, minHeight: 0 }}
+        w={'100%'}
+        wrap="nowrap"
+      >
+        <Suspense
+          fallback={Array.from({ length: 5 }).map((_, index) => (
+            <MtgCardButtonGhost key={index} />
+          ))}
+        >
+          <TrendingCards />
+        </Suspense>
+      </Group>
+    </ScrollArea>
+  </Stack>
+)
+
+const TrendingCards = () => {
   const cards = useSuspenseCards({ q: null, sort: null, page_size: 5 })
 
   return (
-    <Stack gap="lg" style={{ flex: 1, minHeight: 0 }}>
-      <Group justify="space-between">
-        <Group c="orange" gap="xs">
-          <FireIcon size={32} />
-          <Title size="2rem">Trending</Title>
-        </Group>
-        <Button component={Link} to={{ pathname: 'browse', search: '?sort=trending' }}>
-          View All
-        </Button>
-      </Group>
-
-      <ScrollArea mih={'fit-content'} scrollbars="x" style={{ flex: 1 }} w={'100%'}>
-        <Group
-          h={'100%'}
-          justify={'space-evenly'}
-          mih={'fit-content'}
-          style={{ flex: 1, minHeight: 0 }}
-          w={'100%'}
-          wrap="nowrap"
-        >
-          {cards.data.pages.flat().map((card, index) => (
-            <MtgCardButton card={card} key={index} />
-          ))}
-        </Group>
-      </ScrollArea>
-    </Stack>
+    <>
+      {cards.data.pages.flat().map(card => (
+        <MtgCardButton card={card} key={card.oracle_id} />
+      ))}
+    </>
   )
 }

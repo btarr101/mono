@@ -1,6 +1,7 @@
 use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
 
 pub mod constants;
+
 pub async fn setup_pg_pool() -> anyhow::Result<Pool<Postgres>> {
     let pool = PgPoolOptions::new()
         // TODO - These should come from a config

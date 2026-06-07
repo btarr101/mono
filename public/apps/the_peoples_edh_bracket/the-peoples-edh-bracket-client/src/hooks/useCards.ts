@@ -15,7 +15,7 @@ export const useCards = ({ q, sort, page_size }: Omit<GetCardsParams, 'page'>) =
       getCards({
         q,
         sort,
-        page: page,
+        page,
         page_size,
       }),
     initialPageParam: 1,
@@ -43,4 +43,4 @@ export const useCard = (oracleId: string) =>
     queryFn: () => getCard(oracleId),
   })
 
-export const useSearchCards = (q: string | null) => useCards({ q, sort: null, page_size: 50 })
+export const useSearchCards = (q: string | null) => useCards({ q, sort: null, page_size: 10 })

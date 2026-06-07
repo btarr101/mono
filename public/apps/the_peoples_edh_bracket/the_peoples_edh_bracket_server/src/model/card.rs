@@ -1,11 +1,13 @@
 use serde::Serialize;
 
+use crate::constants::TS_RS_EXPORT_TO;
+
 /// The legality of a Magic: The Gathering card.
 ///
 /// Restricted is very unlikely - probably impossible.
 /// Non legal cards will not be listed.
 #[derive(ts_rs::TS)]
-#[ts(export)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
 #[derive(Serialize, sqlx::Type)]
 #[serde(rename_all = "snake_case")]
 #[sqlx(rename_all = "snake_case", type_name = "text")]
@@ -20,7 +22,7 @@ pub enum CardLegality {
 
 /// A Magic: The Gathering card.
 #[derive(ts_rs::TS)]
-#[ts(export)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
 #[derive(sqlx::FromRow, Serialize)]
 pub struct Card {
     /// A unique identifier for the mechanics / behavior of the card

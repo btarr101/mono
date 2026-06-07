@@ -11,34 +11,16 @@ use serde_inline_default::serde_inline_default;
 use sqlx::PgPool;
 
 use crate::{
+    constants::TS_RS_EXPORT_TO,
     model::card::{Card, CardLegality},
     state::AppState,
+    util::parse_pagination,
 };
 
 pub fn get_router() -> Router<AppState> { Router::new().route("/", get(get_cards)).route("/{oracle_id}", get(get_card)) }
 
-async fn get_card(State(pg_pool): State<PgPool>, Path(oracle_id): Path<uuid::Uuid>) -> ApiResult<Json<Card>> {
-    let card = sqlx::query_as!(
-        Card,
-        "SELECT
-            oracle_id,
-            name,
-            image_uri,
-            legality as \"legality: CardLegality\"
-        FROM card
-        WHERE oracle_id = $1
-        LIMIT 1",
-        oracle_id
-    )
-    .fetch_optional(&pg_pool)
-    .await?
-    .context_not_found("card could not be found")?;
-
-    Ok(Json(card))
-}
-
 #[derive(ts_rs::TS)]
-#[ts(export)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum GetCardsParamsSort {
@@ -47,7 +29,7 @@ enum GetCardsParamsSort {
 }
 
 #[derive(ts_rs::TS)]
-#[ts(export)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
 #[serde_inline_default]
 #[derive(Deserialize)]
 struct GetCardsParams {
@@ -70,8 +52,7 @@ async fn get_cards(
         page_size,
     }): Query<GetCardsParams>,
 ) -> ApiResult<Json<Vec<Card>>> {
-    let limit = page_size.get() as i64;
-    let offset = ((page.get() - 1) * page_size.get()) as i64;
+    let (limit, offset) = parse_pagination(page, page_size);
     let desc = match sort {
         None => None,
         Some(GetCardsParamsSort::HighestRated) => Some(true),
@@ -106,4 +87,24 @@ async fn get_cards(
     .await?;
 
     Ok(Json(cards))
+}
+
+async fn get_card(State(pg_pool): State<PgPool>, Path(oracle_id): Path<uuid::Uuid>) -> ApiResult<Json<Card>> {
+    let card = sqlx::query_as!(
+        Card,
+        "SELECT
+            oracle_id,
+            name,
+            image_uri,
+            legality as \"legality: CardLegality\"
+        FROM card
+        WHERE oracle_id = $1
+        LIMIT 1",
+        oracle_id
+    )
+    .fetch_optional(&pg_pool)
+    .await?
+    .context_not_found("card could not be found")?;
+
+    Ok(Json(card))
 }
