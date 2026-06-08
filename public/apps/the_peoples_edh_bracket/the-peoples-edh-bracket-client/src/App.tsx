@@ -48,6 +48,8 @@ const router = createBrowserRouter([
   {
     path: '/',
     Component: Layout,
+    // TODO: THIS IS NOT PERMANENT!
+    hydrateFallbackElement: <p>Loading...</p>,
     children: [
       {
         index: true,

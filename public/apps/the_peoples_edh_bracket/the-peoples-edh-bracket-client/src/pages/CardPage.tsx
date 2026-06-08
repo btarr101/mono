@@ -71,7 +71,7 @@ export const CardPage = () => {
   const saveRating = async ({ points, reason }: SaveRatingParams) => {
     const pointsAndReason = {
       points: (points ?? 0.0).toString(),
-      reason,
+      reason: reason || null,
     }
 
     await (myRating
@@ -293,7 +293,7 @@ const RatingInput = ({ rating, onSave }: RatingInputProps) => {
     mode: 'controlled',
     initialValues: {
       points: rating ? Number(rating.points) : null, // todo: look into bigfloat impls
-      reason: rating?.reason ?? null,
+      reason: rating?.reason ?? '',
     },
     validate: {
       reason: hasLength({ max: 300 }, 'Reason must be less 300 characters or less'),
