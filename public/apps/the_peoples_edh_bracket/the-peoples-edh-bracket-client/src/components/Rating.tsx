@@ -16,17 +16,35 @@ import {
 import { PushPinIcon, ShareIcon } from '@phosphor-icons/react'
 
 import { usePerson } from '../hooks/usePersons'
-import type { CardRating } from '../types/bindings/CardRating'
+import { usePostReviewRating } from '../hooks/useRatings'
+import type { CardRatingWithReviews } from '../types/bindings/CardRatingWithReviews'
+import { formatTimeStamp } from '../util'
 import { PersonProfileLine } from './PersonProfileLine'
 
 export type RatingProps = {
-  rating: CardRating
+  rating: CardRatingWithReviews
   pinned?: boolean
   onPin?: () => void
 }
 
 export const Rating = ({ rating, pinned, onPin }: RatingProps) => {
   const person = usePerson(rating.rater_person_uuid)
+  const { mutate: reviewRating } = usePostReviewRating()
+
+  const personLiked = rating.reviews.person_review === true
+  const personDisliked = rating.reviews.person_review === false
+
+  const onLike = () =>
+    reviewRating({
+      uuid: rating.uuid,
+      like: personLiked ? null : true,
+    })
+
+  const onDislike = () =>
+    reviewRating({
+      uuid: rating.uuid,
+      like: personDisliked ? null : false,
+    })
 
   return (
     <Box pos="relative">
@@ -35,11 +53,19 @@ export const Rating = ({ rating, pinned, onPin }: RatingProps) => {
         label={
           <Box pos={'relative'} w={0}>
             <Button.Group pos="absolute" right={0} style={{ transform: 'translate(10%, -50%)' }}>
-              <Button size="compact-md" variant="light">
-                10 👍
+              <Button
+                size="compact-md"
+                variant={personLiked ? 'light' : 'default'}
+                onClick={onLike}
+              >
+                {rating.reviews.likes} 👍
               </Button>
-              <Button size="compact-md" variant="default">
-                5 👎
+              <Button
+                size="compact-md"
+                variant={rating.reviews.person_review === false ? 'light' : 'default'}
+                onClick={onDislike}
+              >
+                {rating.reviews.dislikes} 👎
               </Button>
               <Button size="compact-md" variant="default">
                 <ShareIcon />
@@ -77,6 +103,10 @@ export const Rating = ({ rating, pinned, onPin }: RatingProps) => {
           </Card.Section>
         </Card>
       </Indicator>
+      <Text c="dimmed" px="xs" size="xs">
+        {formatTimeStamp(rating.created_at)}
+        {rating.updated_at && ' • edited'}
+      </Text>
     </Box>
   )
 }

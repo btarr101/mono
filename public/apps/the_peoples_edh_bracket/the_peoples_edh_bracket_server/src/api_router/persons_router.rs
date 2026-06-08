@@ -42,10 +42,8 @@ async fn get_persons(
     let persons = sqlx::query_as!(
         Person,
         "SELECT * FROM person
-        WHERE ($1::text IS NULL OR $1 <% username)
-        ORDER BY
-            CASE WHEN $1 IS NOT NULL THEN word_similarity($1, username) END DESC NULLS LAST,
-            username
+        WHERE ($1::text IS NULL OR lower(username) LIKE lower($1))
+        ORDER BY username
         LIMIT $2 OFFSET $3",
         q,
         limit,

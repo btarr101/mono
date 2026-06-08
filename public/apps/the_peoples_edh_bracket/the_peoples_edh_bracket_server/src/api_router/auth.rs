@@ -5,10 +5,16 @@ use axum::{
     response::Response,
 };
 use reqwest::StatusCode;
+use std::convert::Infallible;
 
 #[derive(Clone, Copy)]
 pub struct Auth {
     pub person_uuid: uuid::Uuid,
+}
+
+#[derive(Clone, Copy)]
+pub struct OptionalAuth {
+    pub person_uuid: Option<uuid::Uuid>,
 }
 
 pub async fn auth_middleware(headers: HeaderMap, mut request: Request, next: Next) -> Response {
@@ -36,5 +42,18 @@ where
 
     async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
         parts.extensions.get::<Auth>().copied().ok_or(StatusCode::UNAUTHORIZED)
+    }
+}
+
+impl<S> FromRequestParts<S> for OptionalAuth
+where
+    S: Send + Sync,
+{
+    type Rejection = Infallible;
+
+    async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
+        Ok(Self {
+            person_uuid: parts.extensions.get::<Auth>().copied().map(|auth| auth.person_uuid),
+        })
     }
 }

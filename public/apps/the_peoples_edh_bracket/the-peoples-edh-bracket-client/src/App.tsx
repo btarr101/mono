@@ -1,8 +1,10 @@
 import '@mantine/core/styles.css'
 import '@mantine/charts/styles.css'
+import '@mantine/notifications/styles.css'
 
 import { MantineProvider } from '@mantine/core'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Notifications, notifications } from '@mantine/notifications'
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 
@@ -13,7 +15,34 @@ import { CardPage } from './pages/CardPage'
 import { HomePage } from './pages/HomePage'
 import { theme } from './theme'
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      throwOnError: false,
+    },
+    mutations: {
+      throwOnError: false,
+    },
+  },
+  queryCache: new QueryCache({
+    onError: error =>
+      notifications.show({
+        title: error.name,
+        message: error.message,
+        color: 'red',
+        autoClose: false,
+      }),
+  }),
+  mutationCache: new MutationCache({
+    onError: error =>
+      notifications.show({
+        title: error.name,
+        message: error.message,
+        color: 'red',
+        autoClose: false,
+      }),
+  }),
+})
 
 const router = createBrowserRouter([
   {
@@ -63,6 +92,7 @@ export const App = () => (
   <QueryClientProvider client={queryClient}>
     <MantineProvider theme={theme}>
       <RouterProvider router={router} />
+      <Notifications />
     </MantineProvider>
     <ReactQueryDevtools initialIsOpen={false} />
   </QueryClientProvider>

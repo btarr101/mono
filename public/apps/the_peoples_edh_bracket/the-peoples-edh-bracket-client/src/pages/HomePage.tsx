@@ -12,11 +12,10 @@ import {
 import { useForm } from '@mantine/form'
 import { FireIcon, MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useDebouncedValue } from '@tanstack/react-pacer'
-import { Suspense } from 'react'
 import { Link, useNavigate } from 'react-router'
 
 import { MtgCardButton, MtgCardButtonGhost } from '../components/MtgCardButton'
-import { useSearchCards, useSuspenseCards } from '../hooks/useCards'
+import { useCards, useSearchCards } from '../hooks/useCards'
 
 export const HomePage = () => (
   <Stack h="100dvh" justify="stretch" p="xl" w="100%">
@@ -127,26 +126,16 @@ const Trending = () => (
         w={'100%'}
         wrap="nowrap"
       >
-        <Suspense
-          fallback={Array.from({ length: 5 }).map((_, index) => (
-            <MtgCardButtonGhost key={index} />
-          ))}
-        >
-          <TrendingCards />
-        </Suspense>
+        <TrendingCards />
       </Group>
     </ScrollArea>
   </Stack>
 )
 
 const TrendingCards = () => {
-  const cards = useSuspenseCards({ q: null, sort: null, page_size: 5 })
+  const cards = useCards({ q: null, sort: null, page_size: 5 })
 
-  return (
-    <>
-      {cards.data.pages.flat().map(card => (
-        <MtgCardButton card={card} key={card.oracle_id} />
-      ))}
-    </>
-  )
+  return cards.data
+    ? cards.data.pages.flat().map(card => <MtgCardButton card={card} key={card.oracle_id} />)
+    : Array.from({ length: 5 }).map((_, index) => <MtgCardButtonGhost key={index} />)
 }

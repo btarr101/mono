@@ -21,7 +21,7 @@ import {
 } from '@mantine/core'
 import { hasLength, useForm } from '@mantine/form'
 import { ArrowSquareOutIcon, InfoIcon, ShareIcon } from '@phosphor-icons/react'
-import { useQueryState } from 'nuqs'
+import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { Link, useLoaderData, useNavigate } from 'react-router'
 
 import { LoadingImage } from '../components/LoadingImage'
@@ -35,8 +35,8 @@ import {
   useRatings,
 } from '../hooks/useRatings'
 import type { Card as MtgCard } from '../types/bindings/Card'
-import type { CardRating } from '../types/bindings/CardRating'
-import { safeNavigate } from '../util'
+import type { CardRatingWithReviews } from '../types/bindings/CardRatingWithReviews'
+import { formatTimeStamp, safeNavigate } from '../util'
 
 type SaveRatingParams = {
   points: number | null
@@ -48,9 +48,16 @@ export const CardPage = () => {
   const { card } = useLoaderData<{ card: MtgCard }>()
 
   const personUUID = usePersonUUID()
+  const [sort, setSort] = useQueryState(
+    'sort',
+    parseAsStringLiteral(['liked', 'disliked', 'controversial', 'recent'] as const).withDefault(
+      'liked',
+    ),
+  )
   const { data: ratings, isPending: ratingsPending } = useRatings({
     card_oracle_id: card.oracle_id,
     rater_person_uuid: null,
+    sort,
     page_size: 10,
   })
   const { data: myRating, isPending: myRatingPending } = useMyCardRating(card.oracle_id)
@@ -111,9 +118,27 @@ export const CardPage = () => {
           <Title order={1}>Community Ratings</Title>
           <Select
             allowDeselect={false}
-            data={['👍 Most Liked', '👎 Most Disliked', '🔥 Most Controversial', '⏲️ Most Recent']}
-            defaultValue="👍 Most Liked"
-            placeholder="sort by"
+            data={[
+              {
+                value: 'liked',
+                label: '👍 Most Liked',
+              },
+              {
+                value: 'disliked',
+                label: '👎 Most Disliked',
+              },
+              {
+                value: 'controversial',
+                label: '🔥 Most Controversial',
+              },
+              {
+                value: 'recent',
+                label: '⏲️ Most Recent',
+              },
+            ]}
+            defaultValue="liked"
+            value={sort}
+            onChange={newSort => setSort(newSort)}
           />
         </Group>
         <Stack gap="xl">
@@ -259,7 +284,7 @@ const InfoSection = ({ card }: InfoSectionProps) => (
 )
 
 type RatingInputProps = {
-  rating: CardRating | null
+  rating: CardRatingWithReviews | null
   onSave: (values: { points: number | null; reason: string | null }) => Promise<void>
 }
 
@@ -300,7 +325,7 @@ const RatingInput = ({ rating, onSave }: RatingInputProps) => {
                     style={{ pointerEvents: 'none' }}
                     variant="default"
                   >
-                    10 👍
+                    {rating.reviews.likes} 👍
                   </Button>
                   <Button
                     disabled
@@ -308,7 +333,7 @@ const RatingInput = ({ rating, onSave }: RatingInputProps) => {
                     style={{ pointerEvents: 'none' }}
                     variant="default"
                   >
-                    5 👎
+                    {rating.reviews.dislikes} 👎
                   </Button>
                   <Button size="compact-md" variant="default">
                     <ShareIcon />
@@ -374,6 +399,12 @@ const RatingInput = ({ rating, onSave }: RatingInputProps) => {
           </Card.Section>
         </Card>
       </Indicator>
+      {rating && (
+        <Text c="dimmed" px="xs" size="xs">
+          {formatTimeStamp(rating.created_at)}
+          {rating.updated_at && ' • edited'}
+        </Text>
+      )}
     </form>
   )
 }

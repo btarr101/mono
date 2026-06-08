@@ -6,20 +6,22 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
-import { getRating, getRatings, patchRating, postRating } from '../api/ratings'
+import { getRating, getRatings, patchRating, postRating, postReviewRating } from '../api/ratings'
 import type { GetRatingsParams } from '../types/bindings/GetRatingsParams'
 import type { PatchRatingBody } from '../types/bindings/PatchRatingBody'
+import type { PostReviewRatingBody } from '../types/bindings/PostReviewRatingBody'
 import { usePersonUUID } from './useAuth'
 
 export const useRatings = ({
   card_oracle_id,
   rater_person_uuid,
+  sort,
   page_size,
 }: Omit<GetRatingsParams, 'page'>) =>
   useInfiniteQuery({
-    queryKey: ['ratings', card_oracle_id, page_size],
+    queryKey: ['ratings', card_oracle_id, sort, page_size],
     queryFn: ({ pageParam: page }) =>
-      getRatings({ card_oracle_id, rater_person_uuid, page, page_size }),
+      getRatings({ card_oracle_id, rater_person_uuid, sort, page, page_size }),
     initialPageParam: 1,
     getNextPageParam: (_, pages) => pages.length + 1,
     placeholderData: keepPreviousData,
@@ -56,6 +58,7 @@ export const useMyCardRating = (oracleId: string) => {
       const ratings = await getRatings({
         card_oracle_id: oracleId,
         rater_person_uuid: personUUID,
+        sort: null,
         page: 1,
         page_size: 1,
       })
@@ -70,6 +73,23 @@ export const usePatchRating = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ uuid, ...body }: { uuid: string } & PatchRatingBody) => patchRating(uuid, body),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['ratings'],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['rating'],
+        }),
+      ]),
+  })
+}
+
+export const usePostReviewRating = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ uuid, ...body }: { uuid: string } & PostReviewRatingBody) =>
+      postReviewRating(uuid, body),
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({

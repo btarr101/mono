@@ -10,3 +10,18 @@ export const safeNavigate = (navigate: NavigateFunction, delta: number, fallback
     navigate(fallback)
   }
 }
+
+const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+const formatter = new Intl.DateTimeFormat('en-US', {
+  timeZone,
+  dateStyle: 'short',
+  timeStyle: 'short',
+})
+
+export const formatTimeStamp = (timestamp: string) => {
+  try {
+    return formatter.format(new Date(timestamp))
+  } catch {
+    return timestamp
+  }
+}

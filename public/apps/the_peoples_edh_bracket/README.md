@@ -9,4 +9,5 @@ A bracket management app for EDH (Elder Dragon Highlander / Commander) card rati
 
 ## Services
 
-- [Server](the_peoples_edh_bracket_server/README.md)
+- [Server](./the_peoples_edh_bracket_server/README.md)
+- [Client](./the-peoples-edh-bracket-client/README.md)

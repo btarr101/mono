@@ -71,11 +71,10 @@ async fn get_cards(
             SELECT card_oracle_id, AVG(points) AS avg_points
             FROM card_rating GROUP BY card_oracle_id
         ) r ON c.oracle_id = r.card_oracle_id
-        WHERE ($1::text IS NULL OR $1 <% c.name)
+        WHERE ($1::text IS NULL OR lower(c.name) LIKE lower($1) || '%')
         ORDER BY
             CASE WHEN $4 = true THEN r.avg_points END DESC NULLS LAST,
             CASE WHEN $4 = false THEN r.avg_points END ASC NULLS LAST,
-            CASE WHEN $1 IS NOT NULL THEN word_similarity($1, c.name) END DESC NULLS LAST,
             c.name
         LIMIT $2 OFFSET $3",
         q,

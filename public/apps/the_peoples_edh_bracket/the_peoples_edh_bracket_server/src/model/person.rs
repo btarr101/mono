@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::Serialize;
 
 use crate::constants::TS_RS_EXPORT_TO;
@@ -8,4 +9,6 @@ use crate::constants::TS_RS_EXPORT_TO;
 pub struct Person {
     pub uuid: uuid::Uuid,
     pub username: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: Option<DateTime<Utc>>,
 }
