@@ -17,12 +17,12 @@ import { PushPinIcon, ShareIcon } from '@phosphor-icons/react'
 
 import { usePerson } from '../hooks/usePersons'
 import { usePostReviewRating } from '../hooks/useRatings'
-import type { CardRatingWithReviews } from '../types/bindings/CardRatingWithReviews'
+import type { CardRatingWithReviewsAndGlobalPoints } from '../types/bindings/CardRatingWithReviewsAndGlobalPoints'
 import { formatTimeStamp } from '../util'
 import { PersonProfileLine } from './PersonProfileLine'
 
 export type RatingProps = {
-  rating: CardRatingWithReviews
+  rating: CardRatingWithReviewsAndGlobalPoints
   pinned?: boolean
   onPin?: () => void
 }
@@ -85,7 +85,11 @@ export const Rating = ({ rating, pinned, onPin }: RatingProps) => {
               <Stack align="start" gap={'lg'}>
                 <Group wrap="nowrap">
                   <Title order={2} textWrap="nowrap">
-                    <NumberFormatter suffix={' pts'} value={10} />
+                    <NumberFormatter
+                      decimalScale={2}
+                      suffix={' pts'}
+                      value={rating.global_points}
+                    />
                   </Title>
                   <Divider orientation="vertical" />
                   <Title c="dimmed" order={4} textWrap="nowrap">

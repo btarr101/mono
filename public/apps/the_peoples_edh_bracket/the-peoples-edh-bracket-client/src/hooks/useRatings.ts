@@ -6,7 +6,15 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
-import { getRating, getRatings, patchRating, postRating, postReviewRating } from '../api/ratings'
+import {
+  getRating,
+  getRatingHistogramForCard,
+  getRatings,
+  patchRating,
+  postRating,
+  postReviewRating,
+} from '../api/ratings'
+import type { GetRatingHistogramParams } from '../types/bindings/GetRatingHistogramParams'
 import type { GetRatingsParams } from '../types/bindings/GetRatingsParams'
 import type { PatchRatingBody } from '../types/bindings/PatchRatingBody'
 import type { PostReviewRatingBody } from '../types/bindings/PostReviewRatingBody'
@@ -101,3 +109,9 @@ export const usePostReviewRating = () => {
       ]),
   })
 }
+
+export const useGetRatingHistogramForCard = (oracleId: string, params: GetRatingHistogramParams) =>
+  useQuery({
+    queryKey: ['ratings', 'histogram', 'card', oracleId, params],
+    queryFn: async () => getRatingHistogramForCard(oracleId, params),
+  })

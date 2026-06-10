@@ -1,4 +1,4 @@
-import { AreaChart } from '@mantine/charts'
+import { BarChart } from '@mantine/charts'
 import {
   Alert,
   Anchor,
@@ -28,14 +28,15 @@ import { LoadingImage } from '../components/LoadingImage'
 import { Rating, RatingGhost } from '../components/Rating'
 import { usePersonUUID } from '../hooks/useAuth'
 import {
+  useGetRatingHistogramForCard,
   useMyCardRating,
   usePatchRating,
   usePostRating,
   useRating,
   useRatings,
 } from '../hooks/useRatings'
-import type { Card as MtgCard } from '../types/bindings/Card'
-import type { CardRatingWithReviews } from '../types/bindings/CardRatingWithReviews'
+import type { CardRatingWithReviewsAndGlobalPoints } from '../types/bindings/CardRatingWithReviewsAndGlobalPoints'
+import type { CardWithGlobalPoints } from '../types/bindings/CardWithGlobalPoints'
 import { formatTimeStamp, safeNavigate } from '../util'
 
 type SaveRatingParams = {
@@ -45,7 +46,7 @@ type SaveRatingParams = {
 
 export const CardPage = () => {
   const navigate = useNavigate()
-  const { card } = useLoaderData<{ card: MtgCard }>()
+  const { card } = useLoaderData<{ card: CardWithGlobalPoints }>()
 
   const personUUID = usePersonUUID()
   const [sort, setSort] = useQueryState(
@@ -179,7 +180,7 @@ export const CardPage = () => {
 }
 
 type CardSectionProps = {
-  card: MtgCard
+  card: CardWithGlobalPoints
 }
 
 const CardSection = ({ card }: CardSectionProps) => (
@@ -214,77 +215,64 @@ const CardSection = ({ card }: CardSectionProps) => (
 )
 
 type InfoSectionProps = {
-  card: MtgCard
+  card: CardWithGlobalPoints
 }
 
-const InfoSection = ({ card }: InfoSectionProps) => (
-  <Stack flex={3} h={'100%'}>
-    <Title order={1}>{card.name}</Title>
-    <Text c="dimmed" maw={540} size="xl">
-      Community Power Score
-    </Text>
-    <Group wrap="nowrap">
+const InfoSection = ({ card }: InfoSectionProps) => {
+  const { data: buckets } = useGetRatingHistogramForCard(card.oracle_id, {
+    buckets: 10,
+  })
+
+  const barChartData = buckets?.map(
+    ({ lower_inclusive_points_bound, upper_exclusive_points_bound, count }) => ({
+      pts: (Number(lower_inclusive_points_bound) + Number(upper_exclusive_points_bound)) / 2,
+      ratings: count,
+      window: `${lower_inclusive_points_bound} - ${upper_exclusive_points_bound} pts`,
+    }),
+  )
+
+  return (
+    <Stack flex={3} h={'100%'}>
+      <Title order={1}>{card.name}</Title>
+      <Text c="dimmed" maw={540} size="xl">
+        Community Power Score
+      </Text>
       <Title order={1} textWrap="nowrap">
-        <NumberFormatter suffix={' pts'} value={10} />
+        <NumberFormatter decimalScale={2} suffix={' pts'} value={card.global_points} />
       </Title>
-      <Divider orientation="vertical" />
-      <Title order={1} textWrap="nowrap">
-        <NumberFormatter suffix={'%'} value={0.0002} />
-      </Title>
-    </Group>
-    <Stack align="end" gap={'xs'} w={'100%'}>
-      <Text>Insta-Ban</Text>
-      <Progress value={70} w={'100%'} />
+      <Stack align="end" gap={'xs'} w={'100%'}>
+        <Text>Insta-Ban</Text>
+        <Progress value={70} w={'100%'} />
+      </Stack>
+      <Title order={2}>Rank #46 Overall</Title>
+      <Text c="dimmed">
+        <NumberFormatter suffix={' ratings'} value={23} />
+      </Text>
+      <BarChart
+        data={barChartData ?? []}
+        dataKey="pts"
+        h={240}
+        series={[{ name: 'ratings', color: 'var(--mantine-primary-color-filled)' }]}
+        tickLine="x"
+        tooltipProps={{
+          labelFormatter: (_, payload) => payload?.[0]?.payload?.window ?? '',
+        }}
+        xAxisProps={{
+          domain: [0, 10],
+          ticks: Array.from({ length: 11 }, (_, i) => i),
+          type: 'number',
+          unit: ' pts',
+        }}
+        yAxisProps={{
+          allowDecimals: false,
+        }}
+      />
     </Stack>
-    <Title order={2}>Rank #46 Overall</Title>
-    <Text c="dimmed">
-      <NumberFormatter suffix={' ratings'} value={23} />
-    </Text>
-    <AreaChart
-      curveType="monotone"
-      data={[
-        {
-          '%': 0.0,
-          ratings: 200,
-        },
-        {
-          '%': 0.1,
-          ratings: 50,
-        },
-        {
-          '%': 0.2,
-          ratings: 30,
-        },
-        {
-          '%': 0.3,
-          ratings: 20,
-        },
-        {
-          '%': 0.4,
-          ratings: 400,
-        },
-        {
-          '%': 0.5,
-          ratings: 60,
-        },
-        {
-          '%': 0.6,
-          ratings: 32,
-        },
-        {
-          '%': 0.7,
-          ratings: 20,
-        },
-      ]}
-      dataKey="%"
-      h={240}
-      series={[{ name: 'ratings', color: 'var(--mantine-primary-color-filled)' }]}
-    />
-  </Stack>
-)
+  )
+}
 
 type RatingInputProps = {
-  rating: CardRatingWithReviews | null
+  rating: CardRatingWithReviewsAndGlobalPoints | null
   onSave: (values: { points: number | null; reason: string | null }) => Promise<void>
 }
 
@@ -359,7 +347,7 @@ const RatingInput = ({ rating, onSave }: RatingInputProps) => {
             <Center h="100%">
               <Group wrap="nowrap">
                 <Title order={2} textWrap="nowrap">
-                  <NumberFormatter suffix={' pts'} value={10} />
+                  <NumberFormatter decimalScale={2} suffix={' pts'} value={rating?.global_points} />
                 </Title>
                 <Divider orientation="vertical" />
                 <NumberInput

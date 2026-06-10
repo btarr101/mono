@@ -12,7 +12,7 @@ import {
 } from '@mantine/core'
 import { Link } from 'react-router'
 
-import type { Card } from '../types/bindings/Card'
+import type { CardWithGlobalPoints } from '../types/bindings/CardWithGlobalPoints'
 import { LoadingImage } from './LoadingImage'
 
 const CARD_BUTTON_DIMENSIONS = {
@@ -21,7 +21,7 @@ const CARD_BUTTON_DIMENSIONS = {
 }
 
 export type MtgCardButtonProps = {
-  card: Card
+  card: CardWithGlobalPoints
 }
 
 export const MtgCardButton = ({ card }: MtgCardButtonProps) => {
@@ -51,11 +51,11 @@ export const MtgCardButton = ({ card }: MtgCardButtonProps) => {
           <Stack gap={'xs'}>
             <Group wrap="nowrap">
               <Title order={4} textWrap="nowrap">
-                <NumberFormatter suffix={' pts'} value={10} />
+                <NumberFormatter decimalScale={2} suffix={' pts'} value={card.global_points} />
               </Title>
               <Divider orientation="vertical" />
-              <Title order={4} textWrap="nowrap">
-                <NumberFormatter suffix={'%'} value={0.0002} />
+              <Title order={5} textWrap="nowrap">
+                <NumberFormatter prefix="Rank #" value={5} />
               </Title>
             </Group>
             <Group justify="space-between">

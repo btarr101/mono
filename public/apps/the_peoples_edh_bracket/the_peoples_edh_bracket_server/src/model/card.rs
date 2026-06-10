@@ -8,7 +8,7 @@ use crate::constants::TS_RS_EXPORT_TO;
 /// Non legal cards will not be listed.
 #[derive(ts_rs::TS)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
-#[derive(Serialize, sqlx::Type)]
+#[derive(Debug, Serialize, sqlx::Type)]
 #[serde(rename_all = "snake_case")]
 #[sqlx(rename_all = "snake_case", type_name = "text")]
 pub enum CardLegality {
