@@ -9,7 +9,7 @@ export const useAuthState = () =>
     defaultValue: { ty: null },
   })
 
-export const usePersonUUID = () => {
+export const useLoggedInPersonUUID = () => {
   const [authState] = useAuthState()
 
   if (authState.ty === 'debug') {

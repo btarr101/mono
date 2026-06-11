@@ -15,8 +15,9 @@ import {
 } from '@mantine/core'
 import { PushPinIcon, ShareIcon } from '@phosphor-icons/react'
 
+import { useLoggedInPersonUUID } from '../hooks/useAuth'
 import { usePerson } from '../hooks/usePersons'
-import { usePostReviewRating } from '../hooks/useRatings'
+import { usePutRatingReview } from '../hooks/useRatings'
 import type { CardRatingWithReviewsAndGlobalPoints } from '../types/bindings/CardRatingWithReviewsAndGlobalPoints'
 import { formatTimeStamp } from '../util'
 import { PersonProfileLine } from './PersonProfileLine'
@@ -29,7 +30,8 @@ export type RatingProps = {
 
 export const Rating = ({ rating, pinned, onPin }: RatingProps) => {
   const person = usePerson(rating.rater_person_uuid)
-  const { mutate: reviewRating } = usePostReviewRating()
+  const loggedInPersonUUID = useLoggedInPersonUUID()
+  const { mutate: reviewRating } = usePutRatingReview()
 
   const personLiked = rating.reviews.person_review === true
   const personDisliked = rating.reviews.person_review === false
@@ -54,6 +56,7 @@ export const Rating = ({ rating, pinned, onPin }: RatingProps) => {
           <Box pos={'relative'} w={0}>
             <Button.Group pos="absolute" right={0} style={{ transform: 'translate(10%, -50%)' }}>
               <Button
+                disabled={loggedInPersonUUID === null}
                 size="compact-md"
                 variant={personLiked ? 'light' : 'default'}
                 onClick={onLike}
@@ -61,6 +64,7 @@ export const Rating = ({ rating, pinned, onPin }: RatingProps) => {
                 {rating.reviews.likes} 👍
               </Button>
               <Button
+                disabled={loggedInPersonUUID === null}
                 size="compact-md"
                 variant={rating.reviews.person_review === false ? 'light' : 'default'}
                 onClick={onDislike}
@@ -115,4 +119,4 @@ export const Rating = ({ rating, pinned, onPin }: RatingProps) => {
   )
 }
 
-export const RatingGhost = () => <Skeleton h={127} w="100%" />
+export const RatingGhost = () => <Skeleton h={144} w="100%" />

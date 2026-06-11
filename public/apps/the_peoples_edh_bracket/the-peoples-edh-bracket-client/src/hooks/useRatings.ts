@@ -10,15 +10,12 @@ import {
   getRating,
   getRatingHistogramForCard,
   getRatings,
-  patchRating,
-  postRating,
-  postReviewRating,
+  putRating,
+  putRatingReview,
 } from '../api/ratings'
 import type { GetRatingHistogramParams } from '../types/bindings/GetRatingHistogramParams'
 import type { GetRatingsParams } from '../types/bindings/GetRatingsParams'
-import type { PatchRatingBody } from '../types/bindings/PatchRatingBody'
-import type { PostReviewRatingBody } from '../types/bindings/PostReviewRatingBody'
-import { usePersonUUID } from './useAuth'
+import type { PutRatingReviewBody } from '../types/bindings/PutRatingReviewBody'
 
 export const useRatings = ({
   card_oracle_id,
@@ -38,7 +35,7 @@ export const useRatings = ({
 export const usePostRating = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: postRating,
+    mutationFn: putRating,
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({
@@ -58,10 +55,9 @@ export const useRating = (uuid: string | null) =>
     queryFn: async () => (uuid ? await getRating(uuid) : null),
   })
 
-export const useMyCardRating = (oracleId: string) => {
-  const personUUID = usePersonUUID()
-  return useQuery({
-    queryKey: ['rating', 'me', oracleId],
+export const usePersonRating = (oracleId: string, personUUID: string | null) =>
+  useQuery({
+    queryKey: ['ratings', oracleId, 'person', personUUID],
     queryFn: async () => {
       const ratings = await getRatings({
         card_oracle_id: oracleId,
@@ -75,13 +71,12 @@ export const useMyCardRating = (oracleId: string) => {
     },
     enabled: personUUID !== null,
   })
-}
 
-export const usePatchRating = () => {
+export const usePutRating = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ uuid, ...body }: { uuid: string } & PatchRatingBody) => patchRating(uuid, body),
-    onSuccess: () =>
+    mutationFn: putRating,
+    onSuccess: ({ card_oracle_id }) =>
       Promise.all([
         queryClient.invalidateQueries({
           queryKey: ['ratings'],
@@ -89,15 +84,18 @@ export const usePatchRating = () => {
         queryClient.invalidateQueries({
           queryKey: ['rating'],
         }),
+        queryClient.invalidateQueries({
+          queryKey: ['card', card_oracle_id],
+        }),
       ]),
   })
 }
 
-export const usePostReviewRating = () => {
+export const usePutRatingReview = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ uuid, ...body }: { uuid: string } & PostReviewRatingBody) =>
-      postReviewRating(uuid, body),
+    mutationFn: ({ uuid, ...body }: { uuid: string } & PutRatingReviewBody) =>
+      putRatingReview(uuid, body),
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({

@@ -1,36 +1,52 @@
 import { Autocomplete, Flex, Group, Select, Stack } from '@mantine/core'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
-import { useDebouncedValue } from '@tanstack/react-pacer'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 
 import { MtgCardButton, MtgCardButtonGhost } from '../components/MtgCardButton'
-import { useCards, useSearchCards } from '../hooks/useCards'
+import { useDebouncedSearchCards, useGetCards } from '../hooks/useCards'
+import type { GetCardsParamsSort } from '../types/bindings/GetCardsParamsSort'
 
 const PAGE_SIZE = 50
 
 export const BrowsePage = () => {
   const [q, setQ] = useQueryState('q')
-  const [debouncedQ] = useDebouncedValue(q, { wait: 500 })
-
   const [sort, setSort] = useQueryState(
     'sort',
-    parseAsStringLiteral(['highest_rated', 'lowest_rated']),
+    parseAsStringLiteral<GetCardsParamsSort>([
+      'highest_rated',
+      'lowest_rated',
+      'most_controversial',
+      'most_rated',
+      'least_rated',
+      'trending',
+    ]),
   )
 
-  const searchCards = useSearchCards(q || null)
-  const { data, isLoading, isFetching } = useCards({
-    q: debouncedQ || null,
+  const [usedSearchCards, { debouncedQ, isDebouncing }] = useDebouncedSearchCards(q || null)
+  const usedGetCards = useGetCards({
+    q: debouncedQ,
     sort,
     page_size: PAGE_SIZE,
   })
+
+  const isAutocompleteLoading = isDebouncing || usedSearchCards.isFetching
 
   return (
     <Stack h="100dvh" p="xl" w="100%">
       <Group w={'100%'}>
         <Autocomplete
-          data={searchCards.data?.pages.flat().map(({ name }) => name)}
+          data={
+            isAutocompleteLoading
+              ? [
+                  {
+                    value: '...',
+                    disabled: true,
+                  },
+                ]
+              : (usedSearchCards.data?.pages.flat().map(({ name }) => name) ?? [])
+          }
           filter={({ options }) => options}
-          loading={isFetching}
+          loading={usedGetCards.isFetching}
           placeholder="Search for a card..."
           rightSection={<MagnifyingGlassIcon />}
           style={{
@@ -43,11 +59,27 @@ export const BrowsePage = () => {
           data={[
             {
               value: 'highest_rated',
-              label: 'Highest Rated',
+              label: '👑 Highest Rated',
             },
             {
               value: 'lowest_rated',
-              label: 'Lowest Rated',
+              label: '🗑️ Lowest Rated',
+            },
+            {
+              value: 'most_controversial',
+              label: '⚔️ Most Controversial',
+            },
+            {
+              value: 'most_rated',
+              label: '👀 Most Rated',
+            },
+            {
+              value: 'least_rated',
+              label: '👻 Least Rated',
+            },
+            {
+              value: 'trending',
+              label: '🔥 Trending',
             },
           ]}
           placeholder="sort by"
@@ -56,9 +88,11 @@ export const BrowsePage = () => {
         />
       </Group>
       <Flex gap={'lg'} justify={'center'} wrap={'wrap'}>
-        {isLoading
+        {usedGetCards.isLoading
           ? Array.from({ length: PAGE_SIZE }).map((_, index) => <MtgCardButtonGhost key={index} />)
-          : data?.pages.flat().map(card => <MtgCardButton card={card} key={card.oracle_id} />)}
+          : usedGetCards.data?.pages
+              .flat()
+              .map(card => <MtgCardButton card={card} key={card.oracle_id} />)}
       </Flex>
     </Stack>
   )

@@ -11,11 +11,11 @@ import {
 } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { FireIcon, MagnifyingGlassIcon } from '@phosphor-icons/react'
-import { useDebouncedValue } from '@tanstack/react-pacer'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLoaderData, useNavigate } from 'react-router'
 
 import { MtgCardButton, MtgCardButtonGhost } from '../components/MtgCardButton'
-import { useCards, useSearchCards } from '../hooks/useCards'
+import { useDebouncedSearchCards, useGetCards } from '../hooks/useCards'
+import type { HomeMetrics } from '../types/bindings/HomeMetrics'
 
 export const HomePage = () => (
   <Stack h="100dvh" justify="stretch" p="xl" w="100%">
@@ -27,16 +27,17 @@ export const HomePage = () => (
 
 const Hero = () => {
   const navigate = useNavigate()
+  const homeMetrics = useLoaderData<HomeMetrics>()
 
   const form = useForm({
-    mode: 'uncontrolled',
+    mode: 'controlled',
     initialValues: {
       q: '',
     },
   })
+  const [usedSearchCards, { isDebouncing }] = useDebouncedSearchCards(form.getValues().q || null)
 
-  const [debouncedQ] = useDebouncedValue(form.getValues().q, { wait: 500 })
-  const cards = useSearchCards(debouncedQ || null)
+  const isAutocompleteLoading = isDebouncing || usedSearchCards.isFetching
 
   return (
     <Stack gap="lg">
@@ -55,8 +56,19 @@ const Hero = () => {
         })}
       >
         <Autocomplete
-          data={cards.data?.pages.flat().map(({ name }) => name)}
+          data={
+            isAutocompleteLoading
+              ? [
+                  {
+                    value: '...',
+                    disabled: true,
+                  },
+                ]
+              : (usedSearchCards.data?.pages.flat().map(({ name }) => name) ?? [])
+          }
+          filter={({ options }) => options}
           key={form.key('q')}
+          loading={usedSearchCards.isFetching}
           {...form.getInputProps('q')}
           placeholder="Search for a card..."
           rightSection={<MagnifyingGlassIcon />}
@@ -66,11 +78,11 @@ const Hero = () => {
         />
       </form>
       <Group justify="space-evenly" wrap="nowrap">
-        <Stat label="cards rated" value={5_200_000} />
+        <Stat label="cards rated" value={homeMetrics.total_cards_rated} />
         <Divider orientation="vertical" />
-        <Stat label="people" value={18_300} />
+        <Stat label="people" value={homeMetrics.total_persons} />
         <Divider orientation="vertical" />
-        <Stat label="total ratings" value={10_000_300} />
+        <Stat label="total ratings" value={homeMetrics.total_ratings} />
       </Group>
     </Stack>
   )
@@ -133,7 +145,7 @@ const Trending = () => (
 )
 
 const TrendingCards = () => {
-  const cards = useCards({ q: null, sort: null, page_size: 5 })
+  const cards = useGetCards({ q: null, sort: 'trending', page_size: 5 })
 
   return cards.data
     ? cards.data.pages.flat().map(card => <MtgCardButton card={card} key={card.oracle_id} />)

@@ -2,9 +2,8 @@ import type { CardRating } from '../types/bindings/CardRating'
 import type { CardRatingWithReviewsAndGlobalPoints } from '../types/bindings/CardRatingWithReviewsAndGlobalPoints'
 import type { GetRatingHistogramParams } from '../types/bindings/GetRatingHistogramParams'
 import type { GetRatingsParams } from '../types/bindings/GetRatingsParams'
-import type { PatchRatingBody } from '../types/bindings/PatchRatingBody'
-import type { PostRatingBody } from '../types/bindings/PostRatingBody'
-import type { PostReviewRatingBody } from '../types/bindings/PostReviewRatingBody'
+import type { PutRatingBody } from '../types/bindings/PutRatingBody'
+import type { PutRatingReviewBody } from '../types/bindings/PutRatingReviewBody'
 import type { RatingHistogramBucket } from '../types/bindings/RatingHistogramBucket'
 import { api, API_BASE_URL } from '.'
 
@@ -17,11 +16,11 @@ export const getRatings = async (params: GetRatingsParams) => {
   return api.get(uri).json<CardRatingWithReviewsAndGlobalPoints[]>()
 }
 
-export const postRating = async (body: PostRatingBody) => {
+export const putRating = async (body: PutRatingBody) => {
   const uri = new URL(`${API_BASE_URL}/ratings`)
 
   return api
-    .post(uri, {
+    .put(uri, {
       json: body,
     })
     .json<CardRating>()
@@ -33,20 +32,10 @@ export const getRating = async (uuid: string) => {
   return api.get(uri).json<CardRatingWithReviewsAndGlobalPoints>()
 }
 
-export const patchRating = async (uuid: string, body: PatchRatingBody) => {
-  const uri = new URL(`${API_BASE_URL}/ratings/${uuid}`)
-
-  return api
-    .patch(uri, {
-      json: body,
-    })
-    .json<CardRating>()
-}
-
-export const postReviewRating = async (uuid: string, body: PostReviewRatingBody) => {
+export const putRatingReview = async (uuid: string, body: PutRatingReviewBody) => {
   const uri = new URL(`${API_BASE_URL}/ratings/${uuid}/review`)
 
-  return api.post(uri, {
+  return api.put(uri, {
     json: body,
   })
 }

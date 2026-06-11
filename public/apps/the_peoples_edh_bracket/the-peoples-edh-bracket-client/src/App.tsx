@@ -9,6 +9,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 
 import { getCard } from './api/cards'
+import { getHomeMetrics } from './api/home'
 import { Layout } from './Layout'
 import { BrowsePage } from './pages/BrowsePage'
 import { CardPage } from './pages/CardPage'
@@ -54,6 +55,7 @@ const router = createBrowserRouter([
       {
         index: true,
         Component: HomePage,
+        loader: getHomeMetrics,
       },
       {
         path: '/browse',

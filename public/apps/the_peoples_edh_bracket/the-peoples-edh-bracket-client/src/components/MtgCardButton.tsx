@@ -12,7 +12,7 @@ import {
 } from '@mantine/core'
 import { Link } from 'react-router'
 
-import type { CardWithGlobalPoints } from '../types/bindings/CardWithGlobalPoints'
+import type { CardWithMetrics } from '../types/bindings/CardWithMetrics'
 import { LoadingImage } from './LoadingImage'
 
 const CARD_BUTTON_DIMENSIONS = {
@@ -21,7 +21,7 @@ const CARD_BUTTON_DIMENSIONS = {
 }
 
 export type MtgCardButtonProps = {
-  card: CardWithGlobalPoints
+  card: CardWithMetrics
 }
 
 export const MtgCardButton = ({ card }: MtgCardButtonProps) => {
@@ -60,7 +60,7 @@ export const MtgCardButton = ({ card }: MtgCardButtonProps) => {
             </Group>
             <Group justify="space-between">
               <Text c="dimmed" size="xs">
-                <NumberFormatter suffix={' ratings'} value={23} />
+                <NumberFormatter suffix={' ratings'} value={card.total_ratings} />
               </Text>
               <Anchor component={Link} flex={1} ta="center" to={`/browse/${card.oracle_id}`}>
                 View

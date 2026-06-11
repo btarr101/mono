@@ -3,10 +3,9 @@ use std::num::NonZeroUsize;
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
-    http::StatusCode,
-    routing::{get, post},
+    routing::{get, put},
 };
-use axum_anyhow::{ApiResult, IntoApiError, OptionExt, forbidden};
+use axum_anyhow::{ApiResult, OptionExt, forbidden};
 use bigdecimal::BigDecimal;
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
@@ -17,7 +16,6 @@ use validator::Validate;
 use crate::{
     api_router::auth::{Auth, OptionalAuth},
     constants::TS_RS_EXPORT_TO,
-    db::constants::PG_UNIQUE_VIOLATION,
     model::card_rating::CardRating,
     state::AppState,
     util::parse_pagination,
@@ -25,17 +23,19 @@ use crate::{
 
 pub fn get_router() -> Router<AppState> {
     Router::new()
-        .route("/", get(get_ratings).post(post_rating))
+        .route("/", get(get_ratings).put(put_rating))
         .route("/histogram/card/{oracle_id}", get(get_rating_histogram_for_card))
-        .route("/{uuid}", get(get_rating).patch(patch_rating))
-        .route("/{uuid}/review", post(post_review_rating))
+        .route("/{uuid}", get(get_rating).put(put_rating))
+        .route("/{uuid}/review", put(put_rating_review))
 }
 
 #[derive(ts_rs::TS, Serialize, FromRow)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
 struct CardRatingReviews {
     person_review: Option<bool>,
+    #[ts(type = "number")]
     likes: i64,
+    #[ts(type = "number")]
     dislikes: i64,
 }
 
@@ -175,50 +175,52 @@ async fn get_ratings(
 #[derive(ts_rs::TS)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
 #[derive(Deserialize, Validate)]
-struct PostRatingBody {
+struct PutRatingBody {
     card_oracle_id: uuid::Uuid,
-    points: BigDecimal,
+    points: Option<BigDecimal>,
     #[validate(length(max = 4000))]
-    reason: Option<String>,
+    reason: Option<Option<String>>,
 }
 
-async fn post_rating(
+async fn put_rating(
     State(pg_pool): State<PgPool>,
     Auth { person_uuid }: Auth,
-    Json(PostRatingBody {
+    Json(PutRatingBody {
         card_oracle_id,
         points,
         reason,
-    }): Json<PostRatingBody>,
-) -> ApiResult<(StatusCode, Json<CardRating>)> {
+    }): Json<PutRatingBody>,
+) -> ApiResult<Json<CardRating>> {
     let mut tx = pg_pool.begin().await?;
-
     sqlx::query!("SELECT oracle_id FROM card WHERE oracle_id = $1", card_oracle_id)
-        .fetch_optional(&pg_pool)
+        .fetch_optional(&mut *tx)
         .await?
         .context_bad_request(format!("Could not find card with oracle_id '{}'", card_oracle_id))?;
 
-    let rating = sqlx::query_as!(
+    let update_reason = reason.is_some();
+
+    let card_rating = sqlx::query_as!(
         CardRating,
-        "INSERT INTO card_rating (card_oracle_id, rater_person_uuid, points, reason) VALUES ($1, $2, $3, $4)
-         RETURNING *",
+        "INSERT INTO card_rating (card_oracle_id, rater_person_uuid, points, reason)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (card_oracle_id, rater_person_uuid)
+        DO UPDATE SET
+            points = EXCLUDED.points,
+            reason = CASE WHEN $5 THEN EXCLUDED.reason ELSE card_rating.reason END
+        RETURNING *
+        ",
         card_oracle_id,
         person_uuid,
         points.to_owned(),
-        reason,
+        reason.flatten(),
+        update_reason,
     )
     .fetch_one(&mut *tx)
-    .await
-    .map_err(|e| match &e {
-        sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some(PG_UNIQUE_VIOLATION) => {
-            e.context_conflict("person has already rated this card")
-        }
-        _ => e.into(),
-    })?;
+    .await?;
 
     tx.commit().await?;
 
-    Ok((StatusCode::CREATED, Json(rating)))
+    Ok(Json(card_rating))
 }
 
 async fn get_rating(
@@ -288,66 +290,15 @@ async fn get_rating(
 #[derive(ts_rs::TS)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
 #[derive(Deserialize, Validate)]
-struct PatchRatingBody {
-    points: Option<BigDecimal>,
-    #[ts(optional, type = "string | null")]
-    #[validate(length(max = 4000))]
-    reason: Option<Option<String>>,
-}
-
-async fn patch_rating(
-    State(pg_pool): State<PgPool>,
-    Auth { person_uuid }: Auth,
-    Path(uuid): Path<uuid::Uuid>,
-    Json(PatchRatingBody { points, reason }): Json<PatchRatingBody>,
-) -> ApiResult<(StatusCode, Json<CardRating>)> {
-    let mut tx = pg_pool.begin().await?;
-
-    let rater_person_uuid = sqlx::query!("SELECT rater_person_uuid FROM card_rating WHERE uuid = $1", uuid,)
-        .fetch_optional(&mut *tx)
-        .await?
-        .map(|row| row.rater_person_uuid)
-        .context_not_found("rating not found")?;
-
-    (rater_person_uuid == person_uuid).ok_or(forbidden("Forbidden", "cannot patch another person's rating"))?;
-
-    let should_update_reason = reason.is_some();
-    let new_reason = reason.flatten();
-
-    let rating = sqlx::query_as!(
-        CardRating,
-        "UPDATE card_rating
-         SET points = COALESCE($3, points),
-             reason = CASE WHEN $4 THEN $5 ELSE reason END
-         WHERE uuid = $1 AND rater_person_uuid = $2
-         RETURNING *",
-        uuid,
-        person_uuid,
-        points,
-        should_update_reason,
-        new_reason.as_deref(),
-    )
-    .fetch_optional(&mut *tx)
-    .await?
-    .context_not_found("rating not found")?;
-
-    tx.commit().await?;
-
-    Ok((StatusCode::OK, Json(rating)))
-}
-
-#[derive(ts_rs::TS)]
-#[ts(export, export_to = TS_RS_EXPORT_TO)]
-#[derive(Deserialize, Validate)]
-struct PostReviewRatingBody {
+struct PutRatingReviewBody {
     like: Option<bool>,
 }
 
-async fn post_review_rating(
+async fn put_rating_review(
     State(pg_pool): State<PgPool>,
     Auth { person_uuid }: Auth,
     Path(uuid): Path<uuid::Uuid>,
-    Json(PostReviewRatingBody { like }): Json<PostReviewRatingBody>,
+    Json(PutRatingReviewBody { like }): Json<PutRatingReviewBody>,
 ) -> ApiResult<()> {
     let mut tx = pg_pool.begin().await?;
 
