@@ -1,3 +1,5 @@
+#[cfg(debug_assertions)]
+use axum_anyhow::set_expose_errors;
 use tower_http::{
     cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer},
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
@@ -7,6 +9,9 @@ use tracing::info;
 use crate::{api_router, config::Config, state::AppState};
 
 pub async fn server(state: AppState, config: Config) -> anyhow::Result<()> {
+    #[cfg(debug_assertions)]
+    set_expose_errors(true);
+
     let router = axum::Router::new()
         .nest("/api", api_router::get_router())
         .with_state(state)

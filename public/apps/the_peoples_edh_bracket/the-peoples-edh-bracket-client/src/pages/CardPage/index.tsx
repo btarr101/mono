@@ -7,6 +7,7 @@ import {
   Group,
   LoadingOverlay,
   NumberFormatter,
+  Overlay,
   Paper,
   Progress,
   Stack,
@@ -16,6 +17,7 @@ import {
 import { ArrowSquareOutIcon } from '@phosphor-icons/react'
 import { Link, useLoaderData, useNavigate } from 'react-router'
 
+import { EmptyPlaceholder } from '../../components/EmptyPlaceholder'
 import { LoadingImage } from '../../components/LoadingImage'
 import { useGetCardMetrics } from '../../hooks/useCards'
 import { useGetRatingHistogramForCard } from '../../hooks/useRatings'
@@ -106,15 +108,33 @@ const InfoSection = ({ card }: InfoSectionProps) => {
         Community Power Score
       </Text>
       <Title order={1} textWrap="nowrap">
-        <NumberFormatter decimalScale={2} suffix={' pts'} value={cardPoints ?? '..'} />
+        <NumberFormatter
+          decimalScale={2}
+          fixedDecimalScale={true}
+          suffix={' pts'}
+          value={cardPoints ?? '..'}
+        />
       </Title>
       <Progress value={Number(cardPoints) * 10.0} w={'100%'} />
-      <Title order={2}>Rank #46 Overall</Title>
+      <Title order={2}>Rank #{card.card_rank}</Title>
       <Text c="dimmed">
         <NumberFormatter suffix={' ratings'} value={totalRatings} />
       </Text>
       <Box pos="relative">
         <LoadingOverlay visible={!barChartData?.length} />
+        {totalRatings === 0 && (
+          <Overlay backgroundOpacity={0.2} blur={2}>
+            <Center h={'100%'} p="lg">
+              <Box w="fit-content">
+                <EmptyPlaceholder
+                  subText="This chart will show once there are some ratings."
+                  title="😭 No ratings yet!"
+                />
+              </Box>
+            </Center>
+          </Overlay>
+        )}
+
         <BarChart
           data={barChartData ?? []}
           dataKey="pts"

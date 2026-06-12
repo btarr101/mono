@@ -1,13 +1,22 @@
 
+-- Single-row table caching the rank an unrated card (implicit score 5.0) would receive.
+-- Updated whenever card ranks are recomputed.
+CREATE TABLE IF NOT EXISTS global_ratings_state (
+    id BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (id),  -- enforces single row
+    unrated_card_rank INT NOT NULL DEFAULT 1
+);
+INSERT INTO global_ratings_state DEFAULT VALUES ON CONFLICT DO NOTHING;
+
 -- Person Ratings Cache
 CREATE TABLE IF NOT EXISTS person_ratings_cache (
 	person_uuid UUID PRIMARY KEY REFERENCES person(uuid) ON DELETE CASCADE,
-    total_abs_rating_points NUMERIC DEFAULT 0 NOT NULL
+    total_abs_rating_points NUMERIC DEFAULT 1 NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS card_ratings_cache (
     card_oracle_id UUID PRIMARY KEY REFERENCES card(oracle_id) ON DELETE CASCADE,
-    average_global_points NUMERIC NOT NULL DEFAULT 5.0
+    average_global_points NUMERIC NOT NULL DEFAULT 5.0,
+    card_rank INT NOT NULL DEFAULT 1
 );
 
 -- Trigger updates aggregate MIN/MAX points by rater_person_uuid; this index keeps
@@ -83,6 +92,22 @@ BEGIN
     ON CONFLICT (card_oracle_id)
     DO UPDATE SET
         average_global_points = EXCLUDED.average_global_points;
+
+    -- Recompute ranks for all cards; DENSE_RANK means ties share the same rank
+    -- with no gaps (e.g. 1, 1, 2 rather than 1, 1, 3).
+    UPDATE card_ratings_cache crc
+    SET card_rank = ranked.new_rank
+    FROM (
+        SELECT
+            card_oracle_id,
+            DENSE_RANK() OVER (ORDER BY average_global_points DESC) AS new_rank
+        FROM card_ratings_cache
+    ) ranked
+    WHERE crc.card_oracle_id = ranked.card_oracle_id;
+
+    -- Cache the rank an unrated card (implicit 5.0) would receive.
+    UPDATE global_ratings_state
+    SET unrated_card_rank = 1 + (SELECT COUNT(DISTINCT average_global_points)::int FROM card_ratings_cache WHERE average_global_points > 5.0);
 END;
 $$ LANGUAGE plpgsql;
 

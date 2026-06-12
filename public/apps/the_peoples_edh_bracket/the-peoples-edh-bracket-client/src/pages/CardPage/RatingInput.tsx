@@ -96,6 +96,7 @@ export const RatingInput = ({ rating, onSave }: RatingInputProps) => {
                 <Title order={2} textWrap="nowrap">
                   <NumberFormatter
                     decimalScale={2}
+                    fixedDecimalScale={true}
                     suffix={' pts'}
                     value={rating?.global_points ?? '5'}
                   />

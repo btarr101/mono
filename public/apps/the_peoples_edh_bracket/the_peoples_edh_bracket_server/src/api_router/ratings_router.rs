@@ -129,7 +129,9 @@ async fn get_ratings(
             AND ($2::uuid IS NULL OR cr.rater_person_uuid = $2)
         ORDER BY
             CASE WHEN $3::text = 'liked' THEN COALESCE(rc.likes, 0) END DESC,
+            CASE WHEN $3::text = 'liked' THEN COALESCE(rc.dislikes, 0) END ASC,
             CASE WHEN $3::text = 'disliked' THEN COALESCE(rc.dislikes, 0) END DESC,
+            CASE WHEN $3::text = 'disliked' THEN COALESCE(rc.likes, 0) END ASC,
             CASE
                 WHEN $3::text = 'controversial'
                 THEN LEAST(COALESCE(rc.likes, 0), COALESCE(rc.dislikes, 0))

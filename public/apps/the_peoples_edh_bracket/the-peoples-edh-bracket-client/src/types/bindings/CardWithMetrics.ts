@@ -17,4 +17,4 @@ image_uri: string | null,
 /**
  * The legality of the card
  */
-legality: CardLegality, global_points: string, total_ratings: number, };
+legality: CardLegality, global_points: string, total_ratings: number, card_rank: number, };

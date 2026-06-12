@@ -2,6 +2,7 @@ import { Alert, Group, Select, Stack, Title } from '@mantine/core'
 import { InfoIcon } from '@phosphor-icons/react'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 
+import { EmptyPlaceholder } from '../../components/EmptyPlaceholder'
 import { RatingGhost } from '../../components/Rating'
 import { Rating } from '../../components/Rating'
 import { useLoggedInPersonUUID } from '../../hooks/useAuth'
@@ -32,8 +33,13 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
     sort,
     page_size: 10,
   })
-
   const usedPutRating = usePutRating()
+
+  const useRatingsPages = usedRatings.data?.pages
+    .flat()
+    .filter(
+      rating => rating.rater_person_uuid !== loggedInPersonUUID && rating.uuid !== pinnedRatingUUID,
+    )
   const saveRating = ({ points, reason }: { points: number | null; reason: string | null }) =>
     usedPutRating
       .mutateAsync({
@@ -42,6 +48,8 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
         reason: reason || null,
       })
       .then(() => {})
+
+  const hasNotRated = !loggedInPersonUUID || !usedLoggedInPersonRating.data
 
   return (
     <>
@@ -88,6 +96,7 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
               },
             ]}
             defaultValue="liked"
+            disabled={useRatingsPages?.length === 0}
             value={sort}
             onChange={newSort => setSort(newSort)}
           />
@@ -107,22 +116,29 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
               )
             ))}
 
-          {usedRatings.data === undefined
-            ? Array.from({ length: 3 }).map((_, index) => <RatingGhost key={index} />)
-            : usedRatings.data.pages
-                .flat()
-                .filter(
-                  rating =>
-                    rating.rater_person_uuid !== loggedInPersonUUID &&
-                    rating.uuid !== pinnedRatingUUID,
-                )
-                .map(rating => (
-                  <Rating
-                    key={rating.uuid}
-                    rating={rating}
-                    onPin={() => setPinnedRatingUUID(rating.uuid)}
-                  />
-                ))}
+          {useRatingsPages === undefined ? (
+            Array.from({ length: 3 }).map((_, index) => <RatingGhost key={index} />)
+          ) : useRatingsPages.length > 0 ? (
+            useRatingsPages.map(rating => (
+              <Rating
+                key={rating.uuid}
+                rating={rating}
+                onPin={() => setPinnedRatingUUID(rating.uuid)}
+              />
+            ))
+          ) : (
+            <EmptyPlaceholder
+              {...(hasNotRated
+                ? {
+                    title: '😭 No ratings yet!',
+                    subText: 'Ratings will show up down here',
+                  }
+                : {
+                    title: '👀 No other ratings yet',
+                    subText: 'You have been the only one to rate this card so far. Stand proud 😤!',
+                  })}
+            />
+          )}
         </Stack>
       </Stack>
     </>

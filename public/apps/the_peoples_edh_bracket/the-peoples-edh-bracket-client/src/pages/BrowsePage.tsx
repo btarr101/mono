@@ -2,6 +2,7 @@ import { Autocomplete, Flex, Group, Select, Stack } from '@mantine/core'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 
+import { EmptyPlaceholder } from '../components/EmptyPlaceholder'
 import { MtgCardButton, MtgCardButtonGhost } from '../components/MtgCardButton'
 import { useDebouncedSearchCards, useGetCards } from '../hooks/useCards'
 import type { GetCardsParamsSort } from '../types/bindings/GetCardsParamsSort'
@@ -30,6 +31,8 @@ export const BrowsePage = () => {
   })
 
   const isAutocompleteLoading = isDebouncing || usedSearchCards.isFetching
+
+  const usedGetCardsPages = usedGetCards.data?.pages.flat()
 
   return (
     <Stack h="100dvh" p="xl" w="100%">
@@ -88,11 +91,13 @@ export const BrowsePage = () => {
         />
       </Group>
       <Flex gap={'lg'} justify={'center'} wrap={'wrap'}>
-        {usedGetCards.isLoading
-          ? Array.from({ length: PAGE_SIZE }).map((_, index) => <MtgCardButtonGhost key={index} />)
-          : usedGetCards.data?.pages
-              .flat()
-              .map(card => <MtgCardButton card={card} key={card.oracle_id} />)}
+        {usedGetCards.isLoading ? (
+          Array.from({ length: PAGE_SIZE }).map((_, index) => <MtgCardButtonGhost key={index} />)
+        ) : usedGetCardsPages?.length ? (
+          usedGetCardsPages.map(card => <MtgCardButton card={card} key={card.oracle_id} />)
+        ) : (
+          <EmptyPlaceholder subText="Try refining your search." title="🤔 No cards found" />
+        )}
       </Flex>
     </Stack>
   )

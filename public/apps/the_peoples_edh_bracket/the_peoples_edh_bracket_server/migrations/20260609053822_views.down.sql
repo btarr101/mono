@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS global_ratings_state;
 DROP TABLE IF EXISTS card_ratings_cache;
 DROP VIEW IF EXISTS card_rating_global;
 

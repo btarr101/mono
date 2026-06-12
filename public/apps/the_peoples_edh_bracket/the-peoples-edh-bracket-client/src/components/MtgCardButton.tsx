@@ -51,11 +51,16 @@ export const MtgCardButton = ({ card }: MtgCardButtonProps) => {
           <Stack gap={'xs'}>
             <Group wrap="nowrap">
               <Title order={4} textWrap="nowrap">
-                <NumberFormatter decimalScale={2} suffix={' pts'} value={card.global_points} />
+                <NumberFormatter
+                  decimalScale={2}
+                  fixedDecimalScale={true}
+                  suffix={' pts'}
+                  value={card.global_points}
+                />
               </Title>
               <Divider orientation="vertical" />
               <Title order={5} textWrap="nowrap">
-                <NumberFormatter prefix="Rank #" value={5} />
+                <NumberFormatter prefix="Rank #" value={card.card_rank} />
               </Title>
             </Group>
             <Group justify="space-between">

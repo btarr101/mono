@@ -91,6 +91,7 @@ export const Rating = ({ rating, pinned, onPin }: RatingProps) => {
                   <Title order={2} textWrap="nowrap">
                     <NumberFormatter
                       decimalScale={2}
+                      fixedDecimalScale={true}
                       suffix={' pts'}
                       value={rating.global_points}
                     />
@@ -107,7 +108,11 @@ export const Rating = ({ rating, pinned, onPin }: RatingProps) => {
             </Center>
           </Card.Section>
           <Card.Section p="md">
-            <Text>{rating.reason ?? ''}</Text>
+            {rating.reason ? (
+              <Text>{rating.reason}</Text>
+            ) : (
+              <Text c="dimmed">*No reason provided</Text>
+            )}
           </Card.Section>
         </Card>
       </Indicator>
