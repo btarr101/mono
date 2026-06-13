@@ -18,7 +18,7 @@ import { useDebouncedSearchCards, useGetCards } from '../hooks/useCards'
 import type { HomeMetrics } from '../types/bindings/HomeMetrics'
 
 export const HomePage = () => (
-  <Stack h="100dvh" justify="stretch" p="xl" w="100%">
+  <Stack justify="stretch" mih="100dvh" p="xl" w="100%">
     <Hero />
     <Divider />
     <Trending />
