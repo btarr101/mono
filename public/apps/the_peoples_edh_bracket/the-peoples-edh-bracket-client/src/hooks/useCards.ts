@@ -15,7 +15,10 @@ export const useGetCards = ({ q, sort, page_size }: Omit<GetCardsParams, 'page'>
         page_size,
       }),
     initialPageParam: 1,
-    getNextPageParam: (_, pages) => pages.length + 1,
+    getNextPageParam: (lastPage, pages) => {
+      if (lastPage.length === 0) return undefined
+      return pages.length + 1
+    },
     placeholderData: keepPreviousData,
   })
 

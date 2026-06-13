@@ -5,7 +5,7 @@ use axum::{
     extract::{Path, Query, State},
     routing::{get, put},
 };
-use axum_anyhow::{ApiResult, OptionExt, forbidden};
+use axum_anyhow::{ApiResult, IntoApiError, OptionExt};
 use bigdecimal::BigDecimal;
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
@@ -16,6 +16,7 @@ use validator::Validate;
 use crate::{
     api_router::auth::{Auth, OptionalAuth},
     constants::TS_RS_EXPORT_TO,
+    controller::ratings::{RateCardError, RateCardParams, ReviewRatingError, ReviewRatingParams, rate_card, review_rating},
     model::card_rating::CardRating,
     state::AppState,
     util::parse_pagination,
@@ -179,9 +180,9 @@ async fn get_ratings(
 #[derive(Deserialize, Validate)]
 struct PutRatingBody {
     card_oracle_id: uuid::Uuid,
-    points: Option<BigDecimal>,
-    #[validate(length(max = 4000))]
-    reason: Option<Option<String>>,
+    points: BigDecimal,
+    #[validate(length(max = 400))]
+    reason: Option<String>,
 }
 
 async fn put_rating(
@@ -193,34 +194,22 @@ async fn put_rating(
         reason,
     }): Json<PutRatingBody>,
 ) -> ApiResult<Json<CardRating>> {
-    let mut tx = pg_pool.begin().await?;
-    sqlx::query!("SELECT oracle_id FROM card WHERE oracle_id = $1", card_oracle_id)
-        .fetch_optional(&mut *tx)
-        .await?
-        .context_bad_request(format!("Could not find card with oracle_id '{}'", card_oracle_id))?;
-
-    let update_reason = reason.is_some();
-
-    let card_rating = sqlx::query_as!(
-        CardRating,
-        "INSERT INTO card_rating (card_oracle_id, rater_person_uuid, points, reason)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (card_oracle_id, rater_person_uuid)
-        DO UPDATE SET
-            points = EXCLUDED.points,
-            reason = CASE WHEN $5 THEN EXCLUDED.reason ELSE card_rating.reason END
-        RETURNING *
-        ",
-        card_oracle_id,
-        person_uuid,
-        points.to_owned(),
-        reason.flatten(),
-        update_reason,
+    let card_rating = rate_card(
+        RateCardParams {
+            card_oracle_id,
+            person_uuid,
+            points,
+            reason,
+        },
+        &pg_pool,
     )
-    .fetch_one(&mut *tx)
-    .await?;
-
-    tx.commit().await?;
+    .await
+    .map_err(|error| match error {
+        RateCardError::CardDoesNotExist => {
+            error.context_bad_request(format!("Could not find card with oracle_id '{}'", card_oracle_id))
+        }
+        RateCardError::Other(error) => error.into(),
+    })?;
 
     Ok(Json(card_rating))
 }
@@ -302,42 +291,20 @@ async fn put_rating_review(
     Path(uuid): Path<uuid::Uuid>,
     Json(PutRatingReviewBody { like }): Json<PutRatingReviewBody>,
 ) -> ApiResult<()> {
-    let mut tx = pg_pool.begin().await?;
-
-    let rater_person_uuid = sqlx::query!("SELECT rater_person_uuid FROM card_rating WHERE uuid = $1", uuid,)
-        .fetch_optional(&mut *tx)
-        .await?
-        .map(|row| row.rater_person_uuid)
-        .context_not_found("rating not found")?;
-
-    (rater_person_uuid != person_uuid).ok_or(forbidden("Forbidden", "person cannot review their own rating"))?;
-
-    if let Some(like) = like {
-        sqlx::query!(
-            "INSERT INTO card_rating_review (reviewer_person_uuid, reviewed_card_rating_uuid, liked)
-             VALUES ($1, $2, $3)
-             ON CONFLICT (reviewer_person_uuid, reviewed_card_rating_uuid)
-             DO UPDATE SET liked = EXCLUDED.liked",
+    review_rating(
+        ReviewRatingParams {
+            card_rating_uuid: uuid,
             person_uuid,
-            uuid,
             like,
-        )
-        .execute(&mut *tx)
-        .await?;
-    } else {
-        sqlx::query!(
-            "DELETE FROM card_rating_review
-            WHERE reviewer_person_uuid = $1 AND reviewed_card_rating_uuid = $2",
-            person_uuid,
-            uuid
-        )
-        .execute(&mut *tx)
-        .await?;
-    }
-
-    tx.commit().await?;
-
-    Ok(())
+        },
+        &pg_pool,
+    )
+    .await
+    .map_err(|error| match error {
+        ReviewRatingError::RatingDoesNotExist => error.context_not_found("Card rating not found"),
+        ReviewRatingError::CannotReviewOwnRating => error.context_forbidden("Person cannot review their own rating"),
+        ReviewRatingError::Other(error) => error.into(),
+    })
 }
 
 #[derive(ts_rs::TS)]

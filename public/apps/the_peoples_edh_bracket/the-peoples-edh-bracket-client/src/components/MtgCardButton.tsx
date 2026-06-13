@@ -14,11 +14,9 @@ import { Link } from 'react-router'
 
 import type { CardWithMetrics } from '../types/bindings/CardWithMetrics'
 import { LoadingImage } from './LoadingImage'
+import { CARD_BUTTON_DIMENSIONS } from './MtgCardButton.constants'
 
-const CARD_BUTTON_DIMENSIONS = {
-  w: 245,
-  h: 343,
-}
+export { CARD_BUTTON_DIMENSIONS } from './MtgCardButton.constants'
 
 export type MtgCardButtonProps = {
   card: CardWithMetrics

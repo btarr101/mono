@@ -1,10 +1,13 @@
-import { Alert, Group, Select, Stack, Title } from '@mantine/core'
+import 'react-virtualized/styles.css'
+
+import { Alert, Box, Group, Select, Stack, Title } from '@mantine/core'
 import { InfoIcon } from '@phosphor-icons/react'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
+import { useRef } from 'react'
+import { AutoSizer, CellMeasurer, CellMeasurerCache, List, WindowScroller } from 'react-virtualized'
 
 import { EmptyPlaceholder } from '../../components/EmptyPlaceholder'
-import { RatingGhost } from '../../components/Rating'
-import { Rating } from '../../components/Rating'
+import { Rating, RatingGhost } from '../../components/Rating'
 import { useLoggedInPersonUUID } from '../../hooks/useAuth'
 import { usePersonRating, usePutRating, useRating, useRatings } from '../../hooks/useRatings'
 import { RatingInput } from './RatingInput'
@@ -40,6 +43,7 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
     .filter(
       rating => rating.rater_person_uuid !== loggedInPersonUUID && rating.uuid !== pinnedRatingUUID,
     )
+
   const saveRating = ({ points, reason }: { points: number | null; reason: string | null }) =>
     usedPutRating
       .mutateAsync({
@@ -49,7 +53,11 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
       })
       .then(() => {})
 
+  const cache = useRef(new CellMeasurerCache({ fixedWidth: true, defaultHeight: 150 }))
   const hasNotRated = !loggedInPersonUUID || !usedLoggedInPersonRating.data
+  const showEndMessage =
+    !usedRatings.hasNextPage &&
+    (usedRatings.data?.pages.filter(page => page.length > 0).length ?? 0) > 1
 
   return (
     <>
@@ -119,13 +127,71 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
           {useRatingsPages === undefined ? (
             Array.from({ length: 3 }).map((_, index) => <RatingGhost key={index} />)
           ) : useRatingsPages.length > 0 ? (
-            useRatingsPages.map(rating => (
-              <Rating
-                key={rating.uuid}
-                rating={rating}
-                onPin={() => setPinnedRatingUUID(rating.uuid)}
-              />
-            ))
+            <WindowScroller>
+              {({ height, isScrolling, onChildScroll, scrollTop, registerChild }) => (
+                <AutoSizer disableHeight>
+                  {({ width }) => (
+                    <Box ref={registerChild}>
+                      <List
+                        autoHeight
+                        containerStyle={{
+                          overflow: 'visible',
+                        }}
+                        deferredMeasurementCache={cache.current}
+                        height={height}
+                        isScrolling={isScrolling}
+                        overscanRowCount={3}
+                        rowCount={useRatingsPages.length}
+                        rowHeight={cache.current.rowHeight}
+                        rowRenderer={({ index, key, parent, style }) => {
+                          const rating = useRatingsPages[index]
+                          if (!rating) return
+
+                          return (
+                            <CellMeasurer
+                              cache={cache.current}
+                              columnIndex={0}
+                              key={key}
+                              parent={parent}
+                              rowIndex={index}
+                              style={{
+                                overflowX: 'hidden',
+                              }}
+                            >
+                              {({ registerChild }) => (
+                                <Box
+                                  py="sm"
+                                  ref={registerChild}
+                                  style={{ ...style, overflowX: 'visible' }}
+                                >
+                                  <Rating
+                                    rating={rating}
+                                    onPin={() => setPinnedRatingUUID(rating.uuid)}
+                                  />
+                                </Box>
+                              )}
+                            </CellMeasurer>
+                          )
+                        }}
+                        scrollTop={scrollTop}
+                        style={{ overflowY: 'visible', overflowX: 'visible' }}
+                        width={width}
+                        onRowsRendered={({ stopIndex }) => {
+                          if (
+                            stopIndex >= useRatingsPages.length - 1 &&
+                            usedRatings.hasNextPage &&
+                            !usedRatings.isFetching
+                          ) {
+                            usedRatings.fetchNextPage()
+                          }
+                        }}
+                        onScroll={onChildScroll}
+                      />
+                    </Box>
+                  )}
+                </AutoSizer>
+              )}
+            </WindowScroller>
           ) : (
             <EmptyPlaceholder
               {...(hasNotRated
@@ -137,6 +203,12 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
                     title: '👀 No other ratings yet',
                     subText: 'You have been the only one to rate this card so far. Stand proud 😤!',
                   })}
+            />
+          )}
+          {showEndMessage && (
+            <EmptyPlaceholder
+              subText="The journey is complete, you may rest now 🛌."
+              title="The end."
             />
           )}
         </Stack>

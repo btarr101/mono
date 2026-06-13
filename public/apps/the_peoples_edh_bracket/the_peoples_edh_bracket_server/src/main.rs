@@ -1,7 +1,12 @@
 use clap::{Parser, ValueEnum};
 use serde_envfile::from_env;
 use the_peoples_edh_bracket_server::{
-    config::Config, db::setup_pg_pool, scryfall::client::ScryfallClient, server::server, state::AppState, sync_cards::sync_cards,
+    config::Config,
+    db::setup_pg_pool,
+    scripts::{seed::seed, sync_cards::sync_cards},
+    scryfall::client::ScryfallClient,
+    server::server,
+    state::AppState,
     tracing::setup_tracing,
 };
 
@@ -10,6 +15,7 @@ pub enum RunMode {
     #[default]
     Server,
     SyncCards,
+    Seed,
 }
 
 #[derive(Parser, Debug)]
@@ -32,6 +38,7 @@ async fn main() -> anyhow::Result<()> {
     match args.mode {
         RunMode::Server => server(state, config).await?,
         RunMode::SyncCards => sync_cards(state).await?,
+        RunMode::Seed => seed(state).await?,
     }
 
     Ok(())

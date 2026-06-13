@@ -6,13 +6,15 @@ use axum::{
     routing::get,
 };
 use axum_anyhow::{ApiResult, OptionExt};
-use names::Generator;
 use reqwest::StatusCode;
 use serde::Deserialize;
 use serde_inline_default::serde_inline_default;
 use sqlx::{Pool, Postgres};
 
-use crate::{constants::TS_RS_EXPORT_TO, model::person::Person, state::AppState, util::parse_pagination};
+use crate::{
+    constants::TS_RS_EXPORT_TO, controller::persons::create_debug_person, model::person::Person, state::AppState,
+    util::parse_pagination,
+};
 
 pub fn get_router() -> Router<AppState> {
     Router::new()
@@ -56,18 +58,7 @@ async fn get_persons(
 }
 
 async fn post_debug_person(State(pg_pool): State<Pool<Postgres>>) -> ApiResult<(StatusCode, Json<Person>)> {
-    let username = Generator::with_naming(names::Name::Numbered)
-        .next()
-        .context_internal("failed to generate name?")?;
-
-    let person = sqlx::query_as!(
-        Person,
-        "INSERT INTO person (username) VALUES ($1)
-        RETURNING *",
-        username
-    )
-    .fetch_one(&pg_pool)
-    .await?;
+    let person = create_debug_person(&pg_pool).await?;
 
     Ok((StatusCode::CREATED, Json(person)))
 }

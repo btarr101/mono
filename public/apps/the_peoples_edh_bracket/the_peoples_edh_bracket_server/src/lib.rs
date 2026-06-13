@@ -1,11 +1,12 @@
 pub mod api_router;
 pub mod config;
 pub mod constants;
+pub mod controller;
 pub mod db;
 pub mod model;
+pub mod scripts;
 pub mod scryfall;
 pub mod server;
 pub mod state;
-pub mod sync_cards;
 pub mod tracing;
 pub mod util;

@@ -98,7 +98,12 @@ export const Rating = ({ rating, pinned, onPin }: RatingProps) => {
                   </Title>
                   <Divider orientation="vertical" />
                   <Title c="dimmed" order={4} textWrap="nowrap">
-                    <NumberFormatter suffix={' ppts'} value={rating.points} />
+                    <NumberFormatter
+                      decimalScale={2}
+                      fixedDecimalScale={true}
+                      suffix={' ppts'}
+                      value={rating.points}
+                    />
                   </Title>
                 </Group>
                 <PersonProfileLine loading={person.isLoading} person={person.data}>
