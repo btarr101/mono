@@ -34,6 +34,7 @@ export const usePerson = (uuid: string | null) =>
   useQuery({
     queryKey: ['person', uuid],
     queryFn: async () => (uuid ? await getPerson(uuid) : null),
+    staleTime: Infinity,
   })
 
 export const useMe = () => {

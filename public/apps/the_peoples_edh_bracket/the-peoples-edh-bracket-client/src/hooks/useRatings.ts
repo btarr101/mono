@@ -1,3 +1,4 @@
+import type { InfiniteData } from '@tanstack/react-query'
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -13,6 +14,7 @@ import {
   putRating,
   putRatingReview,
 } from '../api/ratings'
+import type { CardRatingWithReviewsAndGlobalPoints } from '../types/bindings/CardRatingWithReviewsAndGlobalPoints'
 import type { GetRatingHistogramParams } from '../types/bindings/GetRatingHistogramParams'
 import type { GetRatingsParams } from '../types/bindings/GetRatingsParams'
 import type { PutRatingReviewBody } from '../types/bindings/PutRatingReviewBody'
@@ -24,7 +26,7 @@ export const useRatings = ({
   page_size,
 }: Omit<GetRatingsParams, 'page'>) =>
   useInfiniteQuery({
-    queryKey: ['ratings', card_oracle_id, sort, page_size],
+    queryKey: ['ratings', 'list', card_oracle_id, sort, page_size],
     queryFn: ({ pageParam: page }) =>
       getRatings({ card_oracle_id, rater_person_uuid, sort, page, page_size }),
     initialPageParam: 1,
@@ -99,15 +101,46 @@ export const usePutRatingReview = () => {
   return useMutation({
     mutationFn: ({ uuid, ...body }: { uuid: string } & PutRatingReviewBody) =>
       putRatingReview(uuid, body),
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ['ratings'],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ['rating'],
-        }),
-      ]),
+    onMutate: ({ uuid, like }) => {
+      // Optimistic rendering - also incorrectly preserves order
+      // as to not mess with UI
+      queryClient.setQueriesData<InfiniteData<CardRatingWithReviewsAndGlobalPoints[]>>(
+        { queryKey: ['ratings', 'list'] },
+        data => {
+          if (!data) return data
+
+          return {
+            ...data,
+            pages: data.pages.map(page =>
+              page.map(rating => {
+                if (rating.uuid !== uuid) return rating
+
+                const previousPersonReview = rating.reviews.person_review
+                const nextPersonReview = previousPersonReview === like ? null : like
+
+                let nextLikes = rating.reviews.likes
+                let nextDislikes = rating.reviews.dislikes
+                if (previousPersonReview === true) nextLikes -= 1
+                if (previousPersonReview === false) nextDislikes -= 1
+                if (nextPersonReview === true) nextLikes += 1
+                if (nextPersonReview === false) nextDislikes += 1
+
+                return {
+                  ...rating,
+                  reviews: {
+                    ...rating.reviews,
+                    person_review: nextPersonReview,
+                    likes: nextLikes,
+                    dislikes: nextDislikes,
+                  },
+                }
+              }),
+            ),
+          }
+        },
+      )
+    },
+    onSuccess: () => Promise.all([queryClient.invalidateQueries({ queryKey: ['rating'] })]),
   })
 }
 

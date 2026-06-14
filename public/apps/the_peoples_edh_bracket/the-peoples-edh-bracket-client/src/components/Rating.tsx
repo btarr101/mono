@@ -36,17 +36,19 @@ export const Rating = ({ rating, pinned, onPin }: RatingProps) => {
   const personLiked = rating.reviews.person_review === true
   const personDisliked = rating.reviews.person_review === false
 
-  const onLike = () =>
+  const onLike = () => {
     reviewRating({
       uuid: rating.uuid,
       like: personLiked ? null : true,
     })
+  }
 
-  const onDislike = () =>
+  const onDislike = () => {
     reviewRating({
       uuid: rating.uuid,
       like: personDisliked ? null : false,
     })
+  }
 
   return (
     <Box pos="relative">
