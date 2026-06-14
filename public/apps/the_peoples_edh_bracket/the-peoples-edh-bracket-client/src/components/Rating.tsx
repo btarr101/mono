@@ -15,8 +15,7 @@ import {
 } from '@mantine/core'
 import { PushPinIcon, ShareIcon } from '@phosphor-icons/react'
 
-import { useLoggedInPersonUUID } from '../hooks/useAuth'
-import { usePerson } from '../hooks/usePersons'
+import { useMe, usePerson } from '../hooks/usePersons'
 import { usePutRatingReview } from '../hooks/useRatings'
 import type { CardRatingWithReviewsAndGlobalPoints } from '../types/bindings/CardRatingWithReviewsAndGlobalPoints'
 import { formatTimeStamp } from '../util'
@@ -31,7 +30,8 @@ export type RatingProps = {
 
 export const Rating = ({ rating, pinned, onPin, onShare }: RatingProps) => {
   const person = usePerson(rating.rater_person_uuid)
-  const loggedInPersonUUID = useLoggedInPersonUUID()
+  const me = useMe()
+  const loggedInPersonUUID = me.data?.uuid ?? null
   const { mutate: reviewRating } = usePutRatingReview()
 
   const personLiked = rating.reviews.person_review === true

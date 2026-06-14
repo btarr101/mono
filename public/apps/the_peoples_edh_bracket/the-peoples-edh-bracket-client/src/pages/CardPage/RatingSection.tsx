@@ -10,7 +10,7 @@ import { AutoSizer, CellMeasurer, CellMeasurerCache, List, WindowScroller } from
 
 import { EmptyPlaceholder } from '../../components/EmptyPlaceholder'
 import { Rating, RatingGhost } from '../../components/Rating'
-import { useLoggedInPersonUUID } from '../../hooks/useAuth'
+import { useMe } from '../../hooks/usePersons'
 import { usePersonRating, usePutRating, useRating, useRatings } from '../../hooks/useRatings'
 import { RatingInput } from './RatingInput'
 
@@ -39,7 +39,8 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
     })
   }
 
-  const loggedInPersonUUID = useLoggedInPersonUUID()
+  const me = useMe()
+  const loggedInPersonUUID = me.data?.uuid ?? null
   const usedLoggedInPersonRating = usePersonRating(cardOracleId, loggedInPersonUUID)
   const usedPinnedRating = useRating(pinnedRatingUUID)
   const usedRatings = useRatings({

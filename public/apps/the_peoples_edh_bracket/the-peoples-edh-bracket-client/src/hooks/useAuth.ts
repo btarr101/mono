@@ -1,7 +1,11 @@
 import { useLocalStorage } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
+import { match } from 'ts-pattern'
 
-export type AuthState = { ty: null } | { ty: 'debug'; personUUID: string }
+export type AuthState =
+  | { ty: null }
+  | { ty: 'debug'; personUUID: string }
+  | { ty: 'google'; jwt: string }
 
 export const useAuthState = () =>
   useLocalStorage<AuthState>({
@@ -9,26 +13,20 @@ export const useAuthState = () =>
     defaultValue: { ty: null },
   })
 
-export const useLoggedInPersonUUID = () => {
-  const [authState] = useAuthState()
-
-  if (authState.ty === 'debug') {
-    return authState.personUUID
-  }
-
-  return null
-}
-
-export type LoginParams = { ty: 'debug'; personUUID: string }
+export type LoginParams = Exclude<AuthState, { ty: null }>
 
 export const useLogin = () => {
   const queryClient = useQueryClient()
   const [, setAuthState] = useAuthState()
 
   return (params: LoginParams) => {
-    if (params.ty === 'debug') {
-      setAuthState({ ty: 'debug', personUUID: params.personUUID })
-    }
+    const newAuthState = match(params)
+      .returnType<AuthState>()
+      .with({ ty: 'debug' }, ({ personUUID }) => ({ ty: 'debug', personUUID }))
+      .with({ ty: 'google' }, ({ jwt }) => ({ ty: 'google', jwt }))
+      .exhaustive()
+
+    setAuthState(newAuthState)
 
     queryClient.invalidateQueries()
   }
@@ -39,10 +37,10 @@ export const useLogout = () => {
   const [authState, setAuthState] = useAuthState()
 
   return () => {
-    if (authState) {
+    if (authState.ty !== null) {
       setAuthState({ ty: null })
     }
 
-    queryClient.invalidateQueries()
+    queryClient.clear()
   }
 }

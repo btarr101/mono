@@ -3,6 +3,7 @@ pub mod config;
 pub mod constants;
 pub mod controller;
 pub mod db;
+pub mod middleware;
 pub mod model;
 pub mod scripts;
 pub mod scryfall;

@@ -20,3 +20,27 @@ pub async fn create_debug_person(pg_pool: &PgPool) -> anyhow::Result<Person> {
 
     Ok(person)
 }
+
+pub async fn upsert_person(
+    uuid: &uuid::Uuid,
+    username: &str,
+    pg_pool: &PgPool,
+    picture_url: Option<&str>,
+) -> anyhow::Result<Person> {
+    let person = sqlx::query_as!(
+        Person,
+        "INSERT INTO person (uuid, username, picture_url) VALUES ($1, $2, $3)
+        ON CONFLICT (uuid)
+        DO UPDATE SET
+            username = EXCLUDED.username,
+            picture_url = EXCLUDED.picture_url
+        RETURNING *",
+        uuid,
+        username,
+        picture_url
+    )
+    .fetch_one(pg_pool)
+    .await?;
+
+    Ok(person)
+}

@@ -12,13 +12,14 @@ use serde_inline_default::serde_inline_default;
 use sqlx::{Pool, Postgres};
 
 use crate::{
-    constants::TS_RS_EXPORT_TO, controller::persons::create_debug_person, model::person::Person, state::AppState,
-    util::parse_pagination,
+    constants::TS_RS_EXPORT_TO, controller::persons::create_debug_person, middleware::auth::Auth, model::person::Person,
+    state::AppState, util::parse_pagination,
 };
 
 pub fn get_router() -> Router<AppState> {
     Router::new()
         .route("/", get(get_persons).post(post_debug_person))
+        .route("/me", get(get_me))
         .route("/{uuid}", get(get_person))
 }
 
@@ -65,6 +66,15 @@ async fn post_debug_person(State(pg_pool): State<Pool<Postgres>>) -> ApiResult<(
 
 async fn get_person(State(pg_pool): State<Pool<Postgres>>, Path(uuid): Path<uuid::Uuid>) -> ApiResult<Json<Person>> {
     let person = sqlx::query_as!(Person, "SELECT * FROM person WHERE uuid = $1 LIMIT 1", uuid)
+        .fetch_optional(&pg_pool)
+        .await?
+        .context_not_found("person could not be found")?;
+
+    Ok(Json(person))
+}
+
+async fn get_me(State(pg_pool): State<Pool<Postgres>>, Auth { person_uuid }: Auth) -> ApiResult<Json<Person>> {
+    let person = sqlx::query_as!(Person, "SELECT * FROM person WHERE uuid = $1 LIMIT 1", person_uuid)
         .fetch_optional(&pg_pool)
         .await?
         .context_not_found("person could not be found")?;

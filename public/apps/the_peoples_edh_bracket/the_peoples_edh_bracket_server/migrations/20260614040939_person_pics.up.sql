@@ -1,0 +1,2 @@
+ALTER TABLE person
+ADD picture_url TEXT DEFAULT NULL;

@@ -1,4 +1,5 @@
 import { AppShell, Box, Menu, NavLink, Space, Stack, Text, Title } from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
 import {
   ChartLineIcon,
   HandFistIcon,
@@ -16,6 +17,7 @@ import { NavLink as RouterNavLink } from 'react-router'
 import { PersonProfileLine } from '../components/PersonProfileLine'
 import { useAuthState, useLogin, useLogout } from '../hooks/useAuth'
 import { useDebugPostPerson, useMe, useSearchPersons } from '../hooks/usePersons'
+import { LoginModal } from './LoginModal'
 
 export const Layout = () => (
   <NuqsAdapter>
@@ -70,27 +72,34 @@ export const Layout = () => (
 
 const DebugAuthSection = () => {
   const [authState] = useAuthState()
+
   const logout = useLogout()
   const debugPostPerson = useDebugPostPerson()
   const me = useMe()
 
+  const [opened, { open, close }] = useDisclosure(false)
+
   return (
-    <Box p={'md'}>
-      <PersonProfileLine loading={me.isLoading} person={me.data}>
-        <Menu.Item onClick={() => debugPostPerson.mutate()}>Create new user</Menu.Item>
-        <Menu.Sub>
-          <Menu.Sub.Target>
-            <Menu.Sub.Item>Log into debug user</Menu.Sub.Item>
-          </Menu.Sub.Target>
-          <DebugUserDropdown />
-        </Menu.Sub>
-        {authState.ty !== null && (
-          <Menu.Item color="red" onClick={logout}>
-            Log out
-          </Menu.Item>
-        )}
-      </PersonProfileLine>
-    </Box>
+    <>
+      <Box p={'md'}>
+        <PersonProfileLine loading={me.isLoading} person={me.data}>
+          <Menu.Item onClick={() => debugPostPerson.mutate()}>Create new user</Menu.Item>
+          <Menu.Sub>
+            <Menu.Sub.Target>
+              <Menu.Sub.Item>Log into debug user</Menu.Sub.Item>
+            </Menu.Sub.Target>
+            <DebugUserDropdown />
+          </Menu.Sub>
+          {authState.ty === null && <Menu.Item onClick={open}>Log in</Menu.Item>}
+          {authState.ty !== null && (
+            <Menu.Item color="red" onClick={logout}>
+              Log out
+            </Menu.Item>
+          )}
+        </PersonProfileLine>
+      </Box>
+      <LoginModal opened={opened} onClose={close} />
+    </>
   )
 }
 

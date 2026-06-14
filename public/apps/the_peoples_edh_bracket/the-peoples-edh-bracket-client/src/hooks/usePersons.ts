@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { debugPostPerson, getPerson, getPersons } from '../api/persons'
+import { debugPostPerson, getMe, getPerson, getPersons } from '../api/persons'
 import type { GetPersonsParams } from '../types/bindings/GetPersonsParams'
 import { useAuthState } from './useAuth'
 
@@ -39,7 +39,12 @@ export const usePerson = (uuid: string | null) =>
 
 export const useMe = () => {
   const [authState] = useAuthState()
-  const uuid = authState.ty === 'debug' ? authState.personUUID : null
+  const useMe = useQuery({
+    queryKey: ['person', 'me', authState],
+    queryFn: getMe,
+    staleTime: Infinity,
+    enabled: authState.ty !== null,
+  })
 
-  return usePerson(uuid)
+  return useMe
 }

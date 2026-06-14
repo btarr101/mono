@@ -9,6 +9,7 @@ use crate::constants::TS_RS_EXPORT_TO;
 pub struct Person {
     pub uuid: uuid::Uuid,
     pub username: String,
+    pub picture_url: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,
 }

@@ -16,6 +16,10 @@ export const api = ky.create({
         if (authState.ty === 'debug') {
           request.headers.set('Authorization', `Debug ${authState.personUUID}`)
         }
+
+        if (authState.ty === 'google') {
+          request.headers.set('Authorization', `Bearer ${authState.jwt}`)
+        }
       },
     ],
   },

@@ -70,8 +70,8 @@ const CardSection = ({ card }: CardSectionProps) => (
         component={Link}
         rightSection={<ArrowSquareOutIcon />}
         target="_blank"
-        to="https://scryfall.com/card/9ed/100/storm-crow"
-        w={'fit-content'}
+        to={`https://scryfall.com/search?q=oracleid:${card.oracle_id}`}
+        w="fit-content"
       >
         View on Scryfall
       </Button>

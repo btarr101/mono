@@ -14,9 +14,9 @@ use strum::Display;
 use validator::Validate;
 
 use crate::{
-    api_router::auth::{Auth, OptionalAuth},
     constants::TS_RS_EXPORT_TO,
     controller::ratings::{RateCardError, RateCardParams, ReviewRatingError, ReviewRatingParams, rate_card, review_rating},
+    middleware::auth::{Auth, OptionalAuth},
     model::card_rating::CardRating,
     state::AppState,
     util::parse_pagination,

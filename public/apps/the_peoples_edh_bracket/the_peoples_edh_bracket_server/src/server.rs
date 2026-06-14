@@ -1,3 +1,4 @@
+use axum::middleware::from_fn_with_state;
 #[cfg(debug_assertions)]
 use axum_anyhow::set_expose_errors;
 use tower_http::{
@@ -6,7 +7,12 @@ use tower_http::{
 };
 use tracing::info;
 
-use crate::{api_router, config::Config, state::AppState};
+use crate::{
+    api_router,
+    config::Config,
+    middleware::auth::{AuthMiddlewareParams, AuthMiddlewareState, auth_middleware},
+    state::AppState,
+};
 
 pub async fn server(state: AppState, config: Config) -> anyhow::Result<()> {
     #[cfg(debug_assertions)]
@@ -14,6 +20,14 @@ pub async fn server(state: AppState, config: Config) -> anyhow::Result<()> {
 
     let router = axum::Router::new()
         .nest("/api", api_router::get_router())
+        .layer(from_fn_with_state(
+            AuthMiddlewareState::new(AuthMiddlewareParams {
+                google_client_id: &config.google_oauth_client_id,
+                pg_pool: state.pg_pool.clone(),
+            })
+            .await?,
+            auth_middleware,
+        ))
         .with_state(state)
         .layer(
             CorsLayer::new()

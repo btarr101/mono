@@ -17,6 +17,12 @@ export const debugPostPerson = async () => {
   return api.post(uri).json<Person>()
 }
 
+export const getMe = async () => {
+  const uri = new URL(`${API_BASE_URL}/persons/me`)
+
+  return api.get(uri).json<Person>()
+}
+
 export const getPerson = async (uuid: string) => {
   const uri = new URL(`${API_BASE_URL}/persons/${uuid}`)
 
