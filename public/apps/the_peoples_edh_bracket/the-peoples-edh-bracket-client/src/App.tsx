@@ -14,6 +14,7 @@ import { getCard } from './api/cards'
 import { getHomeMetrics } from './api/home'
 import { useAuthState } from './hooks/useAuth'
 import { Layout } from './Layout'
+import { AnalyzePage } from './pages/AnalyzePage'
 import { BrowsePage } from './pages/BrowsePage'
 import { CardPage } from './pages/CardPage'
 import { HomePage } from './pages/HomePage'
@@ -52,7 +53,7 @@ const router = createBrowserRouter([
       },
       {
         path: '/analyze',
-        Component: HomePage,
+        Component: AnalyzePage,
       },
       {
         path: '/community',
