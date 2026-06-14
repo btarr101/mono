@@ -1,6 +1,8 @@
 import 'react-virtualized/styles.css'
 
 import { Alert, Box, Group, Select, Stack, Title } from '@mantine/core'
+import { useClipboard } from '@mantine/hooks'
+import { notifications } from '@mantine/notifications'
 import { InfoIcon } from '@phosphor-icons/react'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useRef } from 'react'
@@ -17,6 +19,8 @@ export type RatingSectionProps = {
 }
 
 export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
+  const clipboard = useClipboard()
+
   const [sort, setSort] = useQueryState(
     'sort',
     parseAsStringLiteral(['liked', 'disliked', 'controversial', 'recent'] as const).withDefault(
@@ -26,6 +30,14 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
   const [pinnedRatingUUID, setPinnedRatingUUID] = useQueryState('pinned', {
     clearOnDefault: true,
   })
+  const onShare = (ratingUUID: string) => {
+    clipboard.copy(`${window.location}?pinned=${ratingUUID}`)
+    notifications.show({
+      title: 'Copied share url to clipboard',
+      message: null,
+      autoClose: 1000,
+    })
+  }
 
   const loggedInPersonUUID = useLoggedInPersonUUID()
   const usedLoggedInPersonRating = usePersonRating(cardOracleId, loggedInPersonUUID)
@@ -75,7 +87,16 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
                   variant="light"
                 />
               )}
-              <RatingInput rating={usedLoggedInPersonRating.data ?? null} onSave={saveRating} />
+              <RatingInput
+                rating={usedLoggedInPersonRating.data ?? null}
+                onSave={saveRating}
+                onShare={
+                  usedLoggedInPersonRating.data
+                    ? () =>
+                        usedLoggedInPersonRating.data && onShare(usedLoggedInPersonRating.data.uuid)
+                    : undefined
+                }
+              />
             </>
           )}
         </Stack>
@@ -109,20 +130,23 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
             onChange={newSort => setSort(newSort)}
           />
         </Group>
-        <Stack gap="xl">
-          {pinnedRatingUUID &&
-            (usedPinnedRating.isPending ? (
-              <RatingGhost />
-            ) : (
-              usedPinnedRating.data && (
-                <Rating
-                  key={usedPinnedRating.data.uuid}
-                  pinned={true}
-                  rating={usedPinnedRating.data}
-                  onPin={() => setPinnedRatingUUID(null)}
-                />
-              )
-            ))}
+        <Stack gap={0}>
+          {pinnedRatingUUID && (
+            <Box py="sm">
+              {usedPinnedRating.isPending ? (
+                <RatingGhost />
+              ) : (
+                usedPinnedRating.data && (
+                  <Rating
+                    key={usedPinnedRating.data.uuid}
+                    pinned={true}
+                    rating={usedPinnedRating.data}
+                    onPin={() => setPinnedRatingUUID(null)}
+                  />
+                )
+              )}
+            </Box>
+          )}
 
           {useRatingsPages === undefined ? (
             Array.from({ length: 3 }).map((_, index) => <RatingGhost key={index} />)
@@ -167,6 +191,7 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
                                   <Rating
                                     rating={rating}
                                     onPin={() => setPinnedRatingUUID(rating.uuid)}
+                                    onShare={() => onShare(rating.uuid)}
                                   />
                                 </Box>
                               )}

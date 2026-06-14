@@ -20,10 +20,11 @@ import { formatTimeStamp } from '../../util'
 
 type RatingInputProps = {
   rating: CardRatingWithReviewsAndGlobalPoints | null
+  onShare?: () => void
   onSave: (values: { points: number | null; reason: string | null }) => Promise<void>
 }
 
-export const RatingInput = ({ rating, onSave }: RatingInputProps) => {
+export const RatingInput = ({ rating, onSave, onShare }: RatingInputProps) => {
   const form = useForm({
     mode: 'controlled',
     initialValues: {
@@ -70,7 +71,7 @@ export const RatingInput = ({ rating, onSave }: RatingInputProps) => {
                   >
                     {rating.reviews.dislikes} 👎
                   </Button>
-                  <Button size="compact-md" variant="default">
+                  <Button disabled={!onShare} size="compact-md" variant="default" onClick={onShare}>
                     <ShareIcon />
                   </Button>
                 </Button.Group>

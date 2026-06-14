@@ -26,9 +26,10 @@ export type RatingProps = {
   rating: CardRatingWithReviewsAndGlobalPoints
   pinned?: boolean
   onPin?: () => void
+  onShare?: () => void
 }
 
-export const Rating = ({ rating, pinned, onPin }: RatingProps) => {
+export const Rating = ({ rating, pinned, onPin, onShare }: RatingProps) => {
   const person = usePerson(rating.rater_person_uuid)
   const loggedInPersonUUID = useLoggedInPersonUUID()
   const { mutate: reviewRating } = usePutRatingReview()
@@ -73,7 +74,7 @@ export const Rating = ({ rating, pinned, onPin }: RatingProps) => {
               >
                 {rating.reviews.dislikes} 👎
               </Button>
-              <Button size="compact-md" variant="default">
+              <Button size="compact-md" variant="default" onClick={onShare}>
                 <ShareIcon />
               </Button>
               <Button size="compact-md" variant={pinned ? 'filled' : 'default'} onClick={onPin}>
