@@ -27,12 +27,13 @@ struct Args {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
+    dotenvy::dotenv()?;
     let config: Config = from_env()?;
 
     let _span = setup_tracing(&config.stage);
     let state = AppState {
         scryfall_client: ScryfallClient::new(),
-        pg_pool: setup_pg_pool().await?,
+        pg_pool: setup_pg_pool(&config.database_url).await?,
     };
 
     match args.mode {

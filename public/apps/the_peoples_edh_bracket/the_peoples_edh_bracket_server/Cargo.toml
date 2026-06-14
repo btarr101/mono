@@ -46,3 +46,4 @@ fastrand = "2.4.1"
 cgisf_lib = "0.2.1"
 oidc-jwt-validator = "0.2.3"
 reqwest011 = { version = "0.11", package = "reqwest" }
+dotenvy = "0.15.7"

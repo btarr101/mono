@@ -8,6 +8,7 @@ import {
   Indicator,
   NumberFormatter,
   NumberInput,
+  Stack,
   Text,
   Textarea,
   Title,
@@ -17,6 +18,7 @@ import { ShareIcon } from '@phosphor-icons/react'
 
 import type { CardRatingWithReviewsAndGlobalPoints } from '../../types/bindings/CardRatingWithReviewsAndGlobalPoints'
 import { formatTimeStamp } from '../../util'
+import { useMemo } from 'react'
 
 type RatingInputProps = {
   rating: CardRatingWithReviewsAndGlobalPoints | null
@@ -35,6 +37,14 @@ export const RatingInput = ({ rating, onSave, onShare }: RatingInputProps) => {
       reason: hasLength({ max: 300 }, 'Reason must be less 300 characters or less'),
     },
   })
+
+  const totalPoints = useMemo(() => {
+    if (rating?.total_points === undefined) return undefined
+    const points = form.getValues().points
+    if (points === null) return undefined
+
+    return parseFloat(rating.total_points) - parseFloat(rating.points) + points
+  }, [form, rating])
 
   return (
     <form
@@ -99,24 +109,36 @@ export const RatingInput = ({ rating, onSave, onShare }: RatingInputProps) => {
                     decimalScale={2}
                     fixedDecimalScale={true}
                     suffix={' pts'}
-                    value={rating?.global_points ?? '5'}
+                    value={rating?.global_points ?? '0.0'}
                   />
                 </Title>
                 <Divider orientation="vertical" />
-                <NumberInput
-                  key={form.key('points')}
-                  placeholder="0 ppts"
-                  size="lg"
-                  styles={{
-                    input: {
-                      fieldSizing: 'content',
-                      paddingRight:
-                        'calc(var(--input-right-section-width) + var(--mantine-spacing-md))',
-                    },
-                  }}
-                  suffix=" ppts"
-                  {...form.getInputProps('points')}
-                />
+                <Stack gap="xs">
+                  <NumberInput
+                    key={form.key('points')}
+                    min={0}
+                    placeholder="0 ppts"
+                    size="lg"
+                    styles={{
+                      input: {
+                        fieldSizing: 'content',
+                        paddingRight:
+                          'calc(var(--input-right-section-width) + var(--mantine-spacing-md))',
+                      },
+                    }}
+                    suffix=" ppts"
+                    {...form.getInputProps('points')}
+                  />
+                  <Divider />
+                  <Text size="sm" span c="dimmed">
+                    <NumberFormatter
+                      decimalScale={2}
+                      fixedDecimalScale={true}
+                      suffix={' ppts'}
+                      value={totalPoints}
+                    />
+                  </Text>
+                </Stack>
               </Group>
             </Center>
           </Card.Section>

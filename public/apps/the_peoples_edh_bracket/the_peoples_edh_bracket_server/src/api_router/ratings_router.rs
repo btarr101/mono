@@ -6,7 +6,7 @@ use axum::{
     routing::{get, put},
 };
 use axum_anyhow::{ApiResult, IntoApiError, OptionExt};
-use bigdecimal::BigDecimal;
+use bigdecimal::{BigDecimal, Signed};
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
 use sqlx::{PgPool, prelude::FromRow};
@@ -42,9 +42,17 @@ struct CardRatingReviews {
 
 #[derive(ts_rs::TS, Serialize)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
-struct CardRatingWithReviewsAndGlobalPoints {
+struct CardRatingWithTotalPoints {
     #[serde(flatten)]
     card_rating: CardRating,
+    total_points: BigDecimal,
+}
+
+#[derive(ts_rs::TS, Serialize)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
+struct CardRatingWithReviewsAndGlobalPoints {
+    #[serde(flatten)]
+    card_rating: CardRatingWithTotalPoints,
     global_points: BigDecimal,
     reviews: CardRatingReviews,
 }
@@ -111,6 +119,7 @@ async fn get_ratings(
             cr.points,
             cr.reason,
             crg.global_points,
+            COALESCE(prc.total_personal_points, 0) as \"total_points!\",
             (
                 SELECT crr_person.liked
                 FROM card_rating_review crr_person
@@ -124,6 +133,7 @@ async fn get_ratings(
             cr.updated_at
         FROM card_rating cr
         LEFT JOIN card_rating_global crg ON crg.card_rating_uuid = cr.uuid
+        LEFT JOIN person_ratings_cache prc ON prc.person_uuid = cr.rater_person_uuid
         LEFT JOIN review_counts rc ON rc.card_rating_uuid = cr.uuid
         WHERE
             ($1::uuid IS NULL OR cr.card_oracle_id = $1)
@@ -154,14 +164,17 @@ async fn get_ratings(
     let ratings = rows
         .into_iter()
         .map(|row| CardRatingWithReviewsAndGlobalPoints {
-            card_rating: CardRating {
-                uuid: row.uuid,
-                card_oracle_id: row.card_oracle_id,
-                rater_person_uuid: row.rater_person_uuid,
-                points: row.points,
-                reason: row.reason,
-                created_at: row.created_at,
-                updated_at: row.updated_at,
+            card_rating: CardRatingWithTotalPoints {
+                card_rating: CardRating {
+                    uuid: row.uuid,
+                    card_oracle_id: row.card_oracle_id,
+                    rater_person_uuid: row.rater_person_uuid,
+                    points: row.points,
+                    reason: row.reason,
+                    created_at: row.created_at,
+                    updated_at: row.updated_at,
+                },
+                total_points: row.total_points,
             },
             global_points: row.global_points.unwrap_or_default(),
             reviews: CardRatingReviews {
@@ -175,11 +188,20 @@ async fn get_ratings(
     Ok(Json(ratings))
 }
 
+fn validate_big_decimal_not_negative(value: &BigDecimal) -> Result<(), validator::ValidationError> {
+    if value.is_negative() {
+        return Err(validator::ValidationError::new("value cannot be negative"));
+    }
+
+    Ok(())
+}
+
 #[derive(ts_rs::TS)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
 #[derive(Deserialize, Validate)]
 struct PutRatingBody {
     card_oracle_id: uuid::Uuid,
+    #[validate(custom(function = validate_big_decimal_not_negative))]
     points: BigDecimal,
     #[validate(length(max = 400))]
     reason: Option<String>,
@@ -227,6 +249,7 @@ async fn get_rating(
             cr.points,
             cr.reason,
             crg.global_points,
+            COALESCE(prc.total_personal_points, 0) as \"total_points!\",
             (
                 SELECT crr_person.liked
                 FROM card_rating_review crr_person
@@ -240,6 +263,7 @@ async fn get_rating(
             cr.updated_at
         FROM card_rating cr
         LEFT JOIN card_rating_global crg ON crg.card_rating_uuid = cr.uuid
+        LEFT JOIN person_ratings_cache prc ON prc.person_uuid = cr.rater_person_uuid
         LEFT JOIN (
             SELECT
                 crr.reviewed_card_rating_uuid AS card_rating_uuid,
@@ -258,14 +282,17 @@ async fn get_rating(
     .context_not_found("rating not found")?;
 
     let rating = CardRatingWithReviewsAndGlobalPoints {
-        card_rating: CardRating {
-            uuid: row.uuid,
-            card_oracle_id: row.card_oracle_id,
-            rater_person_uuid: row.rater_person_uuid,
-            points: row.points,
-            reason: row.reason,
-            created_at: row.created_at,
-            updated_at: row.updated_at,
+        card_rating: CardRatingWithTotalPoints {
+            card_rating: CardRating {
+                uuid: row.uuid,
+                card_oracle_id: row.card_oracle_id,
+                rater_person_uuid: row.rater_person_uuid,
+                points: row.points,
+                reason: row.reason,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+            },
+            total_points: row.total_points,
         },
         global_points: row.global_points.unwrap_or_default(),
         reviews: CardRatingReviews {

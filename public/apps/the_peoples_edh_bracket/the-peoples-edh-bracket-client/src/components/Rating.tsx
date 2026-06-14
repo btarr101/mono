@@ -100,14 +100,25 @@ export const Rating = ({ rating, pinned, onPin, onShare }: RatingProps) => {
                     />
                   </Title>
                   <Divider orientation="vertical" />
-                  <Title c="dimmed" order={4} textWrap="nowrap">
-                    <NumberFormatter
-                      decimalScale={2}
-                      fixedDecimalScale={true}
-                      suffix={' ppts'}
-                      value={rating.points}
-                    />
-                  </Title>
+                  <Stack gap={0}>
+                    <Title c="dimmed" order={4} textWrap="nowrap">
+                      <NumberFormatter
+                        decimalScale={2}
+                        fixedDecimalScale={true}
+                        suffix={' ppts'}
+                        value={rating.points}
+                      />
+                    </Title>
+                    <Divider />
+                    <Text size="sm" span c="dimmed">
+                      <NumberFormatter
+                        decimalScale={2}
+                        fixedDecimalScale={true}
+                        suffix={' ppts'}
+                        value={rating.total_points}
+                      />
+                    </Text>
+                  </Stack>
                 </Group>
                 <PersonProfileLine loading={person.isLoading} person={person.data}>
                   <Menu.Item>View Profile</Menu.Item>

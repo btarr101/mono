@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS card_rating (
   uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   card_oracle_id UUID NOT NULL REFERENCES card(oracle_id) ON DELETE CASCADE,
   rater_person_uuid UUID NOT NULL REFERENCES person(uuid) ON DELETE CASCADE,
-  points NUMERIC NOT NULL,
+  points NUMERIC NOT NULL CHECK (points >= 0),
   reason TEXT,
   UNIQUE (card_oracle_id, rater_person_uuid)
 );

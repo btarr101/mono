@@ -110,7 +110,7 @@ async fn get_cards(
             c.name,
             c.image_uri,
             c.legality as \"legality: CardLegality\",
-            COALESCE(crc.average_global_points, 5.0) as \"global_points!\",
+            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",
             COALESCE(cra.total_ratings, 0) as \"total_ratings!\",
             COALESCE(crc.card_rank, grs.unrated_card_rank) as \"card_rank!\"
         FROM card c
@@ -119,8 +119,8 @@ async fn get_cards(
         CROSS JOIN global_ratings_state grs
         WHERE ($1::text IS NULL OR lower(c.name) LIKE lower($1) || '%')
         ORDER BY
-            CASE WHEN $4::text = 'highest_rated' THEN COALESCE(crc.average_global_points, 5.0) END DESC,
-            CASE WHEN $4::text = 'lowest_rated' THEN COALESCE(crc.average_global_points, 5.0) END ASC,
+            CASE WHEN $4::text = 'highest_rated' THEN COALESCE(crc.average_global_points, 0.0) END DESC,
+            CASE WHEN $4::text = 'lowest_rated' THEN COALESCE(crc.average_global_points, 0.0) END ASC,
             CASE
                 WHEN $4::text = 'most_controversial'
                 THEN ABS(COALESCE(cra.likes_count, 0) - COALESCE(cra.dislikes_count, 0))
@@ -165,7 +165,7 @@ async fn get_card(State(pg_pool): State<PgPool>, Path(oracle_id): Path<uuid::Uui
             c.name,
             c.image_uri,
             c.legality as \"legality: CardLegality\",
-            COALESCE(crc.average_global_points, 5.0) as \"global_points!\",
+            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",
             COUNT(cr.uuid) as \"total_ratings!\",
             COALESCE(crc.card_rank, grs.unrated_card_rank) as \"card_rank!\"
         FROM card c
@@ -200,7 +200,7 @@ async fn get_card_metrics(State(pg_pool): State<PgPool>, Path(oracle_id): Path<u
     let metrics = sqlx::query_as!(
         CardMetrics,
         "SELECT
-            COALESCE(crc.average_global_points, 5.0) as \"global_points!\",
+            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",
             COUNT(cr.uuid) as \"total_ratings!\",
             COALESCE(crc.card_rank, grs.unrated_card_rank) as \"card_rank!\"
         FROM card c
