@@ -5,6 +5,7 @@
 - ~~Share Button~~
 - ~~Discord oauth~~
 - Start Analyze Page (maybe normalize power scale where mid is 0, then cut off lower cards)
+  - TODO: HANDLE MULTIPLE COPIES AHHHH
 - Community Page
 - About Page
 - Figure out deployment

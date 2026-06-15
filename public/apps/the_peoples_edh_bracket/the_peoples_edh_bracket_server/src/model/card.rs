@@ -21,7 +21,7 @@ pub enum CardLegality {
 }
 
 /// A Magic: The Gathering card.
-#[derive(ts_rs::TS)]
+#[derive(ts_rs::TS, Debug)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
 #[derive(sqlx::FromRow, Serialize)]
 pub struct Card {
