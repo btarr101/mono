@@ -11,10 +11,11 @@ import {
 } from '@mantine/core'
 import { isNotEmpty, useForm } from '@mantine/form'
 import type { AnalyzeFormProps } from '.'
+import type { DecklistMaindeckEntry } from '../../types/bindings/DecklistMaindeckEntry'
 
 export type DecklistFormModalProps = ModalProps &
   AnalyzeFormProps & {
-    decklist?: string[]
+    decklist?: DecklistMaindeckEntry[]
   }
 
 export const DecklistFormModal = ({
@@ -41,7 +42,7 @@ export const DecklistFormModal = ({
           await onAnalyze({
             type: 'decklist',
             commanders,
-            maindeck: (decklist ?? []).filter(cardName => !commanders.includes(cardName)),
+            maindeck: (decklist ?? []).filter(({ name }) => !commanders.includes(name)),
           })
         })}
       >
@@ -59,14 +60,18 @@ export const DecklistFormModal = ({
               key={form.key('commander')}
               {...form.getInputProps('commander')}
               label="Commander"
-              data={(decklist ?? []).filter(cardName => cardName !== form.getValues().partner)}
+              data={(decklist ?? [])
+                .filter(({ name, count }) => count === 1 && name !== form.getValues().partner)
+                .map(({ name }) => name)}
               searchable
             />
             <Select
               key={form.key('partner')}
               {...form.getInputProps('partner')}
               label="Partner"
-              data={(decklist ?? []).filter(cardName => cardName !== form.getValues().commander)}
+              data={(decklist ?? [])
+                .filter(({ name }) => name !== form.getValues().commander)
+                .map(({ name }) => name)}
               searchable
               disabled={form.getValues().commander === null}
               clearable

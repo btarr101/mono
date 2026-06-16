@@ -64,12 +64,12 @@ export const theme = createTheme({
     //   },
     // },
 
-    TextInput: {
-      styles: {
-        input: {
-          border: '3px solid #111',
-        },
-      },
-    },
+    // TextInput: {
+    //   styles: {
+    //     input: {
+    //       border: '3px solid #111',
+    //     },
+    //   },
+    // },
   },
 })

@@ -1,9 +1,9 @@
+use std::{collections::HashMap, num::NonZeroUsize};
+
 use axum::{Json, Router, extract::State, routing::post};
-use axum_anyhow::{ApiError, ApiResult};
+use axum_anyhow::ApiResult;
 use bigdecimal::BigDecimal;
-use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use sqlx::{PgPool, prelude::FromRow};
 
 use crate::{
@@ -16,9 +16,16 @@ pub fn get_router() -> Router<AppState> { Router::new().route("/analyze", post(p
 
 #[derive(ts_rs::TS, Serialize, Deserialize, Debug)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
+struct DecklistMaindeckEntry {
+    count: NonZeroUsize,
+    name: String,
+}
+
+#[derive(ts_rs::TS, Serialize, Deserialize, Debug)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
 struct Decklist {
     commanders: Vec<String>,
-    maindeck: Vec<String>,
+    maindeck: Vec<DecklistMaindeckEntry>,
 }
 
 #[derive(ts_rs::TS, Serialize, Deserialize, Debug)]
@@ -46,9 +53,16 @@ struct CardWithGlobalPoints {
 
 #[derive(ts_rs::TS, Serialize, Debug)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
+struct DeckMaindeckEntry {
+    count: NonZeroUsize,
+    card: CardWithGlobalPoints,
+}
+
+#[derive(ts_rs::TS, Serialize, Debug)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
 struct Deck {
     commanders: Vec<CardWithGlobalPoints>,
-    maindeck: Vec<CardWithGlobalPoints>,
+    maindeck: Vec<DeckMaindeckEntry>,
 }
 
 #[derive(ts_rs::TS, Serialize, Debug)]
@@ -59,46 +73,75 @@ struct AnalyzedDeck {
     total_points: BigDecimal,
 }
 
-#[axum::debug_handler]
-async fn post_analyze(State(pg_pool): State<PgPool>, Json(body): Json<PostAnalyzeBody>) -> ApiResult<Json<AnalyzedDeck>> {
+#[derive(ts_rs::TS, Serialize, Debug)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
+struct PostAnalyzeInvalidCardsResponse {
+    invalid_commanders: Vec<String>,
+    invalid_maindeck: Vec<String>,
+}
+
+async fn post_analyze(
+    State(pg_pool): State<PgPool>,
+    Json(body): Json<PostAnalyzeBody>,
+) -> ApiResult<Json<Result<AnalyzedDeck, PostAnalyzeInvalidCardsResponse>>> {
     let ((commanders, invalid_commanders), (maindeck, invalid_maindeck)) = match &body {
         PostAnalyzeBody::Url(_) => unimplemented!("Deck urls are not implemented yet!"),
         PostAnalyzeBody::Decklist(decklist) => (
             find_cards_by_names(decklist.commanders.as_slice(), &pg_pool).await?,
-            find_cards_by_names(decklist.maindeck.as_slice(), &pg_pool).await?,
+            async {
+                let card_names = decklist.maindeck.iter().map(|entry| entry.name.clone()).collect::<Vec<_>>();
+                let (valid_cards, invalid_card_names) = find_cards_by_names(card_names.as_slice(), &pg_pool).await?;
+
+                let card_counts = decklist
+                    .maindeck
+                    .iter()
+                    .map(|entry| (entry.name.to_lowercase(), entry.count))
+                    .collect::<HashMap<_, _>>();
+
+                let valid_cards = valid_cards
+                    .into_iter()
+                    .map(|card| DeckMaindeckEntry {
+                        count: card_counts
+                            .get(&card.card.name.to_lowercase())
+                            .cloned()
+                            .unwrap_or(NonZeroUsize::MIN),
+                        card,
+                    })
+                    .collect::<Vec<_>>();
+
+                anyhow::Ok((valid_cards, invalid_card_names))
+            }
+            .await?,
         ),
     };
 
     if !invalid_commanders.is_empty() || !invalid_maindeck.is_empty() {
-        Err(ApiError::builder()
-            .status(StatusCode::BAD_REQUEST)
-            .title("Bad Request")
-            .detail("The below cards could not be found")
-            .meta(json!({
-                "commanders": invalid_commanders,
-                "maindeck": invalid_maindeck
-            }))
-            .build())?;
+        return Ok(Json(Err(PostAnalyzeInvalidCardsResponse {
+            invalid_commanders,
+            invalid_maindeck,
+        })));
     }
 
     let total_points = commanders
         .iter()
-        .chain(maindeck.iter())
-        .map(|card| card.global_points.clone())
+        .map(|commander| commander.global_points.clone())
+        .chain(maindeck.iter().map(|entry| {
+            entry.card.global_points.clone() * BigDecimal::from(u128::try_from(entry.count.get()).unwrap_or(u128::MIN))
+        }))
         .reduce(|a, b| a + b)
         .unwrap_or_default();
 
-    Ok(Json(AnalyzedDeck {
+    Ok(Json(Ok(AnalyzedDeck {
         source: body,
         deck: Deck { commanders, maindeck },
         total_points,
-    }))
+    })))
 }
 
-async fn find_cards_by_names<'a>(
-    cards_names: &'a [String],
+async fn find_cards_by_names(
+    cards_names: &[String],
     pg_pool: &PgPool,
-) -> anyhow::Result<(Vec<CardWithGlobalPoints>, Vec<&'a String>)> {
+) -> anyhow::Result<(Vec<CardWithGlobalPoints>, Vec<String>)> {
     let cards = sqlx::query!(
         "SELECT
             c.oracle_id,
@@ -126,11 +169,10 @@ async fn find_cards_by_names<'a>(
     })
     .collect::<Vec<_>>();
 
-    dbg!(&cards);
-
     let invalid_card_names = cards_names
         .iter()
         .filter(|name| !cards.iter().find(|card| card.card.name == **name).is_some())
+        .cloned()
         .collect::<Vec<_>>();
 
     Ok((cards, invalid_card_names))
@@ -145,7 +187,16 @@ mod test {
     async fn test_analyze_by_decklist() -> anyhow::Result<()> {
         let decklist = Decklist {
             commanders: vec!["Storm Crow".to_string()],
-            maindeck: vec!["Force of Will".to_string(), "Negate".to_string()],
+            maindeck: vec![
+                DecklistMaindeckEntry {
+                    count: NonZeroUsize::MIN,
+                    name: "Force of Will".into(),
+                },
+                DecklistMaindeckEntry {
+                    count: NonZeroUsize::MIN,
+                    name: "Negate".into(),
+                },
+            ],
         };
         let pg_pool = setup_pg_pool("postgres://admin:root@localhost:5432/db").await?;
 

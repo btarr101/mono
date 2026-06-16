@@ -19,6 +19,7 @@ import { BrowsePage } from './pages/BrowsePage'
 import { CardPage } from './pages/CardPage'
 import { HomePage } from './pages/HomePage'
 import { theme } from './theme'
+import { AnalyzedDeckPage } from './pages/AnalyzedDeckPage'
 
 const router = createBrowserRouter([
   {
@@ -53,7 +54,16 @@ const router = createBrowserRouter([
       },
       {
         path: '/analyze',
-        Component: AnalyzePage,
+        children: [
+          {
+            index: true,
+            Component: AnalyzePage,
+          },
+          {
+            path: 'anonymous',
+            Component: AnalyzedDeckPage,
+          },
+        ],
       },
       {
         path: '/community',

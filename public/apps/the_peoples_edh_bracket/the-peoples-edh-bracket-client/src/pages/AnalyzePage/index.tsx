@@ -5,6 +5,8 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { postAnalyze } from '../../api/decks'
 import type { PostAnalyzeBody } from '../../types/bindings/PostAnalyzeBody'
+import { parseDecklist } from './parseDecklist'
+import type { DecklistMaindeckEntry } from '../../types/bindings/DecklistMaindeckEntry'
 
 export const AnalyzePage = () => {
   const { mutateAsync } = useMutation({
@@ -61,25 +63,6 @@ const DECKLIST_PLACEHOLDER = `1 Aftermath Analyst
 1 Ashaya, Soul of the Wild
 ...`
 
-// God this is so fucking hacky and bad
-// SHIT I NEED TO HANDLE MULTIPLE COPIES AHHHHH
-export const parseCardNames = (decklist: string) =>
-  Array.from(
-    new Set(
-      decklist
-        .split('\n')
-        .map(line => line.trim())
-        .filter(Boolean)
-        .map(line =>
-          line
-            .replace(/^\d+\s+/, '') // strip leading counts
-            .replace(/\s+\(.*$/, '') // strips set info
-            .replaceAll(' / ', ' // ') // for double sided cards - they use two //
-            .trim(),
-        ),
-    ),
-  )
-
 const DecklistForm = ({ onAnalyze }: AnalyzeFormProps) => {
   const form = useForm({
     mode: 'controlled',
@@ -88,9 +71,8 @@ const DecklistForm = ({ onAnalyze }: AnalyzeFormProps) => {
     },
     validate: {
       decklist: decklist => {
-        try {
-          console.log(parseCardNames(decklist))
-        } catch {
+        const result = parseDecklist(decklist)
+        if (result.ty === 'error') {
           return 'Unable to parse decklist'
         }
 
@@ -99,12 +81,19 @@ const DecklistForm = ({ onAnalyze }: AnalyzeFormProps) => {
     },
   })
 
-  const [validDecklist, setValidDecklist] = useState<string[] | null>(null)
+  const [validDecklist, setValidDecklist] = useState<DecklistMaindeckEntry[] | null>(null)
 
   return (
     <>
       <form
-        onSubmit={form.onSubmit(({ decklist }) => setValidDecklist(parseCardNames(decklist)))}
+        onSubmit={form.onSubmit(({ decklist }) => {
+          const result = parseDecklist(decklist)
+
+          // This should never come up due to validation
+          if (result.ty === 'error') throw new Error('Unable to parse decklist')
+
+          setValidDecklist(result.value)
+        })}
         style={{
           flex: 1,
           flexDirection: 'column',

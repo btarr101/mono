@@ -31,7 +31,7 @@ export const CardPage = () => {
   const { card } = useLoaderData<{ card: CardWithMetrics }>()
 
   return (
-    <Stack gap="xl" h="100dvh" justify="stretch" p="xl" w="100%">
+    <Stack gap="xl" mih="100dvh" justify="stretch" p="xl" w="100%">
       <Anchor w="fit-content" onClick={() => safeNavigate(navigate, -1, '/browse')}>
         {'<-'} Back
       </Anchor>
