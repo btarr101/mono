@@ -8,7 +8,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { HTTPError } from 'ky'
-import { createBrowserRouter, RouterProvider } from 'react-router'
+import { createBrowserRouter, redirect, RouterProvider } from 'react-router'
 
 import { getCard } from './api/cards'
 import { getHomeMetrics } from './api/home'
@@ -19,7 +19,8 @@ import { BrowsePage } from './pages/BrowsePage'
 import { CardPage } from './pages/CardPage'
 import { HomePage } from './pages/HomePage'
 import { theme } from './theme'
-import { AnalyzedDeckPage } from './pages/AnalyzedDeckPage'
+import { AnalayzeNewDeckPage, AnalyzedDeckPageComponent } from './pages/AnalyzedDeckPage'
+import { readNewAnalyzedDeck } from './pages/AnalyzedDeckPage/analyzed-deck'
 
 const router = createBrowserRouter([
   {
@@ -60,8 +61,15 @@ const router = createBrowserRouter([
             Component: AnalyzePage,
           },
           {
-            path: 'anonymous',
-            Component: AnalyzedDeckPage,
+            path: 'new',
+            Component: AnalayzeNewDeckPage,
+            loader: () => {
+              const newAnalyzedDeck = readNewAnalyzedDeck()
+
+              if (!newAnalyzedDeck) throw redirect('/analyze')
+
+              return { newAnalyzedDeck }
+            },
           },
         ],
       },

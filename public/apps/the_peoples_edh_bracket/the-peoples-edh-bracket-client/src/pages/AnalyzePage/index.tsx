@@ -5,13 +5,37 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { postAnalyze } from '../../api/decks'
 import type { PostAnalyzeBody } from '../../types/bindings/PostAnalyzeBody'
-import { parseDecklist } from './parseDecklist'
+import { parseDecklist } from './parse-decklist'
 import type { DecklistMaindeckEntry } from '../../types/bindings/DecklistMaindeckEntry'
+import { useNavigate } from 'react-router'
+import { notifications } from '@mantine/notifications'
+import { setNewAnalyzedDeck } from '../AnalyzedDeckPage/analyzed-deck'
 
 export const AnalyzePage = () => {
+  const navigate = useNavigate()
+
   const { mutateAsync } = useMutation({
     mutationFn: postAnalyze,
-    onSuccess: response => console.log(response),
+    onSuccess: analyzeDeckResponse => {
+      if (analyzeDeckResponse.type === 'invalid') {
+        const invalidCards = [
+          ...analyzeDeckResponse.invalid_commanders,
+          ...analyzeDeckResponse.invalid_maindeck,
+        ]
+
+        notifications.show({
+          title: 'Failed to analyze deck - the following cards could not be found by name:',
+          message: invalidCards.join(', '),
+          color: 'red',
+          autoClose: false,
+        })
+
+        return
+      }
+
+      setNewAnalyzedDeck(analyzeDeckResponse)
+      navigate('/analyze/new')
+    },
   })
 
   return (
@@ -45,10 +69,12 @@ const MoxfieldUrlForm = () => {
   return (
     <form>
       <Stack flex={1} gap="md">
-        <Title order={1}>Option 1: Moxfield URL</Title>
+        <Title order={1}>Option 1: Moxfield URL (🚧 Under construction 🚧)</Title>
         <Group>
-          <Input placeholder="https://moxfield.com/decks/..." w="50%" />
-          <Button w={'fit-content'}>Analyze</Button>
+          <Input disabled placeholder="https://moxfield.com/decks/..." w="50%" />
+          <Button disabled w={'fit-content'}>
+            Analyze
+          </Button>
         </Group>
       </Stack>
     </form>

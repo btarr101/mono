@@ -36,8 +36,7 @@ struct DeckUrl {
 
 #[derive(ts_rs::TS, Serialize, Deserialize, Debug)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
-#[serde(tag = "type")]
-#[serde(rename_all = "snake_case")]
+#[serde(tag = "type", rename_all = "snake_case")]
 enum PostAnalyzeBody {
     Url(DeckUrl),
     Decklist(Decklist),
@@ -75,22 +74,30 @@ struct AnalyzedDeck {
 
 #[derive(ts_rs::TS, Serialize, Debug)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
-struct PostAnalyzeInvalidCardsResponse {
+struct PostAnalyzeInvalidCards {
     invalid_commanders: Vec<String>,
     invalid_maindeck: Vec<String>,
+}
+
+#[derive(ts_rs::TS, Serialize, Debug)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
+#[serde(tag = "type", rename_all = "snake_case")]
+enum PostAnalyzeDeckResponse {
+    Valid(AnalyzedDeck),
+    Invalid(PostAnalyzeInvalidCards),
 }
 
 async fn post_analyze(
     State(pg_pool): State<PgPool>,
     Json(body): Json<PostAnalyzeBody>,
-) -> ApiResult<Json<Result<AnalyzedDeck, PostAnalyzeInvalidCardsResponse>>> {
+) -> ApiResult<Json<PostAnalyzeDeckResponse>> {
     let ((commanders, invalid_commanders), (maindeck, invalid_maindeck)) = match &body {
         PostAnalyzeBody::Url(_) => unimplemented!("Deck urls are not implemented yet!"),
         PostAnalyzeBody::Decklist(decklist) => (
-            find_cards_by_names(decklist.commanders.as_slice(), &pg_pool).await?,
+            find_cards_by_names(&decklist.commanders, &pg_pool).await?,
             async {
                 let card_names = decklist.maindeck.iter().map(|entry| entry.name.clone()).collect::<Vec<_>>();
-                let (valid_cards, invalid_card_names) = find_cards_by_names(card_names.as_slice(), &pg_pool).await?;
+                let (valid_cards, invalid_card_names) = find_cards_by_names(&card_names, &pg_pool).await?;
 
                 let card_counts = decklist
                     .maindeck
@@ -116,7 +123,7 @@ async fn post_analyze(
     };
 
     if !invalid_commanders.is_empty() || !invalid_maindeck.is_empty() {
-        return Ok(Json(Err(PostAnalyzeInvalidCardsResponse {
+        return Ok(Json(PostAnalyzeDeckResponse::Invalid(PostAnalyzeInvalidCards {
             invalid_commanders,
             invalid_maindeck,
         })));
@@ -131,7 +138,7 @@ async fn post_analyze(
         .reduce(|a, b| a + b)
         .unwrap_or_default();
 
-    Ok(Json(Ok(AnalyzedDeck {
+    Ok(Json(PostAnalyzeDeckResponse::Valid(AnalyzedDeck {
         source: body,
         deck: Deck { commanders, maindeck },
         total_points,
@@ -139,9 +146,12 @@ async fn post_analyze(
 }
 
 async fn find_cards_by_names(
-    cards_names: &[String],
+    cards_names: impl IntoIterator<Item = impl AsRef<str>>,
     pg_pool: &PgPool,
 ) -> anyhow::Result<(Vec<CardWithGlobalPoints>, Vec<String>)> {
+    let input: Vec<String> = cards_names.into_iter().map(|n| n.as_ref().to_string()).collect();
+    let lowercased: Vec<String> = input.iter().map(|n| n.to_lowercase()).collect();
+
     let cards = sqlx::query!(
         "SELECT
             c.oracle_id,
@@ -151,9 +161,9 @@ async fn find_cards_by_names(
             COALESCE(crc.average_global_points, 0.0) as \"global_points!\"
         FROM card c
         LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = c.oracle_id
-        WHERE c.name ILIKE ANY($1)
+        WHERE LOWER(c.name) = ANY($1)
         ",
-        cards_names
+        &lowercased
     )
     .fetch_all(pg_pool)
     .await?
@@ -169,9 +179,14 @@ async fn find_cards_by_names(
     })
     .collect::<Vec<_>>();
 
-    let invalid_card_names = cards_names
+    let invalid_card_names = input
         .iter()
-        .filter(|name| !cards.iter().find(|card| card.card.name == **name).is_some())
+        .filter(|name| {
+            !cards
+                .iter()
+                .find(|card| card.card.name.eq_ignore_ascii_case(name.as_str()))
+                .is_some()
+        })
         .cloned()
         .collect::<Vec<_>>();
 
@@ -204,7 +219,7 @@ mod test {
 
         match analyzation {
             Ok(json) => {
-                dbg!(json.0);
+                let _ = dbg!(json.0);
             }
             Err(err) => {
                 dbg!(err);

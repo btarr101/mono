@@ -150,7 +150,7 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
           )}
 
           {useRatingsPages === undefined ? (
-            Array.from({ length: 3 }).map((_, index) => <RatingGhost key={index} />)
+            Array.from({ length: 1 }).map((_, index) => <RatingGhost key={index} />)
           ) : useRatingsPages.length > 0 ? (
             <WindowScroller>
               {({ height, isScrolling, onChildScroll, scrollTop, registerChild }) => (

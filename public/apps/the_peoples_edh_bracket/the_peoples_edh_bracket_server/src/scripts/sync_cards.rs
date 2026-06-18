@@ -16,7 +16,7 @@ pub async fn sync_cards(state: AppState) -> anyhow::Result<()> {
     cards.retain(|card| !matches!(card.legalities.commander, ScryfallLegality::NotLegal));
 
     for (idx, cards_chunk) in cards.chunks(1000).enumerate() {
-        info!("Handingling chunk '{}'", idx);
+        info!("Handling chunk '{}'", idx);
 
         let mut qb = QueryBuilder::new(
             r#"

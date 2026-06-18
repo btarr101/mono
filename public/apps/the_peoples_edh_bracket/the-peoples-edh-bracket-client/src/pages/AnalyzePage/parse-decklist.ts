@@ -1,7 +1,7 @@
 import type { DecklistMaindeckEntry } from '../../types/bindings/DecklistMaindeckEntry'
 import { err, ok } from '../../util/result'
 
-const LINE_REGEX = /(\d+)\s+(.*)\s\(.*$/
+const LINE_REGEX = /(?:^(\d+)\s+)?\s*(.*?)(?:\s+\([^)]*\).*)?$/
 
 export const parseDecklist = (decklist: string) => {
   const lines = decklist.split('\n')
@@ -10,7 +10,7 @@ export const parseDecklist = (decklist: string) => {
   const [validLines, invalidLines] = parsedLines.reduce<[DecklistMaindeckEntry[], string[]]>(
     ([validLines, invalidLines], result) => {
       if (result.ty === 'ok') {
-        validLines.push(result.value)
+        if (result.value) validLines.push(result.value)
       } else {
         invalidLines.push(result.error)
       }
@@ -28,15 +28,20 @@ export const parseDecklist = (decklist: string) => {
 }
 
 const parseLine = (line: string) => {
-  const match = line.match(LINE_REGEX)
+  const trimmedLine = line.trim()
+  if (!trimmedLine) {
+    return ok(null)
+  }
+
+  const match = trimmedLine.match(LINE_REGEX)
   const countMatch = match?.[1]
   const nameMatch = match?.[2]
 
-  if (!(countMatch && nameMatch)) {
+  if (!nameMatch) {
     return err(line)
   }
 
-  const count = parseInt(countMatch)
+  const count = countMatch !== undefined ? parseInt(countMatch) : 1
   if (count <= 0) {
     return err(line)
   }

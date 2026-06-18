@@ -103,7 +103,6 @@ const InfoSection = ({ card }: InfoSectionProps) => {
   return (
     <Stack flex={3} h={'100%'}>
       <Title order={1}>{card.name}</Title>
-
       <Text c="dimmed" maw={540} size="xl">
         Community Power Score
       </Text>
@@ -134,7 +133,6 @@ const InfoSection = ({ card }: InfoSectionProps) => {
             </Center>
           </Overlay>
         )}
-
         <BarChart
           data={barChartData ?? []}
           dataKey="pts"

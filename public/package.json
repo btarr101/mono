@@ -1,4 +1,4 @@
 {
 	"name": "mono",
-	"packageManager": "pnpm@9.14.2"
+	"packageManager": "pnpm@11.7.0"
 }

@@ -10,6 +10,7 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: root
       POSTGRES_DB: db
+      POSTGRES_INITDB_ARGS: "-c log_statement=all -c log_min_duration_statement=0"
     volumes:
       - postgres-volume:/var/lib/postgresql
     restart: unless-stopped
