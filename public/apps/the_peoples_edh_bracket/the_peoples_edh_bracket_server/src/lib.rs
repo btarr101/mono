@@ -10,4 +10,5 @@ pub mod scryfall;
 pub mod server;
 pub mod state;
 pub mod tracing;
+pub mod types;
 pub mod util;

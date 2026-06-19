@@ -6,7 +6,6 @@ import {
   Divider,
   Group,
   Indicator,
-  NumberFormatter,
   NumberInput,
   Stack,
   Text,
@@ -15,10 +14,11 @@ import {
 } from '@mantine/core'
 import { hasLength, useForm } from '@mantine/form'
 import { ShareIcon } from '@phosphor-icons/react'
+import { useMemo } from 'react'
 
+import { PointsNumberFormatter } from '../../components/PointsNumberFormatter'
 import type { CardRatingWithReviewsAndGlobalPoints } from '../../types/bindings/CardRatingWithReviewsAndGlobalPoints'
 import { formatTimeStamp } from '../../util'
-import { useMemo } from 'react'
 
 type RatingInputProps = {
   rating: CardRatingWithReviewsAndGlobalPoints | null
@@ -105,12 +105,7 @@ export const RatingInput = ({ rating, onSave, onShare }: RatingInputProps) => {
             <Center h="100%">
               <Group wrap="nowrap">
                 <Title order={2} textWrap="nowrap">
-                  <NumberFormatter
-                    decimalScale={2}
-                    fixedDecimalScale={true}
-                    suffix={' pts'}
-                    value={rating?.global_points ?? '0.0'}
-                  />
+                  <PointsNumberFormatter points={rating?.global_points ?? '0.0'} suffix=" pts" />
                 </Title>
                 <Divider orientation="vertical" />
                 <Stack gap="xs">
@@ -130,13 +125,8 @@ export const RatingInput = ({ rating, onSave, onShare }: RatingInputProps) => {
                     {...form.getInputProps('points')}
                   />
                   <Divider />
-                  <Text size="sm" span c="dimmed">
-                    <NumberFormatter
-                      decimalScale={2}
-                      fixedDecimalScale={true}
-                      suffix={' ppts'}
-                      value={totalPoints}
-                    />
+                  <Text span c="dimmed" size="sm">
+                    <PointsNumberFormatter points={totalPoints ?? '0'} suffix=" ppts" />
                   </Text>
                 </Stack>
               </Group>

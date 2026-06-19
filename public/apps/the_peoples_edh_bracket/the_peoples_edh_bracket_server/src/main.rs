@@ -1,3 +1,5 @@
+use std::{env, path::Path};
+
 use clap::{Parser, ValueEnum};
 use serde_envfile::from_env;
 use the_peoples_edh_bracket_server::{
@@ -21,13 +23,21 @@ pub enum RunMode {
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
+    #[arg(value_enum, default_value_t = RunMode::default())]
     mode: RunMode,
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-    dotenvy::dotenv()?;
+
+    if cfg!(debug_assertions) {
+        let manifest_dir = env::var("CARGO_MANIFEST_DIR")?;
+        let env_path = Path::new(&manifest_dir).join(".env");
+        let _ = dotenvy::from_filename(&env_path);
+    }
+
+    let _ = dotenvy::dotenv();
     let config: Config = from_env()?;
 
     let _span = setup_tracing(&config.stage);

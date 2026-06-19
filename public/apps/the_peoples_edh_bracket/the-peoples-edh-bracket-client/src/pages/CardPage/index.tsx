@@ -19,6 +19,7 @@ import { Link, useLoaderData, useNavigate } from 'react-router'
 
 import { EmptyPlaceholder } from '../../components/EmptyPlaceholder'
 import { LoadingImage } from '../../components/LoadingImage'
+import { PointsNumberFormatter } from '../../components/PointsNumberFormatter'
 import { useGetCardMetrics } from '../../hooks/useCards'
 import { useGetRatingHistogramForCard } from '../../hooks/useRatings'
 import type { Card } from '../../types/bindings/Card'
@@ -31,7 +32,7 @@ export const CardPage = () => {
   const { card } = useLoaderData<{ card: CardWithMetrics }>()
 
   return (
-    <Stack gap="xl" mih="100dvh" justify="stretch" p="xl" w="100%">
+    <Stack gap="xl" justify="stretch" mih="100dvh" p="xl" w="100%">
       <Anchor w="fit-content" onClick={() => safeNavigate(navigate, -1, '/browse')}>
         {'<-'} Back
       </Anchor>
@@ -107,12 +108,7 @@ const InfoSection = ({ card }: InfoSectionProps) => {
         Community Power Score
       </Text>
       <Title order={1} textWrap="nowrap">
-        <NumberFormatter
-          decimalScale={2}
-          fixedDecimalScale={true}
-          suffix={' pts'}
-          value={cardPoints ?? '..'}
-        />
+        <PointsNumberFormatter points={cardPoints ?? '..'} suffix=" pts" />
       </Title>
       <Progress value={Number(cardPoints) * 10.0} w={'100%'} />
       <Title order={2}>Rank #{card.card_rank}</Title>

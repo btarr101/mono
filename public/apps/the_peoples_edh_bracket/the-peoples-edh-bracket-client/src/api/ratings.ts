@@ -2,9 +2,9 @@ import type { CardRating } from '../types/bindings/CardRating'
 import type { CardRatingWithReviewsAndGlobalPoints } from '../types/bindings/CardRatingWithReviewsAndGlobalPoints'
 import type { GetRatingHistogramParams } from '../types/bindings/GetRatingHistogramParams'
 import type { GetRatingsParams } from '../types/bindings/GetRatingsParams'
+import type { PointsHistogramBucket } from '../types/bindings/PointsHistogramBucket'
 import type { PutRatingBody } from '../types/bindings/PutRatingBody'
 import type { PutRatingReviewBody } from '../types/bindings/PutRatingReviewBody'
-import type { RatingHistogramBucket } from '../types/bindings/RatingHistogramBucket'
 import { api, API_BASE_URL } from '.'
 
 export const getRatings = async (params: GetRatingsParams) => {
@@ -49,5 +49,5 @@ export const getRatingHistogramForCard = async (
     ([key, value]) => value !== null && uri.searchParams.append(key, String(value)),
   )
 
-  return api.get(uri).json<RatingHistogramBucket[]>()
+  return api.get(uri).json<PointsHistogramBucket[]>()
 }

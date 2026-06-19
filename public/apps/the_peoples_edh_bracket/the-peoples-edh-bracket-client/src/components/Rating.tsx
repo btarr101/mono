@@ -7,7 +7,6 @@ import {
   Group,
   Indicator,
   Menu,
-  NumberFormatter,
   Skeleton,
   Stack,
   Text,
@@ -20,6 +19,7 @@ import { usePutRatingReview } from '../hooks/useRatings'
 import type { CardRatingWithReviewsAndGlobalPoints } from '../types/bindings/CardRatingWithReviewsAndGlobalPoints'
 import { formatTimeStamp } from '../util'
 import { PersonProfileLine } from './PersonProfileLine'
+import { PointsNumberFormatter } from './PointsNumberFormatter'
 
 export type RatingProps = {
   rating: CardRatingWithReviewsAndGlobalPoints
@@ -92,31 +92,16 @@ export const Rating = ({ rating, pinned, onPin, onShare }: RatingProps) => {
               <Stack align="start" gap={'lg'}>
                 <Group wrap="nowrap">
                   <Title order={2} textWrap="nowrap">
-                    <NumberFormatter
-                      decimalScale={2}
-                      fixedDecimalScale={true}
-                      suffix={' pts'}
-                      value={rating.global_points}
-                    />
+                    <PointsNumberFormatter points={rating.global_points} suffix=" pts" />
                   </Title>
                   <Divider orientation="vertical" />
                   <Stack gap={0}>
                     <Title c="dimmed" order={4} textWrap="nowrap">
-                      <NumberFormatter
-                        decimalScale={2}
-                        fixedDecimalScale={true}
-                        suffix={' ppts'}
-                        value={rating.points}
-                      />
+                      <PointsNumberFormatter points={rating.points} suffix=" ppts" />
                     </Title>
                     <Divider />
-                    <Text size="sm" span c="dimmed">
-                      <NumberFormatter
-                        decimalScale={2}
-                        fixedDecimalScale={true}
-                        suffix={' ppts'}
-                        value={rating.total_points}
-                      />
+                    <Text span c="dimmed" size="sm">
+                      <PointsNumberFormatter points={rating.total_points} suffix=" ppts" />
                     </Text>
                   </Stack>
                 </Group>

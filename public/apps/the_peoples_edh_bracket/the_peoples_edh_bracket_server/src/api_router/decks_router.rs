@@ -1,8 +1,8 @@
-use std::{collections::HashMap, num::NonZeroUsize};
+use std::{collections::HashMap, iter::repeat, num::NonZeroUsize};
 
 use axum::{Json, Router, extract::State, routing::post};
 use axum_anyhow::ApiResult;
-use bigdecimal::BigDecimal;
+use bigdecimal::{BigDecimal, ToPrimitive};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, prelude::FromRow};
 
@@ -10,6 +10,7 @@ use crate::{
     constants::TS_RS_EXPORT_TO,
     model::card::{Card, CardLegality},
     state::AppState,
+    types::PointsHistogramBucket,
 };
 
 pub fn get_router() -> Router<AppState> { Router::new().route("/analyze", post(post_analyze)) }
@@ -70,6 +71,7 @@ struct AnalyzedDeck {
     source: PostAnalyzeBody,
     deck: Deck,
     total_points: BigDecimal,
+    histogram: Vec<PointsHistogramBucket>,
 }
 
 #[derive(ts_rs::TS, Serialize, Debug)]
@@ -129,19 +131,20 @@ async fn post_analyze(
         })));
     }
 
-    let total_points = commanders
-        .iter()
-        .map(|commander| commander.global_points.clone())
-        .chain(maindeck.iter().map(|entry| {
-            entry.card.global_points.clone() * BigDecimal::from(u128::try_from(entry.count.get()).unwrap_or(u128::MIN))
-        }))
-        .reduce(|a, b| a + b)
-        .unwrap_or_default();
+    let all_points = commanders.iter().map(|commander| commander.global_points.clone()).chain(
+        maindeck
+            .iter()
+            .flat_map(|entry| repeat(entry.card.global_points.clone()).take(entry.count.get())),
+    );
+
+    let total_points = all_points.clone().reduce(|a, b| a + b).unwrap_or_default();
+    let histogram = build_histogram(all_points);
 
     Ok(Json(PostAnalyzeDeckResponse::Valid(AnalyzedDeck {
         source: body,
         deck: Deck { commanders, maindeck },
         total_points,
+        histogram,
     })))
 }
 
@@ -191,6 +194,29 @@ async fn find_cards_by_names(
         .collect::<Vec<_>>();
 
     Ok((cards, invalid_card_names))
+}
+
+fn build_histogram(all_points: impl Iterator<Item = BigDecimal>) -> Vec<PointsHistogramBucket> {
+    let mut buckets = (0..10)
+        .map(|index| PointsHistogramBucket {
+            lower_inclusive_points_bound: BigDecimal::from(index),
+            upper_exclusive_points_bound: BigDecimal::from(index + 1),
+            count: 0,
+        })
+        .collect::<Vec<_>>();
+
+    for points in all_points {
+        if let Some(bucket_index) = points
+            .with_scale_round(0, bigdecimal::RoundingMode::Floor)
+            .to_usize()
+            .map(|bucket_index| bucket_index.clamp(0, buckets.len() - 1))
+        {
+            dbg!((points.to_string(), bucket_index));
+            buckets[bucket_index].count += 1;
+        }
+    }
+
+    buckets
 }
 
 #[cfg(test)]

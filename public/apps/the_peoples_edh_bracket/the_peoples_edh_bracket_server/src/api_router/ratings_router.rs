@@ -19,6 +19,7 @@ use crate::{
     middleware::auth::{Auth, OptionalAuth},
     model::card_rating::CardRating,
     state::AppState,
+    types::PointsHistogramBucket,
     util::parse_pagination,
 };
 
@@ -343,19 +344,11 @@ struct GetRatingHistogramParams {
     buckets: NonZeroUsize,
 }
 
-#[derive(ts_rs::TS, Serialize)]
-#[ts(export, export_to = TS_RS_EXPORT_TO)]
-struct RatingHistogramBucket {
-    lower_inclusive_points_bound: BigDecimal,
-    upper_exclusive_points_bound: BigDecimal,
-    count: usize,
-}
-
 async fn get_rating_histogram_for_card(
     State(pg_pool): State<PgPool>,
     Path(oracle_id): Path<uuid::Uuid>,
     Query(GetRatingHistogramParams { buckets }): Query<GetRatingHistogramParams>,
-) -> ApiResult<Json<Vec<RatingHistogramBucket>>> {
+) -> ApiResult<Json<Vec<PointsHistogramBucket>>> {
     let rows = sqlx::query!(
         "WITH params AS (
             SELECT
@@ -416,7 +409,7 @@ async fn get_rating_histogram_for_card(
 
     let buckets = rows
         .into_iter()
-        .map(|row| RatingHistogramBucket {
+        .map(|row| PointsHistogramBucket {
             lower_inclusive_points_bound: row.lower_inclusive_points_bound,
             upper_exclusive_points_bound: row.upper_exclusive_points_bound,
             count: row.count as usize,

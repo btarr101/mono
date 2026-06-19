@@ -14,13 +14,13 @@ import { getCard } from './api/cards'
 import { getHomeMetrics } from './api/home'
 import { useAuthState } from './hooks/useAuth'
 import { Layout } from './Layout'
+import { AnalayzeNewDeckPage } from './pages/AnalyzedDeckPage'
+import { readNewAnalyzedDeck } from './pages/AnalyzedDeckPage/analyzed-deck'
 import { AnalyzePage } from './pages/AnalyzePage'
 import { BrowsePage } from './pages/BrowsePage'
 import { CardPage } from './pages/CardPage'
 import { HomePage } from './pages/HomePage'
 import { theme } from './theme'
-import { AnalayzeNewDeckPage, AnalyzedDeckPageComponent } from './pages/AnalyzedDeckPage'
-import { readNewAnalyzedDeck } from './pages/AnalyzedDeckPage/analyzed-deck'
 
 const router = createBrowserRouter([
   {

@@ -10,8 +10,9 @@ import {
   Title,
 } from '@mantine/core'
 import { isNotEmpty, useForm } from '@mantine/form'
-import type { AnalyzeFormProps } from '.'
+
 import type { DecklistMaindeckEntry } from '../../types/bindings/DecklistMaindeckEntry'
+import type { AnalyzeFormProps } from '.'
 
 export type DecklistFormModalProps = ModalProps &
   AnalyzeFormProps & {
@@ -59,24 +60,24 @@ export const DecklistFormModal = ({
             <Select
               key={form.key('commander')}
               {...form.getInputProps('commander')}
-              label="Commander"
+              searchable
               data={(decklist ?? [])
                 .filter(({ name, count }) => count === 1 && name !== form.getValues().partner)
                 .map(({ name }) => name)}
-              searchable
+              label="Commander"
             />
             <Select
               key={form.key('partner')}
               {...form.getInputProps('partner')}
-              label="Partner"
+              clearable
+              searchable
               data={(decklist ?? [])
                 .filter(({ name }) => name !== form.getValues().commander)
                 .map(({ name }) => name)}
-              searchable
               disabled={form.getValues().commander === null}
-              clearable
+              label="Partner"
             />
-            <Button mx="auto" w="fit-content" type="submit" loading={form.submitting}>
+            <Button loading={form.submitting} mx="auto" type="submit" w="fit-content">
               Submit
             </Button>
           </Stack>

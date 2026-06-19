@@ -1,15 +1,16 @@
 import { Button, Group, Input, Stack, Text, Textarea, Title } from '@mantine/core'
 import { useForm } from '@mantine/form'
-import { DecklistFormModal } from './DecklistFormModal'
-import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
-import { postAnalyze } from '../../api/decks'
-import type { PostAnalyzeBody } from '../../types/bindings/PostAnalyzeBody'
-import { parseDecklist } from './parse-decklist'
-import type { DecklistMaindeckEntry } from '../../types/bindings/DecklistMaindeckEntry'
-import { useNavigate } from 'react-router'
 import { notifications } from '@mantine/notifications'
+import { useMutation } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useNavigate } from 'react-router'
+
+import { postAnalyze } from '../../api/decks'
+import type { DecklistMaindeckEntry } from '../../types/bindings/DecklistMaindeckEntry'
+import type { PostAnalyzeBody } from '../../types/bindings/PostAnalyzeBody'
 import { setNewAnalyzedDeck } from '../AnalyzedDeckPage/analyzed-deck'
+import { DecklistFormModal } from './DecklistFormModal'
+import { parseDecklist } from './parse-decklist'
 
 export const AnalyzePage = () => {
   const navigate = useNavigate()
@@ -62,7 +63,7 @@ const Hero = () => (
 )
 
 export type AnalyzeFormProps = {
-  onAnalyze: (body: PostAnalyzeBody) => Promise<any>
+  onAnalyze: (body: PostAnalyzeBody) => Promise<unknown>
 }
 
 const MoxfieldUrlForm = () => {
@@ -112,6 +113,12 @@ const DecklistForm = ({ onAnalyze }: AnalyzeFormProps) => {
   return (
     <>
       <form
+        style={{
+          flex: 1,
+          flexDirection: 'column',
+          display: 'flex',
+          height: '100%',
+        }}
         onSubmit={form.onSubmit(({ decklist }) => {
           const result = parseDecklist(decklist)
 
@@ -120,12 +127,6 @@ const DecklistForm = ({ onAnalyze }: AnalyzeFormProps) => {
 
           setValidDecklist(result.value)
         })}
-        style={{
-          flex: 1,
-          flexDirection: 'column',
-          display: 'flex',
-          height: '100%',
-        }}
       >
         <Stack flex={1} gap="md">
           <Title order={1}>Option 2: Decklist</Title>
@@ -139,17 +140,17 @@ const DecklistForm = ({ onAnalyze }: AnalyzeFormProps) => {
               input: { flexGrow: 1, height: '100%' },
             }}
           />
-          <Button w={'fit-content'} type="submit">
+          <Button type="submit" w={'fit-content'}>
             Analyze
           </Button>
         </Stack>
       </form>
       {validDecklist && (
         <DecklistFormModal
-          onAnalyze={onAnalyze}
-          opened={validDecklist !== null}
-          onClose={() => setValidDecklist(null)}
           decklist={validDecklist}
+          opened={validDecklist !== null}
+          onAnalyze={onAnalyze}
+          onClose={() => setValidDecklist(null)}
         />
       )}
     </>

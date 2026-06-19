@@ -10,7 +10,7 @@ export type Err<E> = {
 
 export type Result<T, E> = Ok<T> | Err<E>
 
-export const ok = <T, E>(value: T) =>
+export const ok = <T>(value: T) =>
   ({
     ty: 'ok',
     value,
