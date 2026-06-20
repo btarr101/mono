@@ -2,4 +2,4 @@
 import type { Deck } from "./Deck";
 import type { PointsHistogramBucket } from "./PointsHistogramBucket";
 
-export type AnalyzedDeck = { deck: Deck, total_points: string, histogram: Array<PointsHistogramBucket>, };
+export type AnalyzedDeckWithSource = { url_source: string | null, deck: Deck, total_points: string, histogram: Array<PointsHistogramBucket>, };

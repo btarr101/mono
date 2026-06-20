@@ -47,3 +47,4 @@ cgisf_lib = "0.2.1"
 oidc-jwt-validator = "0.2.3"
 reqwest011 = { version = "0.11", package = "reqwest" }
 dotenvy = "0.15.7"
+axum-valid = "0.24.0"

@@ -6,9 +6,8 @@ use crate::constants::TS_RS_EXPORT_TO;
 ///
 /// Restricted is very unlikely - probably impossible.
 /// Non legal cards will not be listed.
-#[derive(ts_rs::TS)]
+#[derive(ts_rs::TS, Debug, Serialize, sqlx::Type)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
-#[derive(Debug, Serialize, sqlx::Type)]
 #[serde(rename_all = "snake_case")]
 #[sqlx(rename_all = "snake_case", type_name = "text")]
 pub enum CardLegality {
@@ -21,9 +20,8 @@ pub enum CardLegality {
 }
 
 /// A Magic: The Gathering card.
-#[derive(ts_rs::TS, Debug)]
+#[derive(ts_rs::TS, sqlx::FromRow, Serialize, Debug)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
-#[derive(sqlx::FromRow, Serialize)]
 pub struct Card {
     /// A unique identifier for the mechanics / behavior of the card
     pub oracle_id: uuid::Uuid,

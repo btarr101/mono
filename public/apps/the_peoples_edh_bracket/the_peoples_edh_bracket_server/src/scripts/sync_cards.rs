@@ -19,14 +19,12 @@ pub async fn sync_cards(state: AppState) -> anyhow::Result<()> {
         info!("Handling chunk '{}'", idx);
 
         let mut qb = QueryBuilder::new(
-            r#"
-			INSERT INTO card (
+            "INSERT INTO card (
 				oracle_id,
 				name,
 				image_uri,
 				legality
-			)
-			"#,
+			)",
         );
 
         qb.push_values(cards_chunk, |mut row, card| {

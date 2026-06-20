@@ -15,16 +15,26 @@ import { FilesIcon, GlobeIcon } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { match } from 'ts-pattern'
 
-import type { PostAnalyzeBody } from '../../types/bindings/PostAnalyzeBody'
+import type { Deck } from '../../types/bindings/Deck'
 
-export type DeckSourceProps = {
-  source: PostAnalyzeBody
+export type DeckSource =
+  | {
+      ty: 'url'
+      url: string
+    }
+  | {
+      ty: 'decklist'
+      deck: Deck
+    }
+
+export type DeckSourceButtonProps = {
+  source: DeckSource
 }
 
-export const DeckSource = ({ source }: DeckSourceProps) => {
+export const DeckSourceButton = ({ source }: DeckSourceButtonProps) => {
   const [opened, { open, close }] = useDisclosure(false)
 
-  const label = match(source.type)
+  const label = match(source.ty)
     .with('url', () => (
       <Group>
         <GlobeIcon size={32} />
@@ -55,7 +65,7 @@ export const DeckSource = ({ source }: DeckSourceProps) => {
 }
 
 export type ViewDecklistSourceModalProps = ModalProps & {
-  source: PostAnalyzeBody
+  source: DeckSource
 }
 
 export const ViewDeckSourceModal = ({ source, ...modalProps }: ViewDecklistSourceModalProps) => {
@@ -82,10 +92,10 @@ export const ViewDeckSourceModal = ({ source, ...modalProps }: ViewDecklistSourc
       {...modalProps}
     >
       {match(source)
-        .with({ type: 'url' }, () => <></>)
-        .with({ type: 'decklist' }, ({ commanders, maindeck }) => {
-          const commanderLines = commanders.map(name => `1 ${name}`)
-          const mainDeckLines = maindeck.map(({ count, name }) => `${count} ${name}`)
+        .with({ ty: 'url' }, () => <></>)
+        .with({ ty: 'decklist' }, ({ deck: { commanders, maindeck } }) => {
+          const commanderLines = commanders.map(({ name }) => `1 ${name}`)
+          const mainDeckLines = maindeck.map(({ count, card: { name } }) => `${count} ${name}`)
           const content = [...commanderLines, ...mainDeckLines].join('\n')
 
           return <ViewDeckSourceModalDecklistContent decklist={content} onCopy={onCopy} />

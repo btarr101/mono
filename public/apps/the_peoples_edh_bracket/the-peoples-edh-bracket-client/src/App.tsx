@@ -11,16 +11,18 @@ import { HTTPError } from 'ky'
 import { createBrowserRouter, redirect, RouterProvider } from 'react-router'
 
 import { getCard } from './api/cards'
+import { getTrackedDeck } from './api/decks'
 import { getHomeMetrics } from './api/home'
 import { useAuthState } from './hooks/useAuth'
 import { Layout } from './Layout'
-import { AnalayzeNewDeckPage } from './pages/AnalyzedDeckPage'
-import { readNewAnalyzedDeck } from './pages/AnalyzedDeckPage/analyzed-deck'
 import { AnalyzePage } from './pages/AnalyzePage'
 import { BrowsePage } from './pages/BrowsePage'
 import { CardPage } from './pages/CardPage'
 import { HomePage } from './pages/HomePage'
+import { NewAnalyzedDeckPage } from './pages/NewAnalyzedDeckPage'
+import { TrackedDeckPage } from './pages/TrackedDeckPage'
 import { theme } from './theme'
+import { readNewAnalyzedDeck } from './util/analyzed-deck'
 
 const router = createBrowserRouter([
   {
@@ -62,13 +64,20 @@ const router = createBrowserRouter([
           },
           {
             path: 'new',
-            Component: AnalayzeNewDeckPage,
+            Component: NewAnalyzedDeckPage,
             loader: () => {
-              const newAnalyzedDeck = readNewAnalyzedDeck()
-
-              if (!newAnalyzedDeck) throw redirect('/analyze')
-
-              return { newAnalyzedDeck }
+              const analyzedDeck = readNewAnalyzedDeck()
+              if (!analyzedDeck) throw redirect('/analyze')
+              return { analyzedDeck }
+            },
+          },
+          {
+            path: ':uuid',
+            Component: TrackedDeckPage,
+            loader: async ({ params }) => {
+              if (!params.uuid) throw new Error('no uuid provided')
+              const trackedDeck = await getTrackedDeck(params.uuid)
+              return { trackedDeck }
             },
           },
         ],

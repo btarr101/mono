@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router'
 import { postAnalyze } from '../../api/decks'
 import type { DecklistMaindeckEntry } from '../../types/bindings/DecklistMaindeckEntry'
 import type { PostAnalyzeBody } from '../../types/bindings/PostAnalyzeBody'
-import { setNewAnalyzedDeck } from '../AnalyzedDeckPage/analyzed-deck'
+import { setNewAnalyzedDeck } from '../../util/analyzed-deck'
 import { DecklistFormModal } from './DecklistFormModal'
 import { parseDecklist } from './parse-decklist'
 
@@ -100,7 +100,7 @@ const DecklistForm = ({ onAnalyze }: AnalyzeFormProps) => {
       decklist: decklist => {
         const result = parseDecklist(decklist)
         if (result.ty === 'error') {
-          return 'Unable to parse decklist'
+          return result.error.join('\n')
         }
 
         return null

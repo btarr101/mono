@@ -20,6 +20,7 @@ import type { CardRatingWithReviewsAndGlobalPoints } from '../types/bindings/Car
 import { formatTimeStamp } from '../util'
 import { PersonProfileLine } from './PersonProfileLine'
 import { PointsNumberFormatter } from './PointsNumberFormatter'
+import { ViewablePersonProfileLine } from './ViewablePersonProfileLine'
 
 export type RatingProps = {
   rating: CardRatingWithReviewsAndGlobalPoints
@@ -105,9 +106,7 @@ export const Rating = ({ rating, pinned, onPin, onShare }: RatingProps) => {
                     </Text>
                   </Stack>
                 </Group>
-                <PersonProfileLine loading={person.isLoading} person={person.data}>
-                  <Menu.Item>View Profile</Menu.Item>
-                </PersonProfileLine>
+                <ViewablePersonProfileLine loading={person.isLoading} person={person.data} />
               </Stack>
             </Center>
           </Card.Section>
