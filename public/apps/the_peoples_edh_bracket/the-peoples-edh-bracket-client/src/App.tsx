@@ -18,6 +18,7 @@ import { Layout } from './Layout'
 import { AnalyzePage } from './pages/AnalyzePage'
 import { BrowsePage } from './pages/BrowsePage'
 import { CardPage } from './pages/CardPage'
+import { CommunityPage } from './pages/CommunityPage'
 import { HomePage } from './pages/HomePage'
 import { NewAnalyzedDeckPage } from './pages/NewAnalyzedDeckPage'
 import { TrackedDeckPage } from './pages/TrackedDeckPage'
@@ -84,7 +85,7 @@ const router = createBrowserRouter([
       },
       {
         path: '/community',
-        Component: HomePage,
+        Component: CommunityPage,
       },
       {
         path: '/about',

@@ -6,7 +6,6 @@ import {
   Divider,
   Group,
   Indicator,
-  Menu,
   Skeleton,
   Stack,
   Text,
@@ -18,7 +17,6 @@ import { useMe, usePerson } from '../hooks/usePersons'
 import { usePutRatingReview } from '../hooks/useRatings'
 import type { CardRatingWithReviewsAndGlobalPoints } from '../types/bindings/CardRatingWithReviewsAndGlobalPoints'
 import { formatTimeStamp } from '../util'
-import { PersonProfileLine } from './PersonProfileLine'
 import { PointsNumberFormatter } from './PointsNumberFormatter'
 import { ViewablePersonProfileLine } from './ViewablePersonProfileLine'
 

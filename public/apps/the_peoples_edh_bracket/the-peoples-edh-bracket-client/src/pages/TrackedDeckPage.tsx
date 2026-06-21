@@ -1,4 +1,4 @@
-import { Button, Group, Stack, Title } from '@mantine/core'
+import { Button, Group, Stack, Text, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useMutation } from '@tanstack/react-query'
 import { useLoaderData, useNavigate } from 'react-router'
@@ -9,7 +9,7 @@ import { DeckAnalysis } from '../components/DeckAnalysis'
 import { ViewablePersonProfileLine } from '../components/ViewablePersonProfileLine'
 import { useMe, usePerson } from '../hooks/usePersons'
 import type { TrackedDeckWithAnalysis } from '../types/bindings/TrackedDeckWithAnalysis'
-import { safeNavigate } from '../util'
+import { formatTimeStamp, safeNavigate } from '../util'
 
 export const TrackedDeckPage = () => {
   const navigate = useNavigate()
@@ -47,6 +47,9 @@ export const TrackedDeckPage = () => {
         <Group align="center">
           Tracked by <ViewablePersonProfileLine loading={tracker.isPending} person={tracker.data} />
         </Group>
+        <Text c="dimmed" size="xs">
+          {formatTimeStamp(trackedDeck.created_at)}
+        </Text>
       </Stack>
       <DeckAnalysis analyzedDeck={trackedDeck} />
     </Stack>

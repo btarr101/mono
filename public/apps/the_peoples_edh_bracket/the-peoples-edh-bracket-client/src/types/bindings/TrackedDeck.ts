@@ -3,4 +3,4 @@
 /**
  * A tracked deck
  */
-export type TrackedDeck = { uuid: string, tracker_person_uuid: string, name: string, url_source: string | null, };
+export type TrackedDeck = { uuid: string, tracker_person_uuid: string, name: string, url_source: string | null, created_at: string, updated_at: string | null, };

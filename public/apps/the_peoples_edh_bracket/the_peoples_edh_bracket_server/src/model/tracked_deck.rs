@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::Serialize;
 
 use crate::constants::TS_RS_EXPORT_TO;
@@ -36,4 +37,6 @@ pub struct TrackedDeck {
     pub tracker_person_uuid: uuid::Uuid,
     pub name: String,
     pub url_source: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: Option<DateTime<Utc>>,
 }

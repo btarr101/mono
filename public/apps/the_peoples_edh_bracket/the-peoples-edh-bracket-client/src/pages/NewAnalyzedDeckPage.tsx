@@ -1,4 +1,4 @@
-import { Button, Group, Stack, TextInput } from '@mantine/core'
+import { Button, Group, Stack, TextInput, Tooltip } from '@mantine/core'
 import { isNotEmpty, useForm } from '@mantine/form'
 import { useMutation } from '@tanstack/react-query'
 import { useLoaderData, useNavigate } from 'react-router'
@@ -6,6 +6,7 @@ import { useLoaderData, useNavigate } from 'react-router'
 import { postTrackedDeck } from '../api/decks'
 import { BackAnchor } from '../components/BackAnchor'
 import { DeckAnalysis } from '../components/DeckAnalysis'
+import { useMe } from '../hooks/usePersons'
 import type { AnalyzedDeck } from '../types/bindings/AnalyzedDeck'
 import type { AnalyzedDeckWithSource } from '../types/bindings/AnalyzedDeckWithSource'
 import { setNewAnalyzedDeck } from '../util/analyzed-deck'
@@ -13,6 +14,8 @@ import { setNewAnalyzedDeck } from '../util/analyzed-deck'
 export const NewAnalyzedDeckPage = () => {
   const navigate = useNavigate()
   const { analyzedDeck } = useLoaderData<{ analyzedDeck: AnalyzedDeckWithSource }>()
+
+  const me = useMe()
 
   const { mutateAsync } = useMutation({
     mutationFn: postTrackedDeck,
@@ -58,7 +61,14 @@ export const NewAnalyzedDeckPage = () => {
             size="lg"
             {...form.getInputProps('deckName')}
           />
-          <Button loading={form.submitting} size="lg" type="submit">
+          {!me.data && <Tooltip label="Must be logged in to save a deck." target="#save-button" />}
+          <Button
+            disabled={!me.data}
+            id="save-button"
+            loading={form.submitting}
+            size="lg"
+            type="submit"
+          >
             Save to Tracked Decks
           </Button>
         </Group>

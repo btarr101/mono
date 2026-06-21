@@ -2,4 +2,4 @@
 import type { Deck } from "./Deck";
 import type { PointsHistogramBucket } from "./PointsHistogramBucket";
 
-export type TrackedDeckWithAnalysis = { uuid: string, tracker_person_uuid: string, name: string, url_source: string | null, deck: Deck, total_points: string, histogram: Array<PointsHistogramBucket>, };
+export type TrackedDeckWithAnalysis = { uuid: string, tracker_person_uuid: string, name: string, url_source: string | null, created_at: string, updated_at: string | null, deck: Deck, total_points: string, histogram: Array<PointsHistogramBucket>, };

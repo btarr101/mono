@@ -1,10 +1,17 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useDebouncedValue } from '@tanstack/react-pacer'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import { debugPostPerson, getMe, getPerson, getPersons } from '../api/persons'
 import type { GetPersonsParams } from '../types/bindings/GetPersonsParams'
 import { useAuthState } from './useAuth'
 
-export const usePersons = ({ q, page_size }: Omit<GetPersonsParams, 'page'>) =>
+export const useGetPersons = ({ q, page_size }: Omit<GetPersonsParams, 'page'>) =>
   useInfiniteQuery({
     queryKey: ['persons', q, page_size],
     queryFn: ({ pageParam: page }) =>
@@ -15,9 +22,23 @@ export const usePersons = ({ q, page_size }: Omit<GetPersonsParams, 'page'>) =>
       }),
     initialPageParam: 1,
     getNextPageParam: (_, pages) => pages.length + 1,
+    placeholderData: keepPreviousData,
   })
 
-export const useSearchPersons = (q: string | null) => usePersons({ q, page_size: 10 })
+export const useSearchPersons = (q: string | null) => useGetPersons({ q, page_size: 10 })
+
+export const useDebouncedSearchPersons = (q: string | null) => {
+  const [debouncedQ, debouncer] = useDebouncedValue(q, { wait: 300 }, ({ isPending }) => isPending)
+  const usedSearchCards = useSearchPersons(debouncedQ)
+
+  return [
+    usedSearchCards,
+    {
+      debouncedQ,
+      isDebouncing: debouncer.state,
+    },
+  ] as const
+}
 
 export const useDebugPostPerson = () => {
   const queryClient = useQueryClient()
