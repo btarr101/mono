@@ -21,14 +21,15 @@ export const useGetPersons = ({ q, page_size }: Omit<GetPersonsParams, 'page'>) 
         page_size,
       }),
     initialPageParam: 1,
-    getNextPageParam: (_, pages) => pages.length + 1,
+    getNextPageParam: (lastPage, pages) =>
+      lastPage.length < page_size ? undefined : pages.length + 1,
     placeholderData: keepPreviousData,
   })
 
 export const useSearchPersons = (q: string | null) => useGetPersons({ q, page_size: 10 })
 
 export const useDebouncedSearchPersons = (q: string | null) => {
-  const [debouncedQ, debouncer] = useDebouncedValue(q, { wait: 300 }, ({ isPending }) => isPending)
+  const [debouncedQ, debouncer] = useDebouncedValue(q, { wait: 200 }, ({ isPending }) => isPending)
   const usedSearchCards = useSearchPersons(debouncedQ)
 
   return [

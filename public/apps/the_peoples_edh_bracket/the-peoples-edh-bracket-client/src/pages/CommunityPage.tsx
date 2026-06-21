@@ -2,9 +2,10 @@ import { Autocomplete, Box, Button, Group, Stack, Table } from '@mantine/core'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { useQueryState } from 'nuqs'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 
+import { EmptyPlaceholder } from '../components/EmptyPlaceholder'
 import { ViewablePersonProfileLine } from '../components/ViewablePersonProfileLine'
 import { useDebouncedSearchPersons, useGetPersons } from '../hooks/usePersons'
 
@@ -22,8 +23,7 @@ export const CommunityPage = () => {
 
   const isAutocompleteLoading = isDebouncing || usedSearchPersons.isFetching
 
-  const personsD = usedGetPersons.data?.pages.flat() ?? []
-  const persons = Array.from({ length: 20 }).flatMap(() => personsD)
+  const persons = usedGetPersons.data?.pages.flat() ?? []
 
   const tableRef = useRef<HTMLTableElement>(null)
   const [scrollMargin, setScrollMargin] = useState(0)
@@ -46,6 +46,18 @@ export const CommunityPage = () => {
     ? virtualizer.getTotalSize() - (lastItem.end - virtualizer.options.scrollMargin)
     : 0
 
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = usedGetPersons
+  useEffect(() => {
+    if (!lastItem) return
+    if (lastItem.index >= persons.length - 1 && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }, [lastItem, persons.length, hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  const showEndMessage =
+    !usedGetPersons.hasNextPage &&
+    (usedGetPersons.data?.pages.filter(page => page.length > 0).length ?? 0) > 1
+
   return (
     <Box p="xl" w="100%">
       <Stack gap="sm">
@@ -65,15 +77,15 @@ export const CommunityPage = () => {
             onChange={newValue => setQ(newValue ?? undefined)}
           />
         </Group>
-        <Table stickyHeader ref={tableRef}>
+        <Table stickyHeader layout="fixed" ref={tableRef}>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Person</Table.Th>
-              <Table.Th>Followers</Table.Th>
-              <Table.Th>Cards Rated</Table.Th>
-              <Table.Th>Likes</Table.Th>
-              <Table.Th>Dislikes</Table.Th>
-              <Table.Th ta="right" />
+              <Table.Th w={120}>Followers</Table.Th>
+              <Table.Th w={120}>Cards Rated</Table.Th>
+              <Table.Th w={120}>Likes</Table.Th>
+              <Table.Th w={120}>Dislikes</Table.Th>
+              <Table.Th ta="right" w={120} />
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -82,29 +94,50 @@ export const CommunityPage = () => {
                 <Table.Td colSpan={6} h={paddingTop} p={0} />
               </Table.Tr>
             )}
-            {virtualItems.map(virtualRow => {
-              const person = persons[virtualRow.index]
-              if (!person) return null
+            {virtualItems.length ? (
+              virtualItems.map(virtualRow => {
+                const person = persons[virtualRow.index]
+                if (!person) return null
 
-              return (
-                <Table.Tr h={ROW_HEIGHT} key={virtualRow.key}>
-                  <Table.Td>
-                    <Box w="fit-content">
-                      <ViewablePersonProfileLine loading={false} person={person} />
-                    </Box>
-                  </Table.Td>
-                  <Table.Td>2</Table.Td>
-                  <Table.Td>45</Table.Td>
-                  <Table.Td>2</Table.Td>
-                  <Table.Td>0</Table.Td>
-                  <Table.Td ta="right">
-                    <Button component={Link} to={{ pathname: `/community/${person.uuid}` }}>
-                      View
-                    </Button>
-                  </Table.Td>
-                </Table.Tr>
-              )
-            })}
+                return (
+                  <Table.Tr h={ROW_HEIGHT} key={person.uuid}>
+                    <Table.Td>
+                      <Box w="fit-content">
+                        <ViewablePersonProfileLine loading={false} person={person} />
+                      </Box>
+                    </Table.Td>
+                    <Table.Td>2</Table.Td>
+                    <Table.Td>45</Table.Td>
+                    <Table.Td>2</Table.Td>
+                    <Table.Td>0</Table.Td>
+                    <Table.Td ta="right">
+                      <Button component={Link} to={{ pathname: `/community/${person.uuid}` }}>
+                        View
+                      </Button>
+                    </Table.Td>
+                  </Table.Tr>
+                )
+              })
+            ) : (
+              <Table.Tr>
+                <Table.Td colSpan={6} h={paddingBottom} px={0}>
+                  <EmptyPlaceholder
+                    subText="Try refining your search."
+                    title="🤔 No persons found"
+                  />
+                </Table.Td>
+              </Table.Tr>
+            )}
+            {showEndMessage && (
+              <Table.Tr>
+                <Table.Td colSpan={6} h={paddingBottom} px={0}>
+                  <EmptyPlaceholder
+                    subText="The journey is complete, you may rest now 🛌."
+                    title="The end."
+                  />
+                </Table.Td>
+              </Table.Tr>
+            )}
             {paddingBottom > 0 && (
               <Table.Tr>
                 <Table.Td colSpan={6} h={paddingBottom} p={0} />
