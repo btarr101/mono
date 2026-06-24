@@ -4,7 +4,6 @@ import { notifications } from '@mantine/notifications'
 import { InfoIcon } from '@phosphor-icons/react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useLayoutEffect } from 'react'
 
 import { EmptyPlaceholder } from '../../components/EmptyPlaceholder'
 import { Rating, RatingGhost } from '../../components/Rating'
@@ -89,14 +88,14 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
   useReactVirtualScrollRestoration(virtualizer)
 
   // Infinite scrolling
-  useLayoutEffect(() => {
-    if (end === 0 && usedRatings.hasNextPage && !usedRatings.isFetching) {
-      usedRatings.fetchNextPage()
-    }
-  }, [usedRatings, end])
+  // useLayoutEffect(() => {
+  //   if (end === 0 && usedRatings.hasNextPage && !usedRatings.isFetching) {
+  //     usedRatings.fetchNextPage()
+  //   }
+  // }, [usedRatings, end])
 
   return (
-    <>
+    <Stack>
       {loggedInPersonUUID && (
         <Stack gap="sm">
           {usedLoggedInPersonRating.isPending ? (
@@ -190,12 +189,7 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
                 if (!rating) return null
 
                 return (
-                  <Box
-                    data-index={item.index}
-                    key={rating.uuid}
-                    py="sm"
-                    ref={virtualizer.measureElement}
-                  >
+                  <Box key={rating.uuid} py="sm">
                     <Rating
                       rating={rating}
                       onPin={() => setPinnedRatingUUID(rating.uuid)}
@@ -227,6 +221,6 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
           )}
         </Stack>
       </Stack>
-    </>
+    </Stack>
   )
 }

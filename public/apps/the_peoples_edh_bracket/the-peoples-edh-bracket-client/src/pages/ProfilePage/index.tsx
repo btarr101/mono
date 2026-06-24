@@ -1,6 +1,5 @@
 import { Avatar, Button, Group, Stack, Tabs, Text, Title } from '@mantine/core'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useLayoutEffect } from 'react'
 import { useLoaderData } from 'react-router'
 
 import { BackAnchor } from '../../components/BackAnchor'
@@ -19,11 +18,6 @@ export const ProfilePage = () => {
       clearOnDefault: false,
     }),
   )
-
-  // don't carry over scroll
-  useLayoutEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-  }, [person.uuid])
 
   return (
     <Stack gap="xl" justify="stretch" mih="100vh" p="xl" w="100%">
@@ -51,7 +45,6 @@ export const ProfilePage = () => {
             <Text size="xl">Followees</Text>
           </Tabs.Tab>
         </Tabs.List>
-
         <Tabs.Panel value="ratings">
           <RatingsPanelContent personUUID={person.uuid} />
         </Tabs.Panel>

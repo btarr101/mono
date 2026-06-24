@@ -128,6 +128,7 @@ export const CommunityPage = () => {
             )
           })}
           <Table.Tr h={end ?? 0} />
+          {/*TODO GHOSTS*/}
         </Table.Tbody>
       </Table>
       {showEmptyMessage && (

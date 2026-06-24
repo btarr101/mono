@@ -27,6 +27,7 @@ import type { CardWithMetrics } from '../../types/bindings/CardWithMetrics'
 import { RatingSection } from './RatingSection'
 
 export const CardPage = () => {
+  'use no memo'
   const { card } = useLoaderData<{ card: CardWithMetrics }>()
 
   return (

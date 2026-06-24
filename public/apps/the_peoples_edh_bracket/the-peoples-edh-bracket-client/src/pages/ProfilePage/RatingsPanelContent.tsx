@@ -5,6 +5,7 @@ import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useLayoutEffect } from 'react'
 import { Link } from 'react-router'
 
+import { EmptyPlaceholder } from '../../components/EmptyPlaceholder'
 import { PointsNumberFormatter } from '../../components/PointsNumberFormatter'
 import { useReactVirtualScrollRestoration } from '../../hooks/react-virtual-ext'
 import { useGetCard } from '../../hooks/useCards'
@@ -19,6 +20,8 @@ export type RatingsPanelContentProps = {
 }
 
 export const RatingsPanelContent = ({ personUUID }: RatingsPanelContentProps) => {
+  'use no memo'
+
   const [q, setQ] = useQueryState('ratings-q')
   const [sort, setSort] = useQueryState(
     'rating-sort',
@@ -47,6 +50,11 @@ export const RatingsPanelContent = ({ personUUID }: RatingsPanelContentProps) =>
   })
   const ratings = usedGetRatings.data?.pages.flat() ?? []
 
+  const showEmptyMessage = !usedGetRatings.isLoading && ratings.length === 0
+  const showEndMessage =
+    !usedGetRatings.hasNextPage &&
+    (usedGetRatings.data?.pages.filter(page => page.length > 0).length ?? 0) > 1
+
   const virtualizer = useWindowVirtualizer({
     count: ratings.length,
     estimateSize: () => 150,
@@ -55,7 +63,7 @@ export const RatingsPanelContent = ({ personUUID }: RatingsPanelContentProps) =>
 
   const virtualItems = virtualizer.getVirtualItems()
   const first = virtualItems.at(0)?.start ?? 0
-  const end = virtualItems.length ? virtualizer.getTotalSize() - (virtualItems.at(-1)?.end ?? 0) : 0
+  const end = virtualizer.getTotalSize() - (virtualItems.at(-1)?.end ?? 0)
 
   useReactVirtualScrollRestoration(virtualizer)
 
@@ -145,7 +153,14 @@ export const RatingsPanelContent = ({ personUUID }: RatingsPanelContentProps) =>
           })}
           <Table.Tr h={end ?? 0} />
         </Table.Tbody>
+        {/*TODO GHOSTS PLUS PLACEHOLDERS*/}
       </Table>
+      {showEmptyMessage && (
+        <EmptyPlaceholder subText="Try refining your search." title="🤔 No people found" />
+      )}
+      {showEndMessage && (
+        <EmptyPlaceholder subText="You've seen all the ratings." title="🎁 It's a wrap" />
+      )}
     </Stack>
   )
 }
