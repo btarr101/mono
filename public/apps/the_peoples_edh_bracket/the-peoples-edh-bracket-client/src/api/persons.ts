@@ -1,5 +1,6 @@
 import type { GetPersonsParams } from '../types/bindings/GetPersonsParams'
 import type { Person } from '../types/bindings/Person'
+import type { PersonWithMetrics } from '../types/bindings/PersonWithMetrics'
 import { api, API_BASE_URL } from '.'
 
 export const getPersons = async (params: GetPersonsParams) => {
@@ -8,7 +9,7 @@ export const getPersons = async (params: GetPersonsParams) => {
     ([key, value]) => value !== null && uri.searchParams.append(key, String(value)),
   )
 
-  return api.get(uri).json<Person[]>()
+  return api.get(uri).json<PersonWithMetrics[]>()
 }
 
 export const debugPostPerson = async () => {

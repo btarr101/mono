@@ -13,6 +13,7 @@ import { createBrowserRouter, redirect, RouterProvider } from 'react-router'
 import { getCard } from './api/cards'
 import { getTrackedDeck } from './api/decks'
 import { getHomeMetrics } from './api/home'
+import { getPerson } from './api/persons'
 import { useAuthState } from './hooks/useAuth'
 import { Layout } from './Layout'
 import { AnalyzePage } from './pages/AnalyzePage'
@@ -21,6 +22,7 @@ import { CardPage } from './pages/CardPage'
 import { CommunityPage } from './pages/CommunityPage'
 import { HomePage } from './pages/HomePage'
 import { NewAnalyzedDeckPage } from './pages/NewAnalyzedDeckPage'
+import { ProfilePage } from './pages/ProfilePage'
 import { TrackedDeckPage } from './pages/TrackedDeckPage'
 import { theme } from './theme'
 import { readNewAnalyzedDeck } from './util/analyzed-deck'
@@ -85,7 +87,21 @@ const router = createBrowserRouter([
       },
       {
         path: '/community',
-        Component: CommunityPage,
+        children: [
+          {
+            index: true,
+            Component: CommunityPage,
+          },
+          {
+            path: ':uuid',
+            Component: ProfilePage,
+            loader: async ({ params }) => {
+              if (!params.uuid) throw new Error('no uuid provided')
+              const person = await getPerson(params.uuid)
+              return { person }
+            },
+          },
+        ],
       },
       {
         path: '/about',

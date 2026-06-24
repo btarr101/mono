@@ -1,6 +1,5 @@
 import { BarChart } from '@mantine/charts'
 import {
-  Anchor,
   Box,
   Button,
   Center,
@@ -15,8 +14,9 @@ import {
   Title,
 } from '@mantine/core'
 import { ArrowSquareOutIcon } from '@phosphor-icons/react'
-import { Link, useLoaderData, useNavigate } from 'react-router'
+import { Link, useLoaderData } from 'react-router'
 
+import { BackAnchor } from '../../components/BackAnchor'
 import { EmptyPlaceholder } from '../../components/EmptyPlaceholder'
 import { LoadingImage } from '../../components/LoadingImage'
 import { PointsNumberFormatter } from '../../components/PointsNumberFormatter'
@@ -24,18 +24,14 @@ import { useGetCardMetrics } from '../../hooks/useCards'
 import { useGetRatingHistogramForCard } from '../../hooks/useRatings'
 import type { Card } from '../../types/bindings/Card'
 import type { CardWithMetrics } from '../../types/bindings/CardWithMetrics'
-import { safeNavigate } from '../../util'
 import { RatingSection } from './RatingSection'
 
 export const CardPage = () => {
-  const navigate = useNavigate()
   const { card } = useLoaderData<{ card: CardWithMetrics }>()
 
   return (
     <Stack gap="xl" justify="stretch" mih="100dvh" p="xl" w="100%">
-      <Anchor w="fit-content" onClick={() => safeNavigate(navigate, -1, '/browse')}>
-        {'<-'} Back
-      </Anchor>
+      <BackAnchor fallback="/browse" />
       <Group align="start">
         <CardSection card={card} />
         <InfoSection card={card} />

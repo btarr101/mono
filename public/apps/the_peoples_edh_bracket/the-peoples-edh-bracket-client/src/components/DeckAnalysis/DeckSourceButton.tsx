@@ -36,15 +36,15 @@ export const DeckSourceButton = ({ source }: DeckSourceButtonProps) => {
 
   const label = match(source.ty)
     .with('url', () => (
-      <Group>
+      <Group wrap="nowrap">
         <GlobeIcon size={32} />
-        <Text>Source: URL</Text>
+        <Text textWrap="nowrap">Source: URL</Text>
       </Group>
     ))
     .with('decklist', () => (
-      <Group>
+      <Group wrap="nowrap">
         <FilesIcon size={32} />
-        <Text>Source: Decklist</Text>
+        <Text textWrap="nowrap">Source: Decklist</Text>
       </Group>
     ))
     .exhaustive()
@@ -52,9 +52,9 @@ export const DeckSourceButton = ({ source }: DeckSourceButtonProps) => {
   return (
     <>
       <Paper withBorder flex={1} h={'100%'}>
-        <Center h="100%">
+        <Center h="100%" p="sm">
           <Stack>
-            <Group wrap="nowrap">{label}</Group>
+            {label}
             <Button onClick={open}>View</Button>
           </Stack>
         </Center>

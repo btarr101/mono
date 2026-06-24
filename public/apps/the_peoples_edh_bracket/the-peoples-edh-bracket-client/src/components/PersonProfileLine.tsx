@@ -14,7 +14,7 @@ export const PersonProfileLine = ({ loading, person, children }: PersonProfileLi
 
   return (
     <Group gap="sm" style={{ minWidth: 0 }} wrap="nowrap">
-      <Avatar size="md" src={person?.picture_url}>
+      <Avatar imageProps={{ referrerPolicy: 'no-referrer' }} size="md" src={person?.picture_url}>
         {anonymous ? '🫏' : ''}
       </Avatar>
       <Group gap={0} style={{ minWidth: 0, flex: 1 }} wrap="nowrap">

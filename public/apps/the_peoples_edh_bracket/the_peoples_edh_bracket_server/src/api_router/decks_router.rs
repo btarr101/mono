@@ -217,13 +217,13 @@ async fn find_cards_by_names(
 
     let cards = sqlx::query!(
         "SELECT
-            c.oracle_id,
-            c.name,
+            c.oracle_id as \"oracle_id!\",
+            c.name as \"name!\",
             c.image_uri,
-            c.legality as \"legality: CardLegality\",
+            c.legality as \"legality!: CardLegality\",
             COALESCE(crc.average_global_points, 0.0) as \"global_points!\"
         FROM card c
-        LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = c.oracle_id
+        LEFT JOIN card_ratings_cache crc ON c.oracle_id = crc.card_oracle_id
         WHERE LOWER(c.name) = ANY($1)
         ",
         &lowercased

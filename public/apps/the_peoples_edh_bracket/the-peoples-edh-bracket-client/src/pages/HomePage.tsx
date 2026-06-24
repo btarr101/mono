@@ -1,19 +1,10 @@
-import {
-  Autocomplete,
-  Button,
-  Divider,
-  Group,
-  NumberFormatter,
-  ScrollArea,
-  Stack,
-  Text,
-  Title,
-} from '@mantine/core'
+import { Autocomplete, Button, Divider, Group, ScrollArea, Stack, Text, Title } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { FireIcon, MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { Link, useLoaderData, useNavigate } from 'react-router'
 
 import { MtgCardButton, MtgCardButtonGhost } from '../components/MtgCardButton'
+import { Stat } from '../components/Stat'
 import { useDebouncedSearchCards, useGetCards } from '../hooks/useCards'
 import type { HomeMetrics } from '../types/bindings/HomeMetrics'
 
@@ -84,35 +75,6 @@ const Hero = () => {
         <Divider orientation="vertical" />
         <Stat label="total ratings" value={homeMetrics.total_ratings} />
       </Group>
-    </Stack>
-  )
-}
-
-type StatProps = {
-  value: number
-  label: string
-}
-
-const Stat = ({ value, label }: StatProps) => {
-  const scales = [
-    {
-      min: 1000000,
-      suffix: 'm',
-    },
-    {
-      min: 1000,
-      suffix: 'k',
-    },
-  ]
-
-  const scale = scales.find(({ min }) => value > min) ?? { min: 1, suffix: undefined }
-
-  return (
-    <Stack>
-      <Title size="2rem">
-        <NumberFormatter decimalScale={1} suffix={scale.suffix} value={value / scale.min} />
-      </Title>
-      <Text textWrap="nowrap">{label}</Text>
     </Stack>
   )
 }

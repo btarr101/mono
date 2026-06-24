@@ -11,12 +11,13 @@ import { debugPostPerson, getMe, getPerson, getPersons } from '../api/persons'
 import type { GetPersonsParams } from '../types/bindings/GetPersonsParams'
 import { useAuthState } from './useAuth'
 
-export const useGetPersons = ({ q, page_size }: Omit<GetPersonsParams, 'page'>) =>
+export const useGetPersons = ({ q, sort, page_size }: Omit<GetPersonsParams, 'page'>) =>
   useInfiniteQuery({
-    queryKey: ['persons', q, page_size],
+    queryKey: ['persons', q, sort, page_size],
     queryFn: ({ pageParam: page }) =>
       getPersons({
         q,
+        sort,
         page: page,
         page_size,
       }),
@@ -26,7 +27,8 @@ export const useGetPersons = ({ q, page_size }: Omit<GetPersonsParams, 'page'>) 
     placeholderData: keepPreviousData,
   })
 
-export const useSearchPersons = (q: string | null) => useGetPersons({ q, page_size: 10 })
+export const useSearchPersons = (q: string | null) =>
+  useGetPersons({ q, sort: null, page_size: 10 })
 
 export const useDebouncedSearchPersons = (q: string | null) => {
   const [debouncedQ, debouncer] = useDebouncedValue(q, { wait: 200 }, ({ isPending }) => isPending)

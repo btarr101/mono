@@ -2,6 +2,7 @@ import 'react-virtualized/styles.css'
 
 import { Autocomplete, Box, Flex, Group, Select, Stack } from '@mantine/core'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
+import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { AutoSizer, Grid, WindowScroller } from 'react-virtualized'
 
@@ -29,14 +30,16 @@ export const BrowsePage = () => {
   )
 
   const [usedSearchCards, { debouncedQ, isDebouncing }] = useDebouncedSearchCards(q || null)
+  const isAutocompleteLoading = isDebouncing || usedSearchCards.isFetching
+
   const usedGetCards = useGetCards({
     q: debouncedQ,
     sort,
     page_size: PAGE_SIZE,
   })
+  const cards = usedGetCards.data?.pages.flat() ?? []
 
-  const isAutocompleteLoading = isDebouncing || usedSearchCards.isFetching
-  const allCards = usedGetCards.data?.pages.flat() ?? []
+  const showEmptyMessage = !usedGetCards.isLoading && cards.length === 0
   const showEndMessage =
     !usedGetCards.hasNextPage &&
     (usedGetCards.data?.pages.filter(page => page.length > 0).length ?? 0) > 1
@@ -79,7 +82,7 @@ export const BrowsePage = () => {
             <MtgCardButtonGhost key={index} />
           ))}
         </Flex>
-      ) : allCards.length > 0 ? (
+      ) : (
         <WindowScroller>
           {({ height, isScrolling, onChildScroll, scrollTop, registerChild }) => (
             <AutoSizer disableHeight>
@@ -88,7 +91,7 @@ export const BrowsePage = () => {
                   1,
                   Math.floor(width / (CARD_BUTTON_DIMENSIONS.w + CARD_GAP)),
                 )
-                const rowCount = Math.ceil(allCards.length / columnCount)
+                const rowCount = Math.ceil(cards.length / columnCount)
                 const totalGridWidth = columnCount * (CARD_BUTTON_DIMENSIONS.w + CARD_GAP)
                 const paddingLeft = Math.max(0, (width - totalGridWidth) / 2)
 
@@ -98,7 +101,7 @@ export const BrowsePage = () => {
                       autoHeight
                       cellRenderer={({ columnIndex, rowIndex, key, style }) => {
                         const cardIndex = rowIndex * columnCount + columnIndex
-                        const card = allCards[cardIndex]
+                        const card = cards[cardIndex]
                         if (!card) return undefined
 
                         return (
@@ -143,10 +146,10 @@ export const BrowsePage = () => {
             </AutoSizer>
           )}
         </WindowScroller>
-      ) : (
+      )}
+      {showEmptyMessage && (
         <EmptyPlaceholder subText="Try refining your search." title="🤔 No cards found" />
       )}
-
       {showEndMessage && (
         <EmptyPlaceholder
           subText="The journey is complete, you may rest now 🛌."

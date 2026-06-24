@@ -1,151 +1,148 @@
-import { Autocomplete, Box, Button, Group, Stack, Table } from '@mantine/core'
+import { Autocomplete, Box, Button, Group, Select, Stack, Table } from '@mantine/core'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
-import { useQueryState } from 'nuqs'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { parseAsStringLiteral, useQueryState } from 'nuqs'
+import { useLayoutEffect, useRef } from 'react'
 import { Link } from 'react-router'
 
 import { EmptyPlaceholder } from '../components/EmptyPlaceholder'
 import { ViewablePersonProfileLine } from '../components/ViewablePersonProfileLine'
 import { useDebouncedSearchPersons, useGetPersons } from '../hooks/usePersons'
+import type { GetPersonsParamsSort } from '../types/bindings/GetPersonsParamsSort'
 
 const PAGE_SIZE = 50
-const ROW_HEIGHT = 53
 
 export const CommunityPage = () => {
+  'use no memo'
+
   const [q, setQ] = useQueryState('q')
+  const [sort, setSort] = useQueryState(
+    'sort',
+    parseAsStringLiteral<GetPersonsParamsSort>(['likes', 'followers', 'cards_rated']),
+  )
 
   const [usedSearchPersons, { debouncedQ, isDebouncing }] = useDebouncedSearchPersons(q || null)
-  const usedGetPersons = useGetPersons({
-    q: debouncedQ,
-    page_size: PAGE_SIZE,
-  })
-
   const isAutocompleteLoading = isDebouncing || usedSearchPersons.isFetching
 
+  const usedGetPersons = useGetPersons({
+    q: debouncedQ,
+    sort,
+    page_size: PAGE_SIZE,
+  })
   const persons = usedGetPersons.data?.pages.flat() ?? []
 
-  const tableRef = useRef<HTMLTableElement>(null)
-  const [scrollMargin, setScrollMargin] = useState(0)
-  useLayoutEffect(() => {
-    setScrollMargin(tableRef.current?.offsetTop ?? 0)
-  }, [])
-
-  const virtualizer = useWindowVirtualizer({
-    count: persons.length,
-    estimateSize: () => ROW_HEIGHT,
-    overscan: 100,
-    scrollMargin,
-  })
-
-  const virtualItems = virtualizer.getVirtualItems()
-  const firstItem = virtualItems[0]
-  const lastItem = virtualItems[virtualItems.length - 1]
-  const paddingTop = firstItem ? firstItem.start - virtualizer.options.scrollMargin : 0
-  const paddingBottom = lastItem
-    ? virtualizer.getTotalSize() - (lastItem.end - virtualizer.options.scrollMargin)
-    : 0
-
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = usedGetPersons
-  useEffect(() => {
-    if (!lastItem) return
-    if (lastItem.index >= persons.length - 1 && hasNextPage && !isFetchingNextPage) {
-      fetchNextPage()
-    }
-  }, [lastItem, persons.length, hasNextPage, isFetchingNextPage, fetchNextPage])
-
+  const showEmptyMessage = !usedGetPersons.isLoading && persons.length === 0
   const showEndMessage =
     !usedGetPersons.hasNextPage &&
     (usedGetPersons.data?.pages.filter(page => page.length > 0).length ?? 0) > 1
 
-  return (
-    <Box p="xl" w="100%">
-      <Stack gap="sm">
-        <Group w={'100%'}>
-          <Autocomplete
-            data={
-              isAutocompleteLoading
-                ? [{ value: '...', disabled: true }]
-                : (usedSearchPersons.data?.pages.flat().map(({ username }) => username) ?? [])
-            }
-            filter={({ options }) => options}
-            loading={usedGetPersons.isFetching}
-            placeholder="Search for a person..."
-            rightSection={<MagnifyingGlassIcon />}
-            style={{ flex: 1 }}
-            value={q ?? ''}
-            onChange={newValue => setQ(newValue ?? undefined)}
-          />
-        </Group>
-        <Table stickyHeader layout="fixed" ref={tableRef}>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Person</Table.Th>
-              <Table.Th w={120}>Followers</Table.Th>
-              <Table.Th w={120}>Cards Rated</Table.Th>
-              <Table.Th w={120}>Likes</Table.Th>
-              <Table.Th w={120}>Dislikes</Table.Th>
-              <Table.Th ta="right" w={120} />
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {paddingTop > 0 && (
-              <Table.Tr>
-                <Table.Td colSpan={6} h={paddingTop} p={0} />
-              </Table.Tr>
-            )}
-            {virtualItems.length ? (
-              virtualItems.map(virtualRow => {
-                const person = persons[virtualRow.index]
-                if (!person) return null
+  const virtualizer = useWindowVirtualizer({
+    count: persons.length,
+    estimateSize: () => 53,
+    overscan: PAGE_SIZE,
+  })
 
-                return (
-                  <Table.Tr h={ROW_HEIGHT} key={person.uuid}>
-                    <Table.Td>
-                      <Box w="fit-content">
-                        <ViewablePersonProfileLine loading={false} person={person} />
-                      </Box>
-                    </Table.Td>
-                    <Table.Td>2</Table.Td>
-                    <Table.Td>45</Table.Td>
-                    <Table.Td>2</Table.Td>
-                    <Table.Td>0</Table.Td>
-                    <Table.Td ta="right">
-                      <Button component={Link} to={{ pathname: `/community/${person.uuid}` }}>
-                        View
-                      </Button>
-                    </Table.Td>
-                  </Table.Tr>
-                )
-              })
-            ) : (
-              <Table.Tr>
-                <Table.Td colSpan={6} h={paddingBottom} px={0}>
-                  <EmptyPlaceholder
-                    subText="Try refining your search."
-                    title="🤔 No persons found"
-                  />
+  const items = virtualizer.getVirtualItems()
+  const first = items.at(0)?.start
+  const end = virtualizer.getTotalSize() - (items.at(-1)?.end ?? 0)
+
+  // Scroll restoration
+  const savedScroll = useRef(0)
+  useLayoutEffect(() => {
+    virtualizer.scrollToOffset(savedScroll.current)
+    return () => {
+      savedScroll.current = window.scrollY ?? 0
+    }
+  }, [virtualizer])
+
+  // Infinite scrolling
+  const isScrollingToBottom = end === 0
+  useLayoutEffect(() => {
+    if (isScrollingToBottom && usedGetPersons.hasNextPage) {
+      usedGetPersons.fetchNextPage()
+    }
+  }, [usedGetPersons, isScrollingToBottom])
+
+  return (
+    <Stack align="stretch" mih="100dvh" p="xl" w="100%">
+      <Group w={'100%'}>
+        <Autocomplete
+          data={
+            isAutocompleteLoading
+              ? [{ value: '...', disabled: true }]
+              : (usedSearchPersons.data?.pages.flat().map(({ username }) => username) ?? [])
+          }
+          filter={({ options }) => options}
+          loading={usedGetPersons.isFetching}
+          placeholder="Search for a person..."
+          rightSection={<MagnifyingGlassIcon />}
+          style={{ flex: 1 }}
+          value={q ?? ''}
+          onChange={newValue => setQ(newValue ?? undefined)}
+        />
+        <Select
+          data={[
+            { value: 'followers', label: '👥 Followers' },
+            { value: 'cards_rated', label: '📝 Cards Rated' },
+            { value: 'likes', label: '👍 Likes' },
+          ]}
+          placeholder="sort by"
+          value={sort}
+          onChange={newSort => setSort(newSort)}
+        />
+      </Group>
+      <Table stickyHeader>
+        <colgroup>
+          <col style={{ width: '50%' }} />
+          <col style={{ width: '11%' }} />
+          <col style={{ width: '11%' }} />
+          <col style={{ width: '11%' }} />
+          <col style={{ width: '11%' }} />
+          <col style={{ width: '6%' }} />
+        </colgroup>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Person</Table.Th>
+            <Table.Th>👥 Followers</Table.Th>
+            <Table.Th>📝 Cards Rated</Table.Th>
+            <Table.Th>👍 Likes</Table.Th>
+            <Table.Th>👎 Dislikes</Table.Th>
+            <Table.Th />
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          <Table.Tr h={first ?? 0} />
+          {virtualizer.getVirtualItems().map(item => {
+            const person = persons[item.index]!
+
+            return (
+              <Table.Tr key={person.uuid}>
+                <Table.Td>
+                  <Box w="fit-content">
+                    <ViewablePersonProfileLine loading={false} person={person} />
+                  </Box>
+                </Table.Td>
+                <Table.Td>{person.followers}</Table.Td>
+                <Table.Td>{person.cards_rated}</Table.Td>
+                <Table.Td>{person.likes}</Table.Td>
+                <Table.Td>{person.dislikes}</Table.Td>
+                <Table.Td ta="right">
+                  <Button component={Link} to={{ pathname: `/community/${person.uuid}` }}>
+                    View
+                  </Button>
                 </Table.Td>
               </Table.Tr>
-            )}
-            {showEndMessage && (
-              <Table.Tr>
-                <Table.Td colSpan={6} h={paddingBottom} px={0}>
-                  <EmptyPlaceholder
-                    subText="The journey is complete, you may rest now 🛌."
-                    title="The end."
-                  />
-                </Table.Td>
-              </Table.Tr>
-            )}
-            {paddingBottom > 0 && (
-              <Table.Tr>
-                <Table.Td colSpan={6} h={paddingBottom} p={0} />
-              </Table.Tr>
-            )}
-          </Table.Tbody>
-        </Table>
-      </Stack>
-    </Box>
+            )
+          })}
+          <Table.Tr h={end ?? 0} />
+        </Table.Tbody>
+      </Table>
+      {showEmptyMessage && (
+        <EmptyPlaceholder subText="Try refining your search." title="🤔 No people found" />
+      )}
+      {showEndMessage && (
+        <EmptyPlaceholder subText="No more people found." title="👋 That's all folks!" />
+      )}
+    </Stack>
   )
 }
