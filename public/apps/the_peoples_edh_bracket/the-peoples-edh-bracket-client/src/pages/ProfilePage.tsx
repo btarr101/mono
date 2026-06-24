@@ -198,11 +198,7 @@ export const RatingsPanelContent = ({ personUUID }: RatingsPanelContentProps) =>
                               ref={registerChild}
                               style={{ ...style, overflowX: 'visible' }}
                             >
-                              <Rating
-                                rating={rating}
-                                onPin={() => setPinnedRatingUUID(rating.uuid)}
-                                onShare={() => onShare(rating.uuid)}
-                              />
+                              <Rating rating={rating} onShare={() => onShare(rating.uuid)} />
                             </Box>
                           )}
                         </CellMeasurer>

@@ -1,10 +1,8 @@
-import 'react-virtualized/styles.css'
-
 import { Autocomplete, Box, Flex, Group, Select, Stack } from '@mantine/core'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import { AutoSizer, Grid, WindowScroller } from 'react-virtualized'
+import { useLayoutEffect, useRef, useState } from 'react'
 
 import { EmptyPlaceholder } from '../components/EmptyPlaceholder'
 import { MtgCardButton, MtgCardButtonGhost } from '../components/MtgCardButton'
@@ -44,6 +42,73 @@ export const BrowsePage = () => {
     !usedGetCards.hasNextPage &&
     (usedGetCards.data?.pages.filter(page => page.length > 0).length ?? 0) > 1
 
+  // Calculate size of row - since it's dynamic
+  // --------------------------------------------------------------------
+  const [containerWidth, setContainerWidth] = useState(0)
+  const gridResizeObserverRef = useRef<ResizeObserver | null>(null)
+
+  const gridContainerRef = (node: HTMLDivElement | null) => {
+    gridResizeObserverRef.current?.disconnect()
+    if (!node) return
+
+    setContainerWidth(node.clientWidth)
+
+    const resizeObserver = new ResizeObserver(entries => {
+      const entry = entries[0]
+      if (!entry) return
+      setContainerWidth(entry.contentRect.width)
+    })
+
+    resizeObserver.observe(node)
+    gridResizeObserverRef.current = resizeObserver
+  }
+
+  useLayoutEffect(
+    () => () => {
+      gridResizeObserverRef.current?.disconnect()
+    },
+    [],
+  )
+
+  const columnCount = Math.max(
+    1,
+    Math.floor(containerWidth / (CARD_BUTTON_DIMENSIONS.w + CARD_GAP)),
+  )
+  const rowCount = Math.ceil(cards.length / columnCount)
+  const totalGridWidth = columnCount * (CARD_BUTTON_DIMENSIONS.w + CARD_GAP)
+  // -----------------------------------------------------------------------
+
+  const virtualizer = useWindowVirtualizer({
+    count: rowCount,
+    estimateSize: () => CARD_BUTTON_DIMENSIONS.h + CARD_GAP,
+    overscan: Math.ceil(PAGE_SIZE / columnCount),
+  })
+
+  const virtualRows = virtualizer.getVirtualItems()
+  const first = virtualRows.at(0)?.start ?? 0
+  const end = Math.max(0, virtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0))
+  const lastVirtualRow = virtualRows.at(-1)?.index ?? -1
+
+  // Scroll restoration
+  const savedScroll = useRef(0)
+  useLayoutEffect(() => {
+    virtualizer.scrollToOffset(savedScroll.current)
+    return () => {
+      savedScroll.current = window.scrollY ?? 0
+    }
+  }, [virtualizer])
+
+  useLayoutEffect(() => {
+    if (
+      rowCount > 0 &&
+      lastVirtualRow >= rowCount - 1 &&
+      usedGetCards.hasNextPage &&
+      !usedGetCards.isFetching
+    ) {
+      usedGetCards.fetchNextPage()
+    }
+  }, [lastVirtualRow, rowCount, usedGetCards])
+
   return (
     <Stack mih="100dvh" p="xl" w="100%">
       <Group w={'100%'}>
@@ -75,7 +140,6 @@ export const BrowsePage = () => {
           onChange={newSort => setSort(newSort)}
         />
       </Group>
-
       {usedGetCards.isLoading ? (
         <Flex gap="lg" justify="center" wrap="wrap">
           {Array.from({ length: PAGE_SIZE }).map((_, index) => (
@@ -83,69 +147,44 @@ export const BrowsePage = () => {
           ))}
         </Flex>
       ) : (
-        <WindowScroller>
-          {({ height, isScrolling, onChildScroll, scrollTop, registerChild }) => (
-            <AutoSizer disableHeight>
-              {({ width }) => {
-                const columnCount = Math.max(
-                  1,
-                  Math.floor(width / (CARD_BUTTON_DIMENSIONS.w + CARD_GAP)),
-                )
-                const rowCount = Math.ceil(cards.length / columnCount)
-                const totalGridWidth = columnCount * (CARD_BUTTON_DIMENSIONS.w + CARD_GAP)
-                const paddingLeft = Math.max(0, (width - totalGridWidth) / 2)
+        <Stack align="center" gap={0} ref={gridContainerRef} w="100%">
+          <Box h={first} />
+          {virtualRows.map(row => {
+            const rowStartIndex = row.index * columnCount
 
-                return (
-                  <Box pl={paddingLeft} ref={registerChild}>
-                    <Grid
-                      autoHeight
-                      cellRenderer={({ columnIndex, rowIndex, key, style }) => {
-                        const cardIndex = rowIndex * columnCount + columnIndex
-                        const card = cards[cardIndex]
-                        if (!card) return undefined
+            return (
+              <Group gap={0} key={row.key} style={{ width: totalGridWidth }} wrap="nowrap">
+                {Array.from({ length: columnCount }).map((_, columnIndex) => {
+                  const card = cards[rowStartIndex + columnIndex]
+                  if (!card)
+                    return (
+                      <Box
+                        h={CARD_BUTTON_DIMENSIONS.h + CARD_GAP}
+                        key={`${row.index}-${columnIndex}`}
+                        w={CARD_BUTTON_DIMENSIONS.w + CARD_GAP}
+                      />
+                    )
 
-                        return (
-                          <Box
-                            key={key}
-                            style={{
-                              ...style,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              padding: CARD_GAP / 2,
-                              boxSizing: 'border-box',
-                            }}
-                          >
-                            <MtgCardButton card={card} />
-                          </Box>
-                        )
+                  return (
+                    <Box
+                      key={card.oracle_id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: CARD_GAP / 2,
+                        boxSizing: 'border-box',
                       }}
-                      columnCount={columnCount}
-                      columnWidth={CARD_BUTTON_DIMENSIONS.w + CARD_GAP}
-                      height={height}
-                      isScrolling={isScrolling}
-                      overscanRowCount={2}
-                      rowCount={rowCount}
-                      rowHeight={CARD_BUTTON_DIMENSIONS.h + CARD_GAP}
-                      scrollTop={scrollTop}
-                      width={totalGridWidth}
-                      onScroll={onChildScroll}
-                      onSectionRendered={({ rowStopIndex }) => {
-                        if (
-                          rowStopIndex >= rowCount - 1 &&
-                          usedGetCards.hasNextPage &&
-                          !usedGetCards.isFetching
-                        ) {
-                          usedGetCards.fetchNextPage()
-                        }
-                      }}
-                    />
-                  </Box>
-                )
-              }}
-            </AutoSizer>
-          )}
-        </WindowScroller>
+                    >
+                      <MtgCardButton card={card} />
+                    </Box>
+                  )
+                })}
+              </Group>
+            )
+          })}
+          <Box h={end} />
+        </Stack>
       )}
       {showEmptyMessage && (
         <EmptyPlaceholder subText="Try refining your search." title="🤔 No cards found" />
