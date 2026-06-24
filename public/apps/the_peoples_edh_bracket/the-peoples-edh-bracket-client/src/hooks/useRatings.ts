@@ -1,3 +1,4 @@
+import { useDebouncedValue } from '@tanstack/react-pacer'
 import type { InfiniteData } from '@tanstack/react-query'
 import {
   keepPreviousData,
@@ -14,21 +15,22 @@ import {
   putRating,
   putRatingReview,
 } from '../api/ratings'
-import type { CardRatingWithReviewsAndGlobalPoints } from '../types/bindings/CardRatingWithReviewsAndGlobalPoints'
+import type { CardRatingEnriched } from '../types/bindings/CardRatingEnriched'
 import type { GetRatingHistogramParams } from '../types/bindings/GetRatingHistogramParams'
 import type { GetRatingsParams } from '../types/bindings/GetRatingsParams'
 import type { PutRatingReviewBody } from '../types/bindings/PutRatingReviewBody'
 
-export const useRatings = ({
+export const useGetRatings = ({
   card_oracle_id,
   rater_person_uuid,
+  q,
   sort,
   page_size,
 }: Omit<GetRatingsParams, 'page'>) =>
   useInfiniteQuery({
-    queryKey: ['ratings', 'list', card_oracle_id, sort, page_size],
+    queryKey: ['ratings', 'list', card_oracle_id, q, sort, page_size],
     queryFn: ({ pageParam: page }) =>
-      getRatings({ card_oracle_id, rater_person_uuid, sort, page, page_size }),
+      getRatings({ card_oracle_id, rater_person_uuid, q, sort, page, page_size }),
     initialPageParam: 1,
     getNextPageParam: (lastPage, pages) => {
       if (lastPage.length === 0) return undefined
@@ -36,6 +38,33 @@ export const useRatings = ({
     },
     placeholderData: keepPreviousData,
   })
+
+export type useSearchRatingsParams = {
+  q: string | null
+  raterPersonUUID: string | null
+}
+
+export const useSearchRatings = ({ q, raterPersonUUID }: useSearchRatingsParams) =>
+  useGetRatings({
+    card_oracle_id: null,
+    rater_person_uuid: raterPersonUUID,
+    q,
+    sort: null,
+    page_size: 50,
+  })
+
+export const useDebouncedSearchRatings = ({ q, raterPersonUUID }: useSearchRatingsParams) => {
+  const [debouncedQ, debouncer] = useDebouncedValue(q, { wait: 200 }, ({ isPending }) => isPending)
+  const usedSearchCards = useSearchRatings({ q: debouncedQ, raterPersonUUID })
+
+  return [
+    usedSearchCards,
+    {
+      debouncedQ,
+      isDebouncing: debouncer.state,
+    },
+  ] as const
+}
 
 export const usePostRating = () => {
   const queryClient = useQueryClient()
@@ -67,6 +96,7 @@ export const usePersonRating = (oracleId: string, personUUID: string | null) =>
       const ratings = await getRatings({
         card_oracle_id: oracleId,
         rater_person_uuid: personUUID,
+        q: null,
         sort: null,
         page: 1,
         page_size: 1,
@@ -104,7 +134,7 @@ export const usePutRatingReview = () => {
     onMutate: ({ uuid, like }) => {
       // Optimistic rendering - also incorrectly preserves order
       // as to not mess with UI
-      queryClient.setQueriesData<InfiniteData<CardRatingWithReviewsAndGlobalPoints[]>>(
+      queryClient.setQueriesData<InfiniteData<CardRatingEnriched[]>>(
         { queryKey: ['ratings', 'list'] },
         data => {
           if (!data) return data

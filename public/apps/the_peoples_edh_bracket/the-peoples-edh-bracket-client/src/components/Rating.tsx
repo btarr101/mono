@@ -15,13 +15,13 @@ import { PushPinIcon, ShareIcon } from '@phosphor-icons/react'
 
 import { useMe, usePerson } from '../hooks/usePersons'
 import { usePutRatingReview } from '../hooks/useRatings'
-import type { CardRatingWithReviewsAndGlobalPoints } from '../types/bindings/CardRatingWithReviewsAndGlobalPoints'
+import type { CardRatingEnriched } from '../types/bindings/CardRatingEnriched'
 import { formatTimeStamp } from '../util'
 import { PointsNumberFormatter } from './PointsNumberFormatter'
 import { ViewablePersonProfileLine } from './ViewablePersonProfileLine'
 
 export type RatingProps = {
-  rating: CardRatingWithReviewsAndGlobalPoints
+  rating: CardRatingEnriched
   pinned?: boolean
   onPin?: () => void
   onShare?: () => void

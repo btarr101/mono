@@ -2,11 +2,12 @@ import { Autocomplete, Box, Button, Group, Select, Stack, Table } from '@mantine
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useLayoutEffect, useRef } from 'react'
+import { useLayoutEffect } from 'react'
 import { Link } from 'react-router'
 
 import { EmptyPlaceholder } from '../components/EmptyPlaceholder'
 import { ViewablePersonProfileLine } from '../components/ViewablePersonProfileLine'
+import { useReactVirtualScrollRestoration } from '../hooks/react-virtual-ext'
 import { useDebouncedSearchPersons, useGetPersons } from '../hooks/usePersons'
 import type { GetPersonsParamsSort } from '../types/bindings/GetPersonsParamsSort'
 
@@ -42,26 +43,18 @@ export const CommunityPage = () => {
     overscan: PAGE_SIZE,
   })
 
-  const items = virtualizer.getVirtualItems()
-  const first = items.at(0)?.start
-  const end = virtualizer.getTotalSize() - (items.at(-1)?.end ?? 0)
+  const virtualItems = virtualizer.getVirtualItems()
+  const first = virtualItems.at(0)?.start
+  const end = virtualizer.getTotalSize() - (virtualItems.at(-1)?.end ?? 0)
 
-  // Scroll restoration
-  const savedScroll = useRef(0)
-  useLayoutEffect(() => {
-    virtualizer.scrollToOffset(savedScroll.current)
-    return () => {
-      savedScroll.current = window.scrollY ?? 0
-    }
-  }, [virtualizer])
+  useReactVirtualScrollRestoration(virtualizer)
 
   // Infinite scrolling
-  const isScrollingToBottom = end === 0
   useLayoutEffect(() => {
-    if (isScrollingToBottom && usedGetPersons.hasNextPage) {
+    if (end === 0 && usedGetPersons.hasNextPage && !usedGetPersons.isFetching) {
       usedGetPersons.fetchNextPage()
     }
-  }, [usedGetPersons, isScrollingToBottom])
+  }, [usedGetPersons, end])
 
   return (
     <Stack align="stretch" mih="100dvh" p="xl" w="100%">

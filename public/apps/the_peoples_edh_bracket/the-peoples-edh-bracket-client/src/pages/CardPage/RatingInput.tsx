@@ -17,11 +17,11 @@ import { ShareIcon } from '@phosphor-icons/react'
 import { useMemo } from 'react'
 
 import { PointsNumberFormatter } from '../../components/PointsNumberFormatter'
-import type { CardRatingWithReviewsAndGlobalPoints } from '../../types/bindings/CardRatingWithReviewsAndGlobalPoints'
+import type { CardRatingEnriched } from '../../types/bindings/CardRatingEnriched'
 import { formatTimeStamp } from '../../util'
 
 type RatingInputProps = {
-  rating: CardRatingWithReviewsAndGlobalPoints | null
+  rating: CardRatingEnriched | null
   onShare?: () => void
   onSave: (values: { points: number | null; reason: string | null }) => Promise<void>
 }

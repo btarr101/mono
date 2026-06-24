@@ -7,6 +7,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { EmptyPlaceholder } from '../components/EmptyPlaceholder'
 import { MtgCardButton, MtgCardButtonGhost } from '../components/MtgCardButton'
 import { CARD_BUTTON_DIMENSIONS } from '../components/MtgCardButton.constants'
+import { useReactVirtualScrollRestoration } from '../hooks/react-virtual-ext'
 import { useDebouncedSearchCards, useGetCards } from '../hooks/useCards'
 import type { GetCardsParamsSort } from '../types/bindings/GetCardsParamsSort'
 
@@ -86,28 +87,16 @@ export const BrowsePage = () => {
 
   const virtualRows = virtualizer.getVirtualItems()
   const first = virtualRows.at(0)?.start ?? 0
-  const end = Math.max(0, virtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0))
-  const lastVirtualRow = virtualRows.at(-1)?.index ?? -1
+  const end = virtualRows.length ? virtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0) : 0
 
-  // Scroll restoration
-  const savedScroll = useRef(0)
-  useLayoutEffect(() => {
-    virtualizer.scrollToOffset(savedScroll.current)
-    return () => {
-      savedScroll.current = window.scrollY ?? 0
-    }
-  }, [virtualizer])
+  useReactVirtualScrollRestoration(virtualizer)
 
+  // Infinite scrolling
   useLayoutEffect(() => {
-    if (
-      rowCount > 0 &&
-      lastVirtualRow >= rowCount - 1 &&
-      usedGetCards.hasNextPage &&
-      !usedGetCards.isFetching
-    ) {
+    if (end === 0 && usedGetCards.hasNextPage && !usedGetCards.isFetching) {
       usedGetCards.fetchNextPage()
     }
-  }, [lastVirtualRow, rowCount, usedGetCards])
+  }, [usedGetCards, end])
 
   return (
     <Stack mih="100dvh" p="xl" w="100%">

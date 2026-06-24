@@ -1,17 +1,16 @@
-import 'react-virtualized/styles.css'
-
 import { Alert, Box, Group, Select, Stack, Title } from '@mantine/core'
 import { useClipboard } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { InfoIcon } from '@phosphor-icons/react'
+import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useRef } from 'react'
-import { AutoSizer, CellMeasurer, CellMeasurerCache, List, WindowScroller } from 'react-virtualized'
+import { useLayoutEffect } from 'react'
 
 import { EmptyPlaceholder } from '../../components/EmptyPlaceholder'
 import { Rating, RatingGhost } from '../../components/Rating'
+import { useReactVirtualScrollRestoration } from '../../hooks/react-virtual-ext'
 import { useMe } from '../../hooks/usePersons'
-import { usePersonRating, usePutRating, useRating, useRatings } from '../../hooks/useRatings'
+import { useGetRatings, usePersonRating, usePutRating, useRating } from '../../hooks/useRatings'
 import { RatingInput } from './RatingInput'
 
 export type RatingSectionProps = {
@@ -20,12 +19,16 @@ export type RatingSectionProps = {
 
 export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
   const clipboard = useClipboard()
-
   const [sort, setSort] = useQueryState(
     'sort',
-    parseAsStringLiteral(['liked', 'disliked', 'controversial', 'recent'] as const).withDefault(
+    parseAsStringLiteral([
       'liked',
-    ),
+      'disliked',
+      'controversial',
+      'recent',
+      'highest_rated',
+      'lowest_rated',
+    ] as const).withDefault('liked'),
   )
   const [pinnedRatingUUID, setPinnedRatingUUID] = useQueryState('pinned', {
     clearOnDefault: true,
@@ -43,9 +46,10 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
   const loggedInPersonUUID = me.data?.uuid ?? null
   const usedLoggedInPersonRating = usePersonRating(cardOracleId, loggedInPersonUUID)
   const usedPinnedRating = useRating(pinnedRatingUUID)
-  const usedRatings = useRatings({
+  const usedRatings = useGetRatings({
     card_oracle_id: cardOracleId,
     rater_person_uuid: null,
+    q: null,
     sort,
     page_size: 10,
   })
@@ -66,11 +70,30 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
       })
       .then(() => {})
 
-  const cache = useRef(new CellMeasurerCache({ fixedWidth: true, defaultHeight: 150 }))
   const hasNotRated = !loggedInPersonUUID || !usedLoggedInPersonRating.data
   const showEndMessage =
     !usedRatings.hasNextPage &&
     (usedRatings.data?.pages.filter(page => page.length > 0).length ?? 0) > 1
+
+  const ratingsCount = useRatingsPages?.length ?? 0
+  const virtualizer = useWindowVirtualizer({
+    count: ratingsCount,
+    estimateSize: () => 150,
+    overscan: 3,
+  })
+
+  const virtualItems = virtualizer.getVirtualItems()
+  const first = virtualItems.at(0)?.start ?? 0
+  const end = virtualItems.length ? virtualizer.getTotalSize() - (virtualItems.at(-1)?.end ?? 0) : 0
+
+  useReactVirtualScrollRestoration(virtualizer)
+
+  // Infinite scrolling
+  useLayoutEffect(() => {
+    if (end === 0 && usedRatings.hasNextPage && !usedRatings.isFetching) {
+      usedRatings.fetchNextPage()
+    }
+  }, [usedRatings, end])
 
   return (
     <>
@@ -124,6 +147,14 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
                 value: 'recent',
                 label: '⏲️ Most Recent',
               },
+              {
+                value: 'highest_rated',
+                label: '👑 Highest Rated',
+              },
+              {
+                value: 'lowest_rated',
+                label: '🗑️ Lowest Rated',
+              },
             ]}
             defaultValue="liked"
             disabled={useRatingsPages?.length === 0}
@@ -152,72 +183,29 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
           {useRatingsPages === undefined ? (
             Array.from({ length: 1 }).map((_, index) => <RatingGhost key={index} />)
           ) : useRatingsPages.length > 0 ? (
-            <WindowScroller>
-              {({ height, isScrolling, onChildScroll, scrollTop, registerChild }) => (
-                <AutoSizer disableHeight>
-                  {({ width }) => (
-                    <Box ref={registerChild}>
-                      <List
-                        autoHeight
-                        containerStyle={{
-                          overflow: 'visible',
-                        }}
-                        deferredMeasurementCache={cache.current}
-                        height={height}
-                        isScrolling={isScrolling}
-                        overscanRowCount={3}
-                        rowCount={useRatingsPages.length}
-                        rowHeight={cache.current.rowHeight}
-                        rowRenderer={({ index, key, parent, style }) => {
-                          const rating = useRatingsPages[index]
-                          if (!rating) return
+            <Box>
+              <Box h={first} />
+              {virtualItems.map(item => {
+                const rating = useRatingsPages[item.index]
+                if (!rating) return null
 
-                          return (
-                            <CellMeasurer
-                              cache={cache.current}
-                              columnIndex={0}
-                              key={key}
-                              parent={parent}
-                              rowIndex={index}
-                              style={{
-                                overflowX: 'hidden',
-                              }}
-                            >
-                              {({ registerChild }) => (
-                                <Box
-                                  py="sm"
-                                  ref={registerChild}
-                                  style={{ ...style, overflowX: 'visible' }}
-                                >
-                                  <Rating
-                                    rating={rating}
-                                    onPin={() => setPinnedRatingUUID(rating.uuid)}
-                                    onShare={() => onShare(rating.uuid)}
-                                  />
-                                </Box>
-                              )}
-                            </CellMeasurer>
-                          )
-                        }}
-                        scrollTop={scrollTop}
-                        style={{ overflowY: 'visible', overflowX: 'visible' }}
-                        width={width}
-                        onRowsRendered={({ stopIndex }) => {
-                          if (
-                            stopIndex >= useRatingsPages.length - 1 &&
-                            usedRatings.hasNextPage &&
-                            !usedRatings.isFetching
-                          ) {
-                            usedRatings.fetchNextPage()
-                          }
-                        }}
-                        onScroll={onChildScroll}
-                      />
-                    </Box>
-                  )}
-                </AutoSizer>
-              )}
-            </WindowScroller>
+                return (
+                  <Box
+                    data-index={item.index}
+                    key={rating.uuid}
+                    py="sm"
+                    ref={virtualizer.measureElement}
+                  >
+                    <Rating
+                      rating={rating}
+                      onPin={() => setPinnedRatingUUID(rating.uuid)}
+                      onShare={() => onShare(rating.uuid)}
+                    />
+                  </Box>
+                )
+              })}
+              <Box h={end} />
+            </Box>
           ) : (
             <EmptyPlaceholder
               {...(hasNotRated

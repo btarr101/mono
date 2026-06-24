@@ -31,6 +31,17 @@ pub fn get_router() -> Router<AppState> {
         .route("/{uuid}/review", put(put_rating_review))
 }
 
+#[derive(ts_rs::TS, Serialize)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
+struct CardRatingEnriched {
+    #[serde(flatten)]
+    card_rating: CardRating,
+    total_points: BigDecimal,
+    global_points: BigDecimal,
+    reviews: CardRatingReviews,
+    card_name: String,
+}
+
 #[derive(ts_rs::TS, Serialize, FromRow)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
 struct CardRatingReviews {
@@ -39,23 +50,6 @@ struct CardRatingReviews {
     likes: i64,
     #[ts(type = "number")]
     dislikes: i64,
-}
-
-#[derive(ts_rs::TS, Serialize)]
-#[ts(export, export_to = TS_RS_EXPORT_TO)]
-struct CardRatingWithTotalPoints {
-    #[serde(flatten)]
-    card_rating: CardRating,
-    total_points: BigDecimal,
-}
-
-#[derive(ts_rs::TS, Serialize)]
-#[ts(export, export_to = TS_RS_EXPORT_TO)]
-struct CardRatingWithReviewsAndGlobalPoints {
-    #[serde(flatten)]
-    card_rating: CardRatingWithTotalPoints,
-    global_points: BigDecimal,
-    reviews: CardRatingReviews,
 }
 
 #[derive(ts_rs::TS, Serialize, Deserialize, Display)]
@@ -67,6 +61,8 @@ enum GetRatingsParamsSort {
     Disliked,
     Controversial,
     Recent,
+    HighestRated,
+    LowestRated,
 }
 
 #[derive(ts_rs::TS)]
@@ -78,6 +74,8 @@ struct GetRatingsParams {
     card_oracle_id: Option<uuid::Uuid>,
     #[serde_inline_default(None)]
     rater_person_uuid: Option<uuid::Uuid>,
+    #[serde_inline_default(None)]
+    q: Option<String>,
     #[serde_inline_default(None)]
     sort: Option<GetRatingsParamsSort>,
     #[serde_inline_default(NonZeroUsize::MIN)]
@@ -92,11 +90,12 @@ async fn get_ratings(
     Query(GetRatingsParams {
         card_oracle_id,
         rater_person_uuid,
+        q,
         sort,
         page,
         page_size,
     }): Query<GetRatingsParams>,
-) -> ApiResult<Json<Vec<CardRatingWithReviewsAndGlobalPoints>>> {
+) -> ApiResult<Json<Vec<CardRatingEnriched>>> {
     let (limit, offset) = parse_pagination(page, page_size);
     let sort = sort.and_then(|sort| {
         serde_json::to_value(sort)
@@ -125,35 +124,41 @@ async fn get_ratings(
                 SELECT crr_person.liked
                 FROM card_rating_review crr_person
                 WHERE crr_person.reviewed_card_rating_uuid = cr.uuid
-                AND crr_person.reviewer_person_uuid = $4::uuid
+                AND crr_person.reviewer_person_uuid = $5::uuid
                 LIMIT 1
             ) AS person_review,
             rc.likes,
             rc.dislikes,
             cr.created_at,
-            cr.updated_at
+            cr.updated_at,
+            c.name AS \"card_name!\"
         FROM card_rating cr
         LEFT JOIN card_rating_global crg ON crg.card_rating_uuid = cr.uuid
         LEFT JOIN person_ratings_cache prc ON prc.person_uuid = cr.rater_person_uuid
         LEFT JOIN review_counts rc ON rc.card_rating_uuid = cr.uuid
+        INNER JOIN card c ON c.oracle_id = cr.card_oracle_id
         WHERE
             ($1::uuid IS NULL OR cr.card_oracle_id = $1)
             AND ($2::uuid IS NULL OR cr.rater_person_uuid = $2)
+            AND ($3::text IS NULL OR lower(c.name) LIKE lower($3::text) || '%')
         ORDER BY
-            CASE WHEN $3::text = 'liked' THEN COALESCE(rc.likes, 0) END DESC,
-            CASE WHEN $3::text = 'liked' THEN COALESCE(rc.dislikes, 0) END ASC,
-            CASE WHEN $3::text = 'disliked' THEN COALESCE(rc.dislikes, 0) END DESC,
-            CASE WHEN $3::text = 'disliked' THEN COALESCE(rc.likes, 0) END ASC,
+            CASE WHEN $4::text = 'liked' THEN COALESCE(rc.likes, 0) END DESC,
+            CASE WHEN $4::text = 'liked' THEN COALESCE(rc.dislikes, 0) END ASC,
+            CASE WHEN $4::text = 'disliked' THEN COALESCE(rc.dislikes, 0) END DESC,
+            CASE WHEN $4::text = 'disliked' THEN COALESCE(rc.likes, 0) END ASC,
             CASE
-                WHEN $3::text = 'controversial'
+                WHEN $4::text = 'controversial'
                 THEN LEAST(COALESCE(rc.likes, 0), COALESCE(rc.dislikes, 0))
             END DESC,
-            CASE WHEN $3::text = 'recent' THEN cr.created_at END DESC,
-            CASE WHEN $3::text = 'recent' THEN cr.updated_at END DESC NULLS LAST,
+            CASE WHEN $4::text = 'recent' THEN cr.created_at END DESC,
+            CASE WHEN $4::text = 'recent' THEN cr.updated_at END DESC NULLS LAST,
+            CASE WHEN $4::text = 'highest_rated' THEN cr.points END DESC,
+            CASE WHEN $4::text = 'lowest_rated' THEN cr.points END ASC,
             cr.uuid
-        LIMIT $5 OFFSET $6",
+        LIMIT $6 OFFSET $7",
         card_oracle_id,
         rater_person_uuid,
+        q,
         sort,
         person_uuid,
         limit,
@@ -164,25 +169,24 @@ async fn get_ratings(
 
     let ratings = rows
         .into_iter()
-        .map(|row| CardRatingWithReviewsAndGlobalPoints {
-            card_rating: CardRatingWithTotalPoints {
-                card_rating: CardRating {
-                    uuid: row.uuid,
-                    card_oracle_id: row.card_oracle_id,
-                    rater_person_uuid: row.rater_person_uuid,
-                    points: row.points,
-                    reason: row.reason,
-                    created_at: row.created_at,
-                    updated_at: row.updated_at,
-                },
-                total_points: row.total_points,
+        .map(|row| CardRatingEnriched {
+            card_rating: CardRating {
+                uuid: row.uuid,
+                card_oracle_id: row.card_oracle_id,
+                rater_person_uuid: row.rater_person_uuid,
+                points: row.points,
+                reason: row.reason,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
             },
+            total_points: row.total_points,
             global_points: row.global_points.unwrap_or_default(),
             reviews: CardRatingReviews {
                 person_review: row.person_review,
                 likes: row.likes.unwrap_or_default(),
                 dislikes: row.dislikes.unwrap_or_default(),
             },
+            card_name: row.card_name,
         })
         .collect();
 
@@ -241,7 +245,7 @@ async fn get_rating(
     State(pg_pool): State<PgPool>,
     OptionalAuth { person_uuid }: OptionalAuth,
     Path(uuid): Path<uuid::Uuid>,
-) -> ApiResult<Json<CardRatingWithReviewsAndGlobalPoints>> {
+) -> ApiResult<Json<CardRatingEnriched>> {
     let row = sqlx::query!(
         "SELECT
             cr.uuid,
@@ -261,7 +265,8 @@ async fn get_rating(
             rc.likes,
             rc.dislikes,
             cr.created_at,
-            cr.updated_at
+            cr.updated_at,
+            c.name AS \"card_name!\"
         FROM card_rating cr
         LEFT JOIN card_rating_global crg ON crg.card_rating_uuid = cr.uuid
         LEFT JOIN person_ratings_cache prc ON prc.person_uuid = cr.rater_person_uuid
@@ -273,6 +278,7 @@ async fn get_rating(
             FROM card_rating_review crr
             GROUP BY crr.reviewed_card_rating_uuid
         ) rc ON rc.card_rating_uuid = cr.uuid
+        INNER JOIN card c ON c.oracle_id = cr.card_oracle_id
         WHERE cr.uuid = $1
         LIMIT 1",
         uuid,
@@ -282,25 +288,24 @@ async fn get_rating(
     .await?
     .context_not_found("rating not found")?;
 
-    let rating = CardRatingWithReviewsAndGlobalPoints {
-        card_rating: CardRatingWithTotalPoints {
-            card_rating: CardRating {
-                uuid: row.uuid,
-                card_oracle_id: row.card_oracle_id,
-                rater_person_uuid: row.rater_person_uuid,
-                points: row.points,
-                reason: row.reason,
-                created_at: row.created_at,
-                updated_at: row.updated_at,
-            },
-            total_points: row.total_points,
+    let rating = CardRatingEnriched {
+        card_rating: CardRating {
+            uuid: row.uuid,
+            card_oracle_id: row.card_oracle_id,
+            rater_person_uuid: row.rater_person_uuid,
+            points: row.points,
+            reason: row.reason,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
         },
+        total_points: row.total_points,
         global_points: row.global_points.unwrap_or_default(),
         reviews: CardRatingReviews {
             person_review: row.person_review,
             likes: row.likes.unwrap_or(0),
             dislikes: row.dislikes.unwrap_or(0),
         },
+        card_name: row.card_name,
     };
 
     Ok(Json(rating))
