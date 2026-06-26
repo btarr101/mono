@@ -40,8 +40,6 @@ export const RatingInput = ({ rating, onSave, onShare }: RatingInputProps) => {
     },
   })
 
-  // TODO: Issue here is that if there is no rating yet... total points will be 0
-  // we need to populate this from the logged in user
   const totalPoints = useMemo(() => {
     const total_points = rating?.total_points ?? me?.total_points
     if (total_points === undefined) return undefined
