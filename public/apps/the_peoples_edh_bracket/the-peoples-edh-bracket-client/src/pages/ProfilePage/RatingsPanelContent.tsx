@@ -12,6 +12,7 @@ import { useReactVirtualScrollRestoration } from '../../hooks/react-virtual-ext'
 import { useGetCard } from '../../hooks/useCards'
 import { useDebouncedSearchRatings, useGetRatings } from '../../hooks/useRatings'
 import type { CardRatingEnriched } from '../../types/bindings/CardRatingEnriched'
+import type { GetRatingsParamsSort } from '../../types/bindings/GetRatingsParamsSort'
 import { formatTimeStamp } from '../../util'
 
 const PAGE_SIZE = 50
@@ -23,17 +24,17 @@ export type RatingsPanelContentProps = {
 export const RatingsPanelContent = ({ personUUID }: RatingsPanelContentProps) => {
   'use no memo'
 
-  const [q, setQ] = useQueryState('ratings-q')
+  const [q, setQ] = useQueryState('r-q')
   const [sort, setSort] = useQueryState(
-    'rating-sort',
+    'r-sort',
     parseAsStringLiteral([
+      'recent',
       'liked',
       'disliked',
       'controversial',
-      'recent',
       'highest_rated',
       'lowest_rated',
-    ] as const).withDefault('liked'),
+    ] as const satisfies GetRatingsParamsSort[]).withDefault('recent'),
   )
 
   const [usedSearchRatings, { debouncedQ, isDebouncing }] = useDebouncedSearchRatings({

@@ -10,7 +10,7 @@ import {
 } from '@phosphor-icons/react'
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v7'
 import { useState } from 'react'
-import { ScrollRestoration } from 'react-router'
+import { Link, ScrollRestoration } from 'react-router'
 import { Outlet } from 'react-router'
 import { NavLink as RouterNavLink } from 'react-router'
 
@@ -92,9 +92,18 @@ const DebugAuthSection = () => {
           </Menu.Sub>
           {authState.ty === null && <Menu.Item onClick={open}>Log in</Menu.Item>}
           {authState.ty !== null && (
-            <Menu.Item color="red" onClick={logout}>
-              Log out
-            </Menu.Item>
+            <>
+              <Menu.Item
+                component={Link}
+                disabled={!me.data?.uuid}
+                to={`/community/${me.data?.uuid}`}
+              >
+                View Profile
+              </Menu.Item>
+              <Menu.Item color="red" onClick={logout}>
+                Log out
+              </Menu.Item>
+            </>
           )}
         </PersonProfileLine>
       </Box>

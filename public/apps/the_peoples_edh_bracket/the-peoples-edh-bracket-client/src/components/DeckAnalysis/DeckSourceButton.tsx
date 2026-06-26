@@ -34,20 +34,24 @@ export type DeckSourceButtonProps = {
 export const DeckSourceButton = ({ source }: DeckSourceButtonProps) => {
   const [opened, { open, close }] = useDisclosure(false)
 
-  const label = match(source.ty)
-    .with('url', () => (
-      <Group wrap="nowrap">
-        <GlobeIcon size={32} />
-        <Text textWrap="nowrap">Source: URL</Text>
-      </Group>
-    ))
-    .with('decklist', () => (
-      <Group wrap="nowrap">
-        <FilesIcon size={32} />
-        <Text textWrap="nowrap">Source: Decklist</Text>
-      </Group>
-    ))
-    .exhaustive()
+  const label = (
+    <Group gap="xs" wrap="nowrap">
+      {match(source.ty)
+        .with('url', () => (
+          <>
+            <GlobeIcon size={32} />
+            <Text textWrap="nowrap">Source: URL</Text>
+          </>
+        ))
+        .with('decklist', () => (
+          <>
+            <FilesIcon size={32} />
+            <Text textWrap="nowrap">Source: Decklist</Text>
+          </>
+        ))
+        .exhaustive()}
+    </Group>
+  )
 
   return (
     <>

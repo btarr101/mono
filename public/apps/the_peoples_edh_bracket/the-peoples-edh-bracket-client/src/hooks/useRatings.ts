@@ -50,7 +50,7 @@ export const useSearchRatings = ({ q, raterPersonUUID }: useSearchRatingsParams)
     rater_person_uuid: raterPersonUUID,
     q,
     sort: null,
-    page_size: 50,
+    page_size: 10,
   })
 
 export const useDebouncedSearchRatings = ({ q, raterPersonUUID }: useSearchRatingsParams) => {

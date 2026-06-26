@@ -7,6 +7,7 @@ import { Stat } from '../../components/Stat'
 import type { Person } from '../../types/bindings/Person'
 import { formatTimeStamp } from '../../util'
 import { RatingsPanelContent } from './RatingsPanelContent'
+import { TrackedDecksPanelContent } from './TrackedDecksPanelContent'
 
 const TABS = ['ratings', 'decks', 'followers', 'followees']
 
@@ -47,6 +48,9 @@ export const ProfilePage = () => {
         </Tabs.List>
         <Tabs.Panel value="ratings">
           <RatingsPanelContent personUUID={person.uuid} />
+        </Tabs.Panel>
+        <Tabs.Panel value="decks">
+          <TrackedDecksPanelContent personUUID={person.uuid} />
         </Tabs.Panel>
       </Tabs>
     </Stack>

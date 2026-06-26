@@ -2,7 +2,7 @@ use std::{collections::HashMap, iter::repeat, num::NonZeroUsize};
 
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::{get, post},
 };
 use axum_anyhow::{ApiError, ApiResult, OptionExt};
@@ -11,7 +11,9 @@ use bigdecimal::{BigDecimal, ToPrimitive};
 use itertools::{Either, Itertools};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+use serde_inline_default::serde_inline_default;
 use sqlx::{PgPool, QueryBuilder, prelude::FromRow};
+use strum::Display;
 use validator::{Validate, ValidationError, ValidationErrors};
 
 use crate::{
@@ -24,13 +26,133 @@ use crate::{
     },
     state::AppState,
     types::PointsHistogramBucket,
+    util::parse_pagination,
 };
 
 pub fn get_router() -> Router<AppState> {
     Router::new()
-        .route("/", post(post_tracked_deck))
+        .route("/", get(get_tracked_decks).post(post_tracked_deck))
         .route("/analyze", post(post_analyze))
         .route("/{uuid}", get(get_tracked_deck).delete(delete_tracked_deck))
+}
+
+#[derive(ts_rs::TS, Serialize, Deserialize, Display)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
+#[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+enum GetTrackedDecksParamsSort {
+    Recent,
+    MostPoints,
+    LeastPoints,
+    MostPersonalPoints,
+    LeastPersonalPoints,
+}
+
+#[derive(ts_rs::TS)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
+#[serde_inline_default]
+#[derive(Deserialize)]
+struct GetTrackedDecksParams {
+    #[serde_inline_default(None)]
+    tracker_person_uuid: Option<uuid::Uuid>,
+    #[serde_inline_default(None)]
+    q: Option<String>,
+    #[serde_inline_default(None)]
+    sort: Option<GetTrackedDecksParamsSort>,
+    #[serde_inline_default(NonZeroUsize::MIN)]
+    page: NonZeroUsize,
+    #[serde_inline_default(const { NonZeroUsize::new(100).expect("100 > 0") })]
+    page_size: NonZeroUsize,
+}
+
+#[derive(ts_rs::TS, Serialize)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
+struct TrackedDeckWithTotalPoints {
+    #[serde(flatten)]
+    tracked_deck: TrackedDeck,
+    total_global_points: BigDecimal,
+    total_personal_points: BigDecimal,
+}
+
+async fn get_tracked_decks(
+    State(pg_pool): State<PgPool>,
+    Query(GetTrackedDecksParams {
+        tracker_person_uuid,
+        q,
+        sort,
+        page,
+        page_size,
+    }): Query<GetTrackedDecksParams>,
+) -> ApiResult<Json<Vec<TrackedDeckWithTotalPoints>>> {
+    let (limit, offset) = parse_pagination(page, page_size);
+    let sort = sort.and_then(|sort| {
+        serde_json::to_value(sort)
+            .ok()
+            .and_then(|value| value.as_str().map(ToOwned::to_owned))
+    });
+
+    let tracked_decks = sqlx::query!(
+        "WITH deck_points AS (
+            SELECT
+                tdc.tracked_deck_uuid,
+                COALESCE(SUM(COALESCE(crc.average_global_points, 0.0) * tdc.count), 0.0) AS total_global_points,
+                COALESCE(SUM(COALESCE(cr.points, 0.0) * tdc.count), 0.0) AS total_personal_points
+            FROM tracked_deck_card tdc
+            INNER JOIN tracked_deck td ON td.uuid = tdc.tracked_deck_uuid
+            LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = tdc.card_oracle_id
+            LEFT JOIN card_rating cr
+                ON cr.card_oracle_id = tdc.card_oracle_id
+                AND cr.rater_person_uuid = td.tracker_person_uuid
+            GROUP BY tdc.tracked_deck_uuid
+        )
+        SELECT
+            td.uuid,
+            td.tracker_person_uuid,
+            td.name,
+            td.url_source,
+            td.created_at,
+            td.updated_at,
+            COALESCE(dp.total_global_points, 0.0) AS \"total_global_points!\",
+            COALESCE(dp.total_personal_points, 0.0) AS \"total_personal_points!\"
+        FROM tracked_deck td
+        LEFT JOIN deck_points dp ON dp.tracked_deck_uuid = td.uuid
+        WHERE
+            ($1::uuid IS NULL OR td.tracker_person_uuid = $1)
+            AND ($2::text IS NULL OR lower(td.name) LIKE lower($2) || '%')
+        ORDER BY
+            CASE WHEN $3::text = 'most_points' THEN COALESCE(dp.total_global_points, 0.0) END DESC,
+            CASE WHEN $3::text = 'least_points' THEN COALESCE(dp.total_global_points, 0.0) END ASC,
+            CASE WHEN $3::text = 'most_personal_points' THEN COALESCE(dp.total_personal_points, 0.0) END DESC,
+            CASE WHEN $3::text = 'least_personal_points' THEN COALESCE(dp.total_personal_points, 0.0) END ASC,
+            CASE WHEN $3::text = 'recent' THEN td.created_at END DESC,
+            CASE WHEN $3::text = 'recent' THEN td.updated_at END DESC NULLS LAST,
+            td.name,
+            td.uuid
+        LIMIT $4 OFFSET $5",
+        tracker_person_uuid,
+        q,
+        sort,
+        limit,
+        offset,
+    )
+    .fetch_all(&pg_pool)
+    .await?
+    .into_iter()
+    .map(|row| TrackedDeckWithTotalPoints {
+        tracked_deck: TrackedDeck {
+            uuid: row.uuid,
+            tracker_person_uuid: row.tracker_person_uuid,
+            name: row.name,
+            url_source: row.url_source,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        },
+        total_global_points: row.total_global_points,
+        total_personal_points: row.total_personal_points,
+    })
+    .collect::<Vec<_>>();
+
+    Ok(Json(tracked_decks))
 }
 
 #[derive(ts_rs::TS, Serialize, Deserialize, Debug)]
