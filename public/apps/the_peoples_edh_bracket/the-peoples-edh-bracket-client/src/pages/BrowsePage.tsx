@@ -87,7 +87,7 @@ export const BrowsePage = () => {
 
   const virtualRows = virtualizer.getVirtualItems()
   const first = virtualRows.at(0)?.start ?? 0
-  const end = virtualRows.length ? virtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0) : 0
+  const end = virtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0)
 
   useReactVirtualScrollRestoration(virtualizer)
 
@@ -129,52 +129,36 @@ export const BrowsePage = () => {
           onChange={newSort => setSort(newSort)}
         />
       </Group>
-      {usedGetCards.isLoading ? (
-        <Flex gap="lg" justify="center" wrap="wrap">
-          {Array.from({ length: PAGE_SIZE }).map((_, index) => (
-            <MtgCardButtonGhost key={index} />
-          ))}
-        </Flex>
-      ) : (
-        <Stack align="center" gap={0} ref={gridContainerRef} w="100%">
-          <Box h={first} />
-          {virtualRows.map(row => {
-            const rowStartIndex = row.index * columnCount
+      <Stack align="center" gap={CARD_GAP} ref={gridContainerRef} w="100%">
+        {usedGetCards.isLoading
+          ? Array.from({ length: Math.ceil(PAGE_SIZE / columnCount) }).map((_, index) => (
+              <Group gap={CARD_GAP} key={index} w={totalGridWidth} wrap="nowrap">
+                {Array.from({ length: columnCount }).map((_, index) => (
+                  <MtgCardButtonGhost key={index} />
+                ))}
+              </Group>
+            ))
+          : null}
+        <Box h={first} mb={-CARD_GAP} />
+        <>
+          {virtualRows.map(item => {
+            const rowStartIndex = item.index * columnCount
 
             return (
-              <Group gap={0} key={row.key} style={{ width: totalGridWidth }} wrap="nowrap">
+              <Group gap={CARD_GAP} key={item.key} w={totalGridWidth} wrap="nowrap">
                 {Array.from({ length: columnCount }).map((_, columnIndex) => {
                   const card = cards[rowStartIndex + columnIndex]
                   if (!card)
-                    return (
-                      <Box
-                        h={CARD_BUTTON_DIMENSIONS.h + CARD_GAP}
-                        key={`${row.index}-${columnIndex}`}
-                        w={CARD_BUTTON_DIMENSIONS.w + CARD_GAP}
-                      />
-                    )
+                    return <Box {...CARD_BUTTON_DIMENSIONS} key={`${item.index}-${columnIndex}`} />
 
-                  return (
-                    <Box
-                      key={card.oracle_id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: CARD_GAP / 2,
-                        boxSizing: 'border-box',
-                      }}
-                    >
-                      <MtgCardButton card={card} />
-                    </Box>
-                  )
+                  return <MtgCardButton card={card} key={card.oracle_id} />
                 })}
               </Group>
             )
           })}
-          <Box h={end} />
-        </Stack>
-      )}
+        </>
+        <Box h={end} mt={-CARD_GAP} />
+      </Stack>
       {showEmptyMessage && (
         <EmptyPlaceholder subText="Try refining your search." title="🤔 No cards found" />
       )}

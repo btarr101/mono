@@ -7,10 +7,18 @@ export const useReactVirtualScrollRestoration = <
 >(
   virtualizer: ReactVirtualizer<TScrollElement, TItemElement>,
 ) => {
-  const savedScroll = useRef(0)
+  const savedScroll = useRef<number | null>(null)
   useLayoutEffect(() => {
-    virtualizer.scrollToOffset(savedScroll.current)
+    if (savedScroll.current !== null) {
+      console.log({
+        restore: savedScroll.current,
+      })
+      virtualizer.scrollToOffset(savedScroll.current)
+    }
     return () => {
+      console.log({
+        save: window.scrollY ?? 0,
+      })
       savedScroll.current = window.scrollY ?? 0
     }
   }, [virtualizer])
