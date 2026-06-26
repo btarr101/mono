@@ -6,6 +6,7 @@ use axum::{
     routing::get,
 };
 use axum_anyhow::{ApiResult, OptionExt};
+use bigdecimal::BigDecimal;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
@@ -140,11 +141,37 @@ async fn get_person(State(pg_pool): State<Pool<Postgres>>, Path(uuid): Path<uuid
     Ok(Json(person))
 }
 
-async fn get_me(State(pg_pool): State<Pool<Postgres>>, Auth { person_uuid }: Auth) -> ApiResult<Json<Person>> {
-    let person = sqlx::query_as!(Person, "SELECT * FROM person WHERE uuid = $1 LIMIT 1", person_uuid)
-        .fetch_optional(&pg_pool)
-        .await?
-        .context_not_found("person could not be found")?;
+#[derive(ts_rs::TS, Deserialize, Serialize)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
+struct PersonWithTotalPoints {
+    #[serde(flatten)]
+    person: Person,
+    total_points: BigDecimal,
+}
 
-    Ok(Json(person))
+async fn get_me(State(pg_pool): State<Pool<Postgres>>, Auth { person_uuid }: Auth) -> ApiResult<Json<PersonWithTotalPoints>> {
+    let row = sqlx::query!(
+        "SELECT
+            person.*,
+            COALESCE(prc.total_personal_points, 0) AS \"total_points!\"
+        FROM person
+        LEFT JOIN person_ratings_cache prc ON prc.person_uuid = person.uuid
+        WHERE person.uuid = $1
+        LIMIT 1",
+        person_uuid
+    )
+    .fetch_optional(&pg_pool)
+    .await?
+    .context_not_found("person could not be found")?;
+
+    Ok(Json(PersonWithTotalPoints {
+        person: Person {
+            uuid: row.uuid,
+            username: row.username,
+            picture_url: row.picture_url,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        },
+        total_points: row.total_points,
+    }))
 }

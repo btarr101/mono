@@ -4,6 +4,7 @@ import { notifications } from '@mantine/notifications'
 import { InfoIcon } from '@phosphor-icons/react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
+import { useLayoutEffect } from 'react'
 
 import { EmptyPlaceholder } from '../../components/EmptyPlaceholder'
 import { Rating, RatingGhost } from '../../components/Rating'
@@ -11,6 +12,8 @@ import { useReactVirtualScrollRestoration } from '../../hooks/react-virtual-ext'
 import { useMe } from '../../hooks/usePersons'
 import { useGetRatings, usePersonRating, usePutRating, useRating } from '../../hooks/useRatings'
 import { RatingInput } from './RatingInput'
+
+const PAGE_SIZE = 50
 
 export type RatingSectionProps = {
   cardOracleId: string
@@ -50,7 +53,7 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
     rater_person_uuid: null,
     q: null,
     sort,
-    page_size: 10,
+    page_size: PAGE_SIZE,
   })
   const usedPutRating = usePutRating()
 
@@ -78,7 +81,7 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
   const virtualizer = useWindowVirtualizer({
     count: ratingsCount,
     estimateSize: () => 150,
-    overscan: 3,
+    overscan: PAGE_SIZE,
   })
 
   const virtualItems = virtualizer.getVirtualItems()
@@ -88,11 +91,11 @@ export const RatingSection = ({ cardOracleId }: RatingSectionProps) => {
   useReactVirtualScrollRestoration(virtualizer)
 
   // Infinite scrolling
-  // useLayoutEffect(() => {
-  //   if (end === 0 && usedRatings.hasNextPage && !usedRatings.isFetching) {
-  //     usedRatings.fetchNextPage()
-  //   }
-  // }, [usedRatings, end])
+  useLayoutEffect(() => {
+    if (end === 0 && usedRatings.hasNextPage && !usedRatings.isFetching) {
+      usedRatings.fetchNextPage()
+    }
+  }, [usedRatings, end])
 
   return (
     <Stack>

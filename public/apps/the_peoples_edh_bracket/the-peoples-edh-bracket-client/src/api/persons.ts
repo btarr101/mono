@@ -1,6 +1,7 @@
 import type { GetPersonsParams } from '../types/bindings/GetPersonsParams'
 import type { Person } from '../types/bindings/Person'
 import type { PersonWithMetrics } from '../types/bindings/PersonWithMetrics'
+import type { PersonWithTotalPoints } from '../types/bindings/PersonWithTotalPoints'
 import { api, API_BASE_URL } from '.'
 
 export const getPersons = async (params: GetPersonsParams) => {
@@ -21,7 +22,7 @@ export const debugPostPerson = async () => {
 export const getMe = async () => {
   const uri = new URL(`${API_BASE_URL}/persons/me`)
 
-  return api.get(uri).json<Person>()
+  return api.get(uri).json<PersonWithTotalPoints>()
 }
 
 export const getPerson = async (uuid: string) => {

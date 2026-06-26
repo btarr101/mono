@@ -17,6 +17,7 @@ import { ShareIcon } from '@phosphor-icons/react'
 import { useMemo } from 'react'
 
 import { PointsNumberFormatter } from '../../components/PointsNumberFormatter'
+import { useMe } from '../../hooks/usePersons'
 import type { CardRatingEnriched } from '../../types/bindings/CardRatingEnriched'
 import { formatTimeStamp } from '../../util'
 
@@ -27,6 +28,7 @@ type RatingInputProps = {
 }
 
 export const RatingInput = ({ rating, onSave, onShare }: RatingInputProps) => {
+  const { data: me } = useMe()
   const form = useForm({
     mode: 'controlled',
     initialValues: {
@@ -41,12 +43,13 @@ export const RatingInput = ({ rating, onSave, onShare }: RatingInputProps) => {
   // TODO: Issue here is that if there is no rating yet... total points will be 0
   // we need to populate this from the logged in user
   const totalPoints = useMemo(() => {
-    if (rating?.total_points === undefined) return undefined
-    const points = form.getValues().points
-    if (points === null) return undefined
+    const total_points = rating?.total_points ?? me?.total_points
+    if (total_points === undefined) return undefined
 
-    return parseFloat(rating.total_points) - parseFloat(rating.points) + points
-  }, [form, rating])
+    const points = form.getValues().points ?? 0
+
+    return parseFloat(total_points) - parseFloat(rating?.points ?? '0') + points
+  }, [form, rating, me])
 
   return (
     <form
