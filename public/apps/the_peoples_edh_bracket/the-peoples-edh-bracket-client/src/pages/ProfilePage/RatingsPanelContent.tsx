@@ -1,4 +1,4 @@
-import { Autocomplete, Button, Group, Select, Stack, Table } from '@mantine/core'
+import { Autocomplete, Button, Group, Select, Skeleton, Stack, Table } from '@mantine/core'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
@@ -7,6 +7,7 @@ import { Link } from 'react-router'
 
 import { EmptyPlaceholder } from '../../components/EmptyPlaceholder'
 import { PointsNumberFormatter } from '../../components/PointsNumberFormatter'
+import { TableCard } from '../../components/TableCard'
 import { useReactVirtualScrollRestoration } from '../../hooks/react-virtual-ext'
 import { useGetCard } from '../../hooks/useCards'
 import { useDebouncedSearchRatings, useGetRatings } from '../../hooks/useRatings'
@@ -75,7 +76,7 @@ export const RatingsPanelContent = ({ personUUID }: RatingsPanelContentProps) =>
   }, [usedGetRatings, end])
 
   return (
-    <Stack p="lg">
+    <Stack p="lg" px={0}>
       <Group w={'100%'}>
         <Autocomplete
           data={
@@ -145,13 +146,25 @@ export const RatingsPanelContent = ({ personUUID }: RatingsPanelContentProps) =>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          <Table.Tr h={first ?? 0} />
-          {virtualizer.getVirtualItems().map(item => {
-            const rating = ratings[item.index]!
+          {usedGetRatings.isLoading ? (
+            Array.from({ length: PAGE_SIZE }).map((_, index) => (
+              <Table.Tr key={index}>
+                <Table.Td colSpan={7}>
+                  <Skeleton h={36} />
+                </Table.Td>
+              </Table.Tr>
+            ))
+          ) : (
+            <>
+              <Table.Tr h={first ?? 0} />
+              {virtualizer.getVirtualItems().map(item => {
+                const rating = ratings[item.index]!
 
-            return <RatingRow key={rating.uuid} rating={rating} />
-          })}
-          <Table.Tr h={end ?? 0} />
+                return <RatingRow key={rating.uuid} rating={rating} />
+              })}
+              <Table.Tr h={end ?? 0} />
+            </>
+          )}
         </Table.Tbody>
         {/*TODO GHOSTS PLUS PLACEHOLDERS*/}
       </Table>
@@ -172,7 +185,12 @@ const RatingRow = ({ rating }: RatingRowProps) => {
 
   return (
     <Table.Tr>
-      <Table.Td>{card.data?.name ?? '...'}</Table.Td>
+      <Table.Td>
+        <Group wrap="nowrap">
+          <TableCard imageUri={card.data?.image_uri} />
+          {card.data?.name ?? '...'}
+        </Group>
+      </Table.Td>
       <Table.Td>
         <PointsNumberFormatter points={rating.global_points} suffix=" pts" />
       </Table.Td>

@@ -3,11 +3,11 @@ import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 
-import { LoadingImage } from '../../components/LoadingImage'
 import { PointsNumberFormatter } from '../../components/PointsNumberFormatter'
 import type { CardWithGlobalPoints } from '../../types/bindings/CardWithGlobalPoints'
 import type { Deck } from '../../types/bindings/Deck'
 import type { DeckMaindeckEntry } from '../../types/bindings/DeckMaindeckEntry'
+import { TableCard } from '../TableCard'
 
 export type DeckTableProps = {
   deck: Deck
@@ -104,7 +104,7 @@ export const DeckTable = ({ deck }: DeckTableProps) => {
                 }}
               >
                 <Group wrap="nowrap">
-                  <LoadingImage src={entry.card.image_uri} w={32} />
+                  <TableCard imageUri={entry.card.image_uri} />
                   {entry.ty === 'commander' && '👑 '}
                   {entry.card.name}
                 </Group>

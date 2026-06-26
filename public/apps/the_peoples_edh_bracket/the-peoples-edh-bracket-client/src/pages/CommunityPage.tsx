@@ -1,4 +1,4 @@
-import { Autocomplete, Box, Button, Group, Select, Stack, Table } from '@mantine/core'
+import { Autocomplete, Box, Button, Group, Select, Skeleton, Stack, Table } from '@mantine/core'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
@@ -104,31 +104,42 @@ export const CommunityPage = () => {
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          <Table.Tr h={first ?? 0} />
-          {virtualizer.getVirtualItems().map(item => {
-            const person = persons[item.index]!
-
-            return (
-              <Table.Tr key={person.uuid}>
-                <Table.Td>
-                  <Box w="fit-content">
-                    <ViewablePersonProfileLine loading={false} person={person} />
-                  </Box>
-                </Table.Td>
-                <Table.Td>{person.followers}</Table.Td>
-                <Table.Td>{person.cards_rated}</Table.Td>
-                <Table.Td>{person.likes}</Table.Td>
-                <Table.Td>{person.dislikes}</Table.Td>
-                <Table.Td ta="right">
-                  <Button component={Link} to={{ pathname: `/community/${person.uuid}` }}>
-                    View
-                  </Button>
+          {usedGetPersons.isLoading ? (
+            Array.from({ length: PAGE_SIZE }).map((_, index) => (
+              <Table.Tr key={index}>
+                <Table.Td colSpan={6}>
+                  <Skeleton h={38} />
                 </Table.Td>
               </Table.Tr>
-            )
-          })}
-          <Table.Tr h={end ?? 0} />
-          {/*TODO GHOSTS*/}
+            ))
+          ) : (
+            <>
+              <Table.Tr h={first ?? 0} />
+              {virtualizer.getVirtualItems().map(item => {
+                const person = persons[item.index]!
+
+                return (
+                  <Table.Tr key={person.uuid}>
+                    <Table.Td>
+                      <Box w="fit-content">
+                        <ViewablePersonProfileLine loading={false} person={person} />
+                      </Box>
+                    </Table.Td>
+                    <Table.Td>{person.followers}</Table.Td>
+                    <Table.Td>{person.cards_rated}</Table.Td>
+                    <Table.Td>{person.likes}</Table.Td>
+                    <Table.Td>{person.dislikes}</Table.Td>
+                    <Table.Td ta="right">
+                      <Button component={Link} to={{ pathname: `/community/${person.uuid}` }}>
+                        View
+                      </Button>
+                    </Table.Td>
+                  </Table.Tr>
+                )
+              })}
+              <Table.Tr h={end ?? 0} />
+            </>
+          )}
         </Table.Tbody>
       </Table>
       {showEmptyMessage && (

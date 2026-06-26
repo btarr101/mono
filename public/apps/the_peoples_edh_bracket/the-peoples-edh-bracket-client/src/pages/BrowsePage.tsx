@@ -1,4 +1,4 @@
-import { Autocomplete, Box, Flex, Group, Select, Stack } from '@mantine/core'
+import { Autocomplete, Box, Group, Select, Stack } from '@mantine/core'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
@@ -70,6 +70,7 @@ export const BrowsePage = () => {
     },
     [],
   )
+  // -----------------------------------------------------------------------
 
   const columnCount = Math.max(
     1,
@@ -77,7 +78,6 @@ export const BrowsePage = () => {
   )
   const rowCount = Math.ceil(cards.length / columnCount)
   const totalGridWidth = columnCount * (CARD_BUTTON_DIMENSIONS.w + CARD_GAP)
-  // -----------------------------------------------------------------------
 
   const virtualizer = useWindowVirtualizer({
     count: rowCount,
