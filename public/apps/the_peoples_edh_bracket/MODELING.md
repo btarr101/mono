@@ -9,6 +9,8 @@ erDiagram
 	person {
 		uuid uuid PK
 		text username
+		created_at timestamp
+		updated_at timestamp
 	}
 
 	card {

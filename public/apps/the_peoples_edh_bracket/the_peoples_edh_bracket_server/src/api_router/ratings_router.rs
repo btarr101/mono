@@ -313,7 +313,7 @@ async fn get_rating(
 
 #[derive(ts_rs::TS)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
-#[derive(Deserialize, Validate)]
+#[derive(Deserialize)]
 struct PutRatingReviewBody {
     like: Option<bool>,
 }

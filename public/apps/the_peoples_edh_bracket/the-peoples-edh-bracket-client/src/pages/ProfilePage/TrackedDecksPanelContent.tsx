@@ -2,6 +2,7 @@ import { Autocomplete, Button, Group, Select, Skeleton, Stack, Table, Text } fro
 import { FilesIcon, MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { GlobeIcon } from '@phosphor-icons/react/dist/ssr'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
+import { uniq } from 'lodash-es'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useLayoutEffect } from 'react'
 import { Link } from 'react-router'
@@ -79,7 +80,7 @@ export const TrackedDecksPanelContent = ({ personUUID }: TrackedDecksPanelConten
           data={
             isAutocompleteLoading
               ? [{ value: '...', disabled: true }]
-              : usedSearchTrackedDecks.data?.pages.flat().map(({ name }) => name)
+              : uniq(usedSearchTrackedDecks.data?.pages.flat().map(({ name }) => name))
           }
           placeholder="Search for a tracked deck..."
           rightSection={<MagnifyingGlassIcon />}

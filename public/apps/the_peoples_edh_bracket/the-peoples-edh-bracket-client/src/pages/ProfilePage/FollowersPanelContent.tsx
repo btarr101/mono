@@ -5,28 +5,35 @@ import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useLayoutEffect } from 'react'
 import { Link } from 'react-router'
 
-import { EmptyPlaceholder } from '../components/EmptyPlaceholder'
-import { ViewablePersonProfileLine } from '../components/ViewablePersonProfileLine'
-import { useReactVirtualScrollRestoration } from '../hooks/react-virtual-ext'
-import { useDebouncedSearchPersons, useGetPersons } from '../hooks/usePersons'
-import type { GetPersonsParamsSort } from '../types/bindings/GetPersonsParamsSort'
+import { EmptyPlaceholder } from '../../components/EmptyPlaceholder'
+import { ViewablePersonProfileLine } from '../../components/ViewablePersonProfileLine'
+import { useReactVirtualScrollRestoration } from '../../hooks/react-virtual-ext'
+import { useDebouncedSearchPersons, useGetPersons } from '../../hooks/usePersons'
+import type { GetPersonsParamsSort } from '../../types/bindings/GetPersonsParamsSort'
+import { formatTimeStamp } from '../../util'
 
 const PAGE_SIZE = 50
 
-export const CommunityPage = () => {
+export type FollowersPanelContentProps = {
+  personUUID: string
+}
+
+export const FollowersPanelContent = ({ personUUID }: FollowersPanelContentProps) => {
   'use no memo'
 
-  const [q, setQ] = useQueryState('q')
+  const [q, setQ] = useQueryState('fwrs-q')
   const [sort, setSort] = useQueryState(
-    'sort',
+    'fwrs-sort',
     parseAsStringLiteral<GetPersonsParamsSort>(['likes', 'followers', 'cards_rated']),
   )
 
-  const [usedSearchPersons, { debouncedQ, isDebouncing }] = useDebouncedSearchPersons(q || null)
+  const [usedSearchPersons, { debouncedQ, isDebouncing }] = useDebouncedSearchPersons(q || null, {
+    personFollowing: personUUID,
+  })
   const isAutocompleteLoading = isDebouncing || usedSearchPersons.isFetching
 
   const usedGetPersons = useGetPersons({
-    person_following: null,
+    person_following: personUUID,
     person_followee: null,
     q: debouncedQ,
     sort,
@@ -88,20 +95,14 @@ export const CommunityPage = () => {
       </Group>
       <Table stickyHeader>
         <colgroup>
-          <col style={{ width: '50%' }} />
-          <col style={{ width: '11%' }} />
-          <col style={{ width: '11%' }} />
-          <col style={{ width: '11%' }} />
-          <col style={{ width: '11%' }} />
-          <col style={{ width: '6%' }} />
+          <col style={{ width: '70%' }} />
+          <col style={{ width: '15%' }} />
+          <col style={{ width: '15%' }} />
         </colgroup>
         <Table.Thead>
           <Table.Tr>
-            <Table.Th>Person</Table.Th>
-            <Table.Th>👥 Followers</Table.Th>
-            <Table.Th>📝 Cards Rated</Table.Th>
-            <Table.Th>👍 Likes</Table.Th>
-            <Table.Th>👎 Dislikes</Table.Th>
+            <Table.Th>Follower</Table.Th>
+            <Table.Th>⏲️ Started Following</Table.Th>
             <Table.Th />
           </Table.Tr>
         </Table.Thead>
@@ -127,10 +128,9 @@ export const CommunityPage = () => {
                         <ViewablePersonProfileLine loading={false} person={person} />
                       </Box>
                     </Table.Td>
-                    <Table.Td>{person.followers}</Table.Td>
-                    <Table.Td>{person.cards_rated}</Table.Td>
-                    <Table.Td>{person.likes}</Table.Td>
-                    <Table.Td>{person.dislikes}</Table.Td>
+                    <Table.Td>
+                      {person.started_following && formatTimeStamp(person.started_following)}
+                    </Table.Td>
                     <Table.Td ta="right">
                       <Button component={Link} to={{ pathname: `/community/${person.uuid}` }}>
                         View
@@ -144,11 +144,12 @@ export const CommunityPage = () => {
           )}
         </Table.Tbody>
       </Table>
-      {showEmptyMessage && (
-        <EmptyPlaceholder subText="Try refining your search." title="🤔 No people found" />
-      )}
+      {showEmptyMessage && <EmptyPlaceholder subText="..." title="No followers?" />}
       {showEndMessage && (
-        <EmptyPlaceholder subText="No more people found." title="👋 That's all folks!" />
+        <EmptyPlaceholder
+          subText='Get it? "followed".'
+          title="You *followed* through with this page."
+        />
       )}
     </Stack>
   )

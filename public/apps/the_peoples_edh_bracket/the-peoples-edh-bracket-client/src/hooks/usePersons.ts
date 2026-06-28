@@ -7,32 +7,48 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
-import { debugPostPerson, getMe, getPerson, getPersons } from '../api/persons'
+import {
+  debugPostPerson,
+  getMe,
+  getPerson,
+  getPersons,
+  postFollowPerson,
+  postUnfollowPerson,
+} from '../api/persons'
 import type { GetPersonsParams } from '../types/bindings/GetPersonsParams'
 import { useAuthState } from './useAuth'
 
-export const useGetPersons = ({ q, sort, page_size }: Omit<GetPersonsParams, 'page'>) =>
+export const useGetPersons = (params: Omit<GetPersonsParams, 'page'>) =>
   useInfiniteQuery({
-    queryKey: ['persons', q, sort, page_size],
+    queryKey: ['persons', params],
     queryFn: ({ pageParam: page }) =>
       getPersons({
-        q,
-        sort,
+        ...params,
         page: page,
-        page_size,
       }),
     initialPageParam: 1,
     getNextPageParam: (lastPage, pages) =>
-      lastPage.length < page_size ? undefined : pages.length + 1,
+      lastPage.length < params.page_size ? undefined : pages.length + 1,
     placeholderData: keepPreviousData,
   })
 
-export const useSearchPersons = (q: string | null) =>
-  useGetPersons({ q, sort: null, page_size: 10 })
+export type UseSearchPersonsOptions = {
+  personFollowing?: string
+  personFollowee?: string
+}
 
-export const useDebouncedSearchPersons = (q: string | null) => {
+export const useSearchPersons = (q: string | null, options?: UseSearchPersonsOptions) =>
+  useGetPersons({
+    person_following: options?.personFollowing ?? null,
+    person_followee: options?.personFollowee ?? null,
+    q,
+    sort: null,
+    page_size: 10,
+  })
+
+export const useDebouncedSearchPersons = (q: string | null, options?: UseSearchPersonsOptions) => {
   const [debouncedQ, debouncer] = useDebouncedValue(q, { wait: 200 }, ({ isPending }) => isPending)
-  const usedSearchCards = useSearchPersons(debouncedQ)
+  const usedSearchCards = useSearchPersons(debouncedQ, options)
 
   return [
     usedSearchCards,
@@ -56,7 +72,7 @@ export const useDebugPostPerson = () => {
 
 export const usePerson = (uuid: string | null) =>
   useQuery({
-    queryKey: ['person', uuid],
+    queryKey: ['persons', uuid],
     queryFn: async () => (uuid ? await getPerson(uuid) : null),
     staleTime: Infinity,
   })
@@ -64,11 +80,34 @@ export const usePerson = (uuid: string | null) =>
 export const useMe = () => {
   const [authState] = useAuthState()
   const useMe = useQuery({
-    queryKey: ['person', 'me', authState],
+    queryKey: ['persons', 'me', authState],
     queryFn: getMe,
     staleTime: Infinity,
     enabled: authState.ty !== null,
+    placeholderData: keepPreviousData,
   })
 
   return useMe
+}
+
+export const useFollowPerson = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: postFollowPerson,
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ['persons'],
+      }),
+  })
+}
+
+export const useUnfollowPerson = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: postUnfollowPerson,
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ['persons'],
+      }),
+  })
 }

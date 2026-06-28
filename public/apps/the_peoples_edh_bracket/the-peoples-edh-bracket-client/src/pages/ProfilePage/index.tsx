@@ -4,8 +4,11 @@ import { useLoaderData } from 'react-router'
 
 import { BackAnchor } from '../../components/BackAnchor'
 import { Stat } from '../../components/Stat'
+import { useFollowPerson } from '../../hooks/usePersons'
 import type { Person } from '../../types/bindings/Person'
+import type { PersonEnriched } from '../../types/bindings/PersonEnriched'
 import { formatTimeStamp } from '../../util'
+import { FollowersPanelContent } from './FollowersPanelContent'
 import { RatingsPanelContent } from './RatingsPanelContent'
 import { TrackedDecksPanelContent } from './TrackedDecksPanelContent'
 
@@ -52,38 +55,50 @@ export const ProfilePage = () => {
         <Tabs.Panel value="decks">
           <TrackedDecksPanelContent personUUID={person.uuid} />
         </Tabs.Panel>
+        <Tabs.Panel value="followers">
+          <FollowersPanelContent personUUID={person.uuid} />
+        </Tabs.Panel>
       </Tabs>
     </Stack>
   )
 }
 
 type HeadSectionProps = {
-  person: Person
+  person: PersonEnriched
 }
 
-export const HeadSection = ({ person }: HeadSectionProps) => (
-  <Stack gap="xl">
-    <Group align="stretch">
-      <Avatar imageProps={{ referrerPolicy: 'no-referrer' }} size="96" src={person.picture_url} />
-      <Stack gap="xs" h="100%">
-        <Group>
-          <Title size="2rem" textWrap="nowrap">
-            {person.username}
-          </Title>
-          {/*for later 🔕*/}
-          <Button>🔔 Follow</Button>
-        </Group>
-        <Text c="dimmed" size="xl">
-          Joined {formatTimeStamp(person.created_at)}
-        </Text>
-      </Stack>
-    </Group>
-    <Group justify="space-between" px="xl" wrap="nowrap">
-      <Stat label="cards rated" value={0} />
-      <Stat label="points allocated" suffix=" ppts" value={0} />
-      <Stat label="tracked decks" value={0} />
-      <Stat label="followers" value={0} />
-      <Stat label="following" value={0} />
-    </Group>
-  </Stack>
-)
+export const HeadSection = ({ person }: HeadSectionProps) => {
+  const { mutate: follow } = useFollowPerson()
+
+  return (
+    <Stack gap="xl">
+      <Group align="stretch">
+        <Avatar imageProps={{ referrerPolicy: 'no-referrer' }} size="96" src={person.picture_url} />
+        <Stack gap="xs" h="100%">
+          <Group>
+            <Title size="2rem" textWrap="nowrap">
+              {person.username}
+            </Title>
+            {person.am_following && (
+              <Text c="dimmed" size="xl">
+                Following
+              </Text>
+            )}
+            {/*for later 🔕*/}
+            <Button>🔔 Follow</Button>
+          </Group>
+          <Text c="dimmed" size="xl">
+            Joined {formatTimeStamp(person.created_at)}
+          </Text>
+        </Stack>
+      </Group>
+      <Group justify="space-between" px="xl" wrap="nowrap">
+        <Stat label="cards rated" value={0} />
+        <Stat label="points allocated" suffix=" ppts" value={0} />
+        <Stat label="tracked decks" value={0} />
+        <Stat label="followers" value={0} />
+        <Stat label="following" value={0} />
+      </Group>
+    </Stack>
+  )
+}
