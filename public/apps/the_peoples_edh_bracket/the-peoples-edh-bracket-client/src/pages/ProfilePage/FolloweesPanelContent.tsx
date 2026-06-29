@@ -14,27 +14,27 @@ import { formatTimeStamp } from '../../util'
 
 const PAGE_SIZE = 50
 
-export type FollowersPanelContentProps = {
+export type FolloweesPanelContentProps = {
   personUUID: string
 }
 
-export const FollowersPanelContent = ({ personUUID }: FollowersPanelContentProps) => {
+export const FolloweesPanelContent = ({ personUUID }: FolloweesPanelContentProps) => {
   'use no memo'
 
-  const [q, setQ] = useQueryState('fwrs-q')
+  const [q, setQ] = useQueryState('fwees-q')
   const [sort, setSort] = useQueryState(
-    'fwrs-sort',
+    'fwees-sort',
     parseAsStringLiteral<GetPersonsParamsSort>(['likes', 'followers', 'cards_rated']),
   )
 
   const [usedSearchPersons, { debouncedQ, isDebouncing }] = useDebouncedSearchPersons(q || null, {
-    personFollowing: personUUID,
+    personFollowee: personUUID,
   })
   const isAutocompleteLoading = isDebouncing || usedSearchPersons.isFetching
 
   const usedGetPersons = useGetPersons({
-    person_following: null,
-    person_followee: personUUID,
+    person_following: personUUID,
+    person_followee: null,
     q: debouncedQ,
     sort,
     page_size: PAGE_SIZE,
@@ -101,8 +101,8 @@ export const FollowersPanelContent = ({ personUUID }: FollowersPanelContentProps
         </colgroup>
         <Table.Thead>
           <Table.Tr>
-            <Table.Th>Follower</Table.Th>
-            <Table.Th>⏲️ Started Following</Table.Th>
+            <Table.Th>Followee</Table.Th>
+            <Table.Th>⏲️ Followed On</Table.Th>
             <Table.Th />
           </Table.Tr>
         </Table.Thead>
@@ -128,9 +128,7 @@ export const FollowersPanelContent = ({ personUUID }: FollowersPanelContentProps
                         <ViewablePersonProfileLine loading={false} person={person} />
                       </Box>
                     </Table.Td>
-                    <Table.Td>
-                      {person.started_following && formatTimeStamp(person.started_following)}
-                    </Table.Td>
+                    <Table.Td>{person.followed_on && formatTimeStamp(person.followed_on)}</Table.Td>
                     <Table.Td ta="right">
                       <Button component={Link} to={{ pathname: `/community/${person.uuid}` }}>
                         View
@@ -144,11 +142,16 @@ export const FollowersPanelContent = ({ personUUID }: FollowersPanelContentProps
           )}
         </Table.Tbody>
       </Table>
-      {showEmptyMessage && <EmptyPlaceholder subText="..." title="No followers?" />}
+      {showEmptyMessage && (
+        <EmptyPlaceholder
+          subText="They carve their own path."
+          title="This person follows no one."
+        />
+      )}
       {showEndMessage && (
         <EmptyPlaceholder
-          subText='Get it? "followed".'
-          title="You *followed* through with this page."
+          subText="You looked at all the followees."
+          title="Follo-weeee! You did it!"
         />
       )}
     </Stack>

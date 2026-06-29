@@ -74,15 +74,25 @@ struct PersonEnriched {
     #[serde(flatten)]
     person: Person,
     /// How many followers this person has
+    #[ts(type = "number")]
     followers: i64,
     /// How many people this person is following
+    #[ts(type = "number")]
     following: i64,
     /// How many likes across all ratings this person has received
+    #[ts(type = "number")]
     likes: i64,
     /// How many dislikes across all ratings this person has received
+    #[ts(type = "number")]
     dislikes: i64,
     /// How many cards this person has rated
+    #[ts(type = "number")]
     cards_rated: i64,
+    /// How many decks this person is tracking
+    #[ts(type = "number")]
+    tracked_decks: i64,
+    /// How many total personal points this person has allocated to their ratings
+    personal_points_allocated: BigDecimal,
     /// If authenticated, if the current user is following this person
     am_following: Option<bool>,
     /// If the `person_following` was passed, this is the date this person has started following that person
@@ -116,6 +126,8 @@ async fn get_persons(
             COALESCE(pldc.likes, 0) AS \"likes!\",
             COALESCE(pldc.dislikes, 0) AS \"dislikes!\",
             COALESCE(cr.cards_rated, 0) AS \"cards_rated!\",
+            COALESCE(td.tracked_decks, 0) AS \"tracked_decks!\",
+            COALESCE(prc.total_personal_points, 0) AS \"personal_points_allocated!\",
             COALESCE(fc.followers, 0) AS \"followers!\",
             COALESCE(fg.following, 0) AS \"following!\",
             CASE
@@ -139,6 +151,12 @@ async fn get_persons(
             FROM card_rating
             GROUP BY rater_person_uuid
         ) cr ON person.uuid = cr.rater_person_uuid
+        LEFT JOIN (
+            SELECT tracker_person_uuid AS person_uuid, COUNT(*) AS tracked_decks
+            FROM tracked_deck
+            GROUP BY tracker_person_uuid
+        ) td ON person.uuid = td.person_uuid
+        LEFT JOIN person_ratings_cache prc ON person.uuid = prc.person_uuid
         LEFT JOIN (
             SELECT followed_person_uuid AS person_uuid, COUNT(*) AS followers
             FROM follower
@@ -192,6 +210,8 @@ async fn get_persons(
         likes: row.likes,
         dislikes: row.dislikes,
         cards_rated: row.cards_rated,
+        tracked_decks: row.tracked_decks,
+        personal_points_allocated: row.personal_points_allocated,
         followed_on: row.followed_on,
         started_following: row.started_following,
     })
@@ -206,14 +226,84 @@ async fn post_debug_person(State(pg_pool): State<PgPool>) -> ApiResult<(StatusCo
     Ok((StatusCode::CREATED, Json(person)))
 }
 
-// TODO: This needs to return a PersonEnriched
-async fn get_person(State(pg_pool): State<PgPool>, Path(uuid): Path<uuid::Uuid>) -> ApiResult<Json<Person>> {
-    let person = sqlx::query_as!(Person, "SELECT * FROM person WHERE uuid = $1 LIMIT 1", uuid)
-        .fetch_optional(&pg_pool)
-        .await?
-        .context_not_found("person could not be found")?;
+async fn get_person(
+    State(pg_pool): State<PgPool>,
+    OptionalAuth { person_uuid }: OptionalAuth,
+    Path(uuid): Path<uuid::Uuid>,
+) -> ApiResult<Json<PersonEnriched>> {
+    let row = sqlx::query!(
+        "SELECT
+            person.*,
+            COALESCE(pldc.likes, 0) AS \"likes!\",
+            COALESCE(pldc.dislikes, 0) AS \"dislikes!\",
+            COALESCE(cr.cards_rated, 0) AS \"cards_rated!\",
+            COALESCE(td.tracked_decks, 0) AS \"tracked_decks!\",
+            COALESCE(prc.total_personal_points, 0) AS \"personal_points_allocated!\",
+            COALESCE(fc.followers, 0) AS \"followers!\",
+            COALESCE(fg.following, 0) AS \"following!\",
+            CASE
+                WHEN $2::uuid IS NULL THEN NULL
+                ELSE EXISTS (
+                    SELECT 1
+                    FROM follower f
+                    WHERE
+                        f.follower_person_uuid = $2
+                        AND f.followed_person_uuid = person.uuid
+                )
+            END AS am_following
+        FROM person
+        LEFT JOIN person_likes_dislikes_cache pldc ON person.uuid = pldc.person_uuid
+        LEFT JOIN (
+            SELECT
+                rater_person_uuid,
+                COUNT(*) AS cards_rated
+            FROM card_rating
+            GROUP BY rater_person_uuid
+        ) cr ON person.uuid = cr.rater_person_uuid
+        LEFT JOIN (
+            SELECT tracker_person_uuid AS person_uuid, COUNT(*) AS tracked_decks
+            FROM tracked_deck
+            GROUP BY tracker_person_uuid
+        ) td ON person.uuid = td.person_uuid
+        LEFT JOIN person_ratings_cache prc ON person.uuid = prc.person_uuid
+        LEFT JOIN (
+            SELECT followed_person_uuid AS person_uuid, COUNT(*) AS followers
+            FROM follower
+            GROUP BY followed_person_uuid
+        ) fc ON person.uuid = fc.person_uuid
+        LEFT JOIN (
+            SELECT follower_person_uuid AS person_uuid, COUNT(*) AS following
+            FROM follower
+            GROUP BY follower_person_uuid
+        ) fg ON person.uuid = fg.person_uuid
+        WHERE person.uuid = $1
+        LIMIT 1",
+        uuid,
+        person_uuid
+    )
+    .fetch_optional(&pg_pool)
+    .await?
+    .context_not_found("person could not be found")?;
 
-    Ok(Json(person))
+    Ok(Json(PersonEnriched {
+        person: Person {
+            uuid: row.uuid,
+            username: row.username,
+            picture_url: row.picture_url,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        },
+        followers: row.followers,
+        following: row.following,
+        likes: row.likes,
+        dislikes: row.dislikes,
+        cards_rated: row.cards_rated,
+        tracked_decks: row.tracked_decks,
+        personal_points_allocated: row.personal_points_allocated,
+        am_following: row.am_following,
+        followed_on: None,
+        started_following: None,
+    }))
 }
 
 #[derive(ts_rs::TS, Deserialize, Serialize)]
@@ -251,26 +341,17 @@ async fn get_me(State(pg_pool): State<PgPool>, Auth { person_uuid }: Auth) -> Ap
     }))
 }
 
-/// Body for following or unfollowing a person
-#[derive(ts_rs::TS)]
-#[ts(export, export_to = TS_RS_EXPORT_TO)]
-#[derive(Deserialize)]
-struct PostFollowPersonBody {
-    /// Who needs to be followed or unfollowed
-    followed_person_uuid: uuid::Uuid,
-}
-
 async fn post_follow_person(
     State(pg_pool): State<PgPool>,
     Auth { person_uuid }: Auth,
-    Json(PostFollowPersonBody { followed_person_uuid }): Json<PostFollowPersonBody>,
+    Path(uuid): Path<uuid::Uuid>,
 ) -> ApiResult<()> {
     sqlx::query!(
         "INSERT INTO follower (follower_person_uuid, followed_person_uuid)
         VALUES ($1, $2)
         ON CONFLICT DO NOTHING",
         person_uuid,
-        followed_person_uuid
+        uuid
     )
     .execute(&pg_pool)
     .await?;
@@ -281,13 +362,13 @@ async fn post_follow_person(
 async fn post_unfollow_person(
     State(pg_pool): State<PgPool>,
     Auth { person_uuid }: Auth,
-    Json(PostFollowPersonBody { followed_person_uuid }): Json<PostFollowPersonBody>,
+    Path(uuid): Path<uuid::Uuid>,
 ) -> ApiResult<()> {
     sqlx::query!(
         "DELETE FROM follower
         WHERE follower_person_uuid = $1 AND followed_person_uuid = $2",
         person_uuid,
-        followed_person_uuid
+        uuid
     )
     .execute(&pg_pool)
     .await?;

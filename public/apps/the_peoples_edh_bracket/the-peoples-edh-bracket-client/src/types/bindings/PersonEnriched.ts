@@ -7,23 +7,31 @@ export type PersonEnriched = {
 /**
  * How many followers this person has
  */
-followers: bigint, 
+followers: number, 
 /**
  * How many people this person is following
  */
-following: bigint, 
+following: number, 
 /**
  * How many likes across all ratings this person has received
  */
-likes: bigint, 
+likes: number, 
 /**
  * How many dislikes across all ratings this person has received
  */
-dislikes: bigint, 
+dislikes: number, 
 /**
  * How many cards this person has rated
  */
-cards_rated: bigint, 
+cards_rated: number, 
+/**
+ * How many decks this person is tracking
+ */
+tracked_decks: number, 
+/**
+ * How many total personal points this person has allocated to their ratings
+ */
+personal_points_allocated: string, 
 /**
  * If authenticated, if the current user is following this person
  */

@@ -28,7 +28,7 @@ export const getMe = () => {
 export const getPerson = (uuid: string) => {
   const uri = new URL(`${API_BASE_URL}/persons/${uuid}`)
 
-  return api.get(uri).json<Person>()
+  return api.get(uri).json<PersonEnriched>()
 }
 
 export const postFollowPerson = (uuid: string) => {

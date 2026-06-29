@@ -167,7 +167,6 @@ export const RatingsPanelContent = ({ personUUID }: RatingsPanelContentProps) =>
             </>
           )}
         </Table.Tbody>
-        {/*TODO GHOSTS PLUS PLACEHOLDERS*/}
       </Table>
       {showEmptyMessage && (
         <EmptyPlaceholder subText="Try refining your search." title="🤔 No people found" />
