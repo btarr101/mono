@@ -5,7 +5,7 @@ import { useLoaderData, useRevalidator } from 'react-router'
 import { BackAnchor } from '../../components/BackAnchor'
 import { PointsNumberFormatter } from '../../components/PointsNumberFormatter'
 import { Stat } from '../../components/Stat'
-import { useFollowPerson, useUnfollowPerson } from '../../hooks/usePersons'
+import { useFollowPerson, useMe, useUnfollowPerson } from '../../hooks/usePersons'
 import type { PersonEnriched } from '../../types/bindings/PersonEnriched'
 import { formatTimeStamp } from '../../util'
 import { FolloweesPanelContent } from './FolloweesPanelContent'
@@ -72,6 +72,8 @@ type HeadSectionProps = {
 }
 
 export const HeadSection = ({ person }: HeadSectionProps) => {
+  const me = useMe()
+
   const { revalidate } = useRevalidator()
   const { mutateAsync: follow } = useFollowPerson()
   const { mutateAsync: unfollow } = useUnfollowPerson()
@@ -85,7 +87,8 @@ export const HeadSection = ({ person }: HeadSectionProps) => {
             <Title size="2rem" textWrap="nowrap">
               {person.username}
             </Title>
-            {person.am_following !== null &&
+            {me.data?.uuid !== person.uuid &&
+              person.am_following !== null &&
               (person.am_following ? (
                 <Button onClick={() => unfollow(person.uuid).then(revalidate)}>🔕 Unfollow</Button>
               ) : (

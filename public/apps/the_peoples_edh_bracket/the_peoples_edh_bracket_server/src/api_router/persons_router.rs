@@ -140,8 +140,8 @@ async fn get_persons(
                             AND followed_person_uuid = person.uuid
                 )
             END AS am_following,
-            fr.created_at AS \"followed_on?\",
-            fb.created_at AS \"started_following?\"
+            fr.created_at AS \"started_following?\",
+            fb.created_at AS \"followed_on?\"
         FROM person
         LEFT JOIN person_likes_dislikes_cache pldc ON person.uuid = pldc.person_uuid
         LEFT JOIN (

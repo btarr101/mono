@@ -16,6 +16,7 @@ import { getHomeMetrics } from './api/home'
 import { getPerson } from './api/persons'
 import { useAuthState } from './hooks/useAuth'
 import { Layout } from './Layout'
+import { AboutPage } from './pages/AboutPage'
 import { AnalyzePage } from './pages/AnalyzePage'
 import { BrowsePage } from './pages/BrowsePage'
 import { CardPage } from './pages/CardPage'
@@ -105,7 +106,7 @@ const router = createBrowserRouter([
       },
       {
         path: '/about',
-        Component: HomePage,
+        Component: AboutPage,
       },
     ],
   },

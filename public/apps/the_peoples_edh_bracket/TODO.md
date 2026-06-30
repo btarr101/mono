@@ -9,8 +9,8 @@
   - ~TODO: Finish the page for viewing an already ssaved trackked deck (maybe ask ai about adding an index)~
   - TODO: HANDLE ALTERNATE NAMES (FUCKING BALAMB TOWER MY BALLZ AHHH)
 - Community Page
-  - SCROLL RESTO SCROLLRESTO SCROLL RESTO AHHHHH FIX THE TINY RESTO BUG WHEN GOING BACK FROM CARD PAGE
-- About Page
+  - ~SCROLL RESTO SCROLLRESTO SCROLL RESTO AHHHHH FIX THE TINY RESTO BUG WHEN GOING BACK FROM CARD PAGE~
+- ~About Page~ For now...
 - Figure out deployment
 
 DONE!

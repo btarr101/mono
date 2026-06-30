@@ -84,7 +84,6 @@ export const useMe = () => {
     queryFn: getMe,
     staleTime: Infinity,
     enabled: authState.ty !== null,
-    placeholderData: keepPreviousData,
   })
 
   return useMe

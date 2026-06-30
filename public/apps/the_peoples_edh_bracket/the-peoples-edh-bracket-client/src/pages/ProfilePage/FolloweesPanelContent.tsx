@@ -33,8 +33,8 @@ export const FolloweesPanelContent = ({ personUUID }: FolloweesPanelContentProps
   const isAutocompleteLoading = isDebouncing || usedSearchPersons.isFetching
 
   const usedGetPersons = useGetPersons({
-    person_following: personUUID,
-    person_followee: null,
+    person_following: null,
+    person_followee: personUUID,
     q: debouncedQ,
     sort,
     page_size: PAGE_SIZE,
