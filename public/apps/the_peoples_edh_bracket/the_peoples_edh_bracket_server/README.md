@@ -34,16 +34,41 @@ To stop and remove all containers:
 docker compose down
 ```
 
+### Environment
+
+Create a `.env` based off of [`.env.example`](./.env.example) (right next to it). The server loads these environment variables at runtime during developement - and more importantly - *at compile time during development*. This is because specifically, `DATABASE_URL` tells sqlx which database to inspect to validate the inline sql at compile time.
+
 ### Migrations
 
 Run from the project root (where the `migrations/` folder lives):
 
 ```bash
-sqlx migrate run --database-url postgres://admin:root@localhost:5432/db
+sqlx migrate run
 ```
+
+### Syncing cards to the server
+
+In order to get every magic card synced into the server, you must run the application with the `sync-cards` options.
+
+
+```bash
+cargo r sync-cards
+```
+
+This will query https://scryfall.com/ for every magic card from the bulk endpoint, and then seed those cards into your local server (there's a lot of Magic: The Gathering cards, so it takes a about 10 0 15 seconds).
 
 ### Running the Server
 
 ```bash
-cargo run -p the_peoples_edh_bracket_server
+cargo r server
 ```
+
+### (Optional) Seeding debug users
+
+To emulate an active community in your development environment, another utility script exists which is the `seed` option.
+
+```bash
+cargo r seed
+```
+
+This will seed the database with many debug users, and then simulate them rating a set of 10 cards.

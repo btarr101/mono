@@ -83,13 +83,17 @@ const DebugAuthSection = () => {
     <>
       <Box p={'md'}>
         <PersonProfileLine loading={me.isLoading} person={me.data}>
-          <Menu.Item onClick={() => debugPostPerson.mutate()}>Create new user</Menu.Item>
-          <Menu.Sub>
-            <Menu.Sub.Target>
-              <Menu.Sub.Item>Log into debug user</Menu.Sub.Item>
-            </Menu.Sub.Target>
-            <DebugUserDropdown />
-          </Menu.Sub>
+          {import.meta.env.DEV && (
+            <>
+              <Menu.Item onClick={() => debugPostPerson.mutate()}>Create new debug user</Menu.Item>
+              <Menu.Sub>
+                <Menu.Sub.Target>
+                  <Menu.Sub.Item>Log into debug user</Menu.Sub.Item>
+                </Menu.Sub.Target>
+                <DebugUserDropdown />
+              </Menu.Sub>
+            </>
+          )}
           {authState.ty === null && <Menu.Item onClick={open}>Log in</Menu.Item>}
           {authState.ty !== null && (
             <>

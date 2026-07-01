@@ -87,7 +87,8 @@ export const HeadSection = ({ person }: HeadSectionProps) => {
             <Title size="2rem" textWrap="nowrap">
               {person.username}
             </Title>
-            {me.data?.uuid !== person.uuid &&
+            {!me.isLoading &&
+              me.data?.uuid !== person.uuid &&
               person.am_following !== null &&
               (person.am_following ? (
                 <Button onClick={() => unfollow(person.uuid).then(revalidate)}>🔕 Unfollow</Button>

@@ -11,8 +11,10 @@ pub struct ScryfallList<T> {
 
 #[derive(Deserialize, Debug)]
 pub struct ScryfallCard {
-    pub oracle_id: uuid::Uuid,
+    pub oracle_id: Option<uuid::Uuid>,
     pub name: String,
+    pub flavor_name: Option<String>,
+    pub printed_name: Option<String>,
     pub image_uris: Option<ScryfallImageUris>,
     pub legalities: ScryfallLegalities,
     pub card_faces: Option<Vec<ScryfallCardFace>>,

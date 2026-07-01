@@ -58,7 +58,9 @@ export const Rating = ({ rating, pinned, onPin, onShare }: RatingProps) => {
           <Box pos={'relative'} w={0}>
             <Button.Group pos="absolute" right={0} style={{ transform: 'translate(10%, -50%)' }}>
               <Button
-                disabled={loggedInPersonUUID === null}
+                disabled={
+                  loggedInPersonUUID === null || loggedInPersonUUID === rating.rater_person_uuid
+                }
                 size="compact-md"
                 variant={personLiked ? 'light' : 'default'}
                 onClick={onLike}
@@ -66,7 +68,9 @@ export const Rating = ({ rating, pinned, onPin, onShare }: RatingProps) => {
                 {rating.reviews.likes} 👍
               </Button>
               <Button
-                disabled={loggedInPersonUUID === null}
+                disabled={
+                  loggedInPersonUUID === null || loggedInPersonUUID === rating.rater_person_uuid
+                }
                 size="compact-md"
                 variant={rating.reviews.person_review === false ? 'light' : 'default'}
                 onClick={onDislike}

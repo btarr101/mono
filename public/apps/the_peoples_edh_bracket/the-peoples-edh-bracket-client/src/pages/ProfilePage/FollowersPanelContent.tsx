@@ -1,4 +1,4 @@
-import { Autocomplete, Box, Button, Group, Select, Skeleton, Stack, Table } from '@mantine/core'
+import { Autocomplete, Box, Button, Group, Select, Stack, Table } from '@mantine/core'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
@@ -11,6 +11,7 @@ import { useReactVirtualScrollRestoration } from '../../hooks/react-virtual-ext'
 import { useDebouncedSearchPersons, useGetPersons } from '../../hooks/usePersons'
 import type { GetPersonsParamsSort } from '../../types/bindings/GetPersonsParamsSort'
 import { formatTimeStamp } from '../../util'
+import { TableRowLoader } from './TableRowLoader'
 
 const PAGE_SIZE = 50
 
@@ -108,13 +109,7 @@ export const FollowersPanelContent = ({ personUUID }: FollowersPanelContentProps
         </Table.Thead>
         <Table.Tbody>
           {usedGetPersons.isLoading ? (
-            Array.from({ length: PAGE_SIZE }).map((_, index) => (
-              <Table.Tr key={index}>
-                <Table.Td colSpan={6}>
-                  <Skeleton h={38} />
-                </Table.Td>
-              </Table.Tr>
-            ))
+            <TableRowLoader />
           ) : (
             <>
               <Table.Tr h={first ?? 0} />

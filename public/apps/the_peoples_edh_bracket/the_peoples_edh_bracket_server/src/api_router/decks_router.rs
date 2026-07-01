@@ -334,8 +334,8 @@ async fn find_cards_by_names(
     cards_names: impl IntoIterator<Item = impl AsRef<str>>,
     pg_pool: &PgPool,
 ) -> anyhow::Result<(Vec<CardWithGlobalPoints>, Vec<String>)> {
-    let input: Vec<String> = cards_names.into_iter().map(|n| n.as_ref().to_string()).collect();
-    let lowercased: Vec<String> = input.iter().map(|n| n.to_lowercase()).collect();
+    let input = cards_names.into_iter().map(|n| n.as_ref().to_string()).collect::<Vec<_>>();
+    let lowercased = input.iter().map(|n| n.to_lowercase()).collect::<Vec<_>>();
 
     let cards = sqlx::query!(
         "SELECT
@@ -343,24 +343,39 @@ async fn find_cards_by_names(
             c.name as \"name!\",
             c.image_uri,
             c.legality as \"legality!: CardLegality\",
-            COALESCE(crc.average_global_points, 0.0) as \"global_points!\"
+            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",
+            acn.alternate_name
         FROM card c
         LEFT JOIN card_ratings_cache crc ON c.oracle_id = crc.card_oracle_id
-        WHERE LOWER(c.name) = ANY($1)
+        LEFT JOIN LATERAL (
+            SELECT name AS alternate_name
+            FROM alternate_card_name acn
+            WHERE acn.card_oracle_id = c.oracle_id
+                AND LOWER(acn.name) = ANY($1)
+            LIMIT 1
+        ) acn ON TRUE
+        WHERE
+            LOWER(c.name) = ANY($1)
+            OR acn.alternate_name IS NOT NULL
         ",
         &lowercased
     )
     .fetch_all(pg_pool)
     .await?
     .into_iter()
-    .map(|row| CardWithGlobalPoints {
-        card: Card {
-            oracle_id: row.oracle_id,
-            name: row.name,
-            image_uri: row.image_uri,
-            legality: row.legality,
-        },
-        global_points: row.global_points,
+    .map(|row| {
+        (
+            row.alternate_name,
+            CardWithGlobalPoints {
+                card: Card {
+                    oracle_id: row.oracle_id,
+                    name: row.name,
+                    image_uri: row.image_uri,
+                    legality: row.legality,
+                },
+                global_points: row.global_points,
+            },
+        )
     })
     .collect::<Vec<_>>();
 
@@ -369,11 +384,18 @@ async fn find_cards_by_names(
         .filter(|name| {
             !cards
                 .iter()
-                .find(|card| card.card.name.eq_ignore_ascii_case(name.as_str()))
+                .find(|(alternate_name, card)| {
+                    card.card.name.eq_ignore_ascii_case(name.as_str())
+                        || alternate_name
+                            .as_deref()
+                            .map_or(false, |alternate_name| alternate_name.eq_ignore_ascii_case(name.as_str()))
+                })
                 .is_some()
         })
         .cloned()
         .collect::<Vec<_>>();
+
+    let cards = cards.into_iter().map(|(_, card)| card).collect::<Vec<_>>();
 
     Ok((cards, invalid_card_names))
 }
@@ -393,7 +415,6 @@ fn build_histogram(all_points: impl Iterator<Item = BigDecimal>) -> Vec<PointsHi
             .to_usize()
             .map(|bucket_index| bucket_index.clamp(0, buckets.len() - 1))
         {
-            dbg!((points.to_string(), bucket_index));
             buckets[bucket_index].count += 1;
         }
     }

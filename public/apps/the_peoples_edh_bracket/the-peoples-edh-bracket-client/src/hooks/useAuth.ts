@@ -1,5 +1,6 @@
 import { useLocalStorage } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
+import { useRevalidator } from 'react-router'
 import { match } from 'ts-pattern'
 
 export type AuthState =
@@ -18,6 +19,7 @@ export type LoginParams = Exclude<AuthState, { ty: null }>
 export const useLogin = () => {
   const queryClient = useQueryClient()
   const [, setAuthState] = useAuthState()
+  const { revalidate } = useRevalidator()
 
   return (params: LoginParams) => {
     const newAuthState = match(params)
@@ -29,12 +31,14 @@ export const useLogin = () => {
     setAuthState(newAuthState)
 
     queryClient.invalidateQueries()
+    revalidate()
   }
 }
 
 export const useLogout = () => {
   const queryClient = useQueryClient()
   const [authState, setAuthState] = useAuthState()
+  const { revalidate } = useRevalidator()
 
   return () => {
     if (authState.ty !== null) {
@@ -42,5 +46,6 @@ export const useLogout = () => {
     }
 
     queryClient.clear()
+    revalidate()
   }
 }
