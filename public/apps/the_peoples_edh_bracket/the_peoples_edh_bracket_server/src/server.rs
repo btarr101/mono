@@ -9,20 +9,20 @@ use tracing::info;
 
 use crate::{
     api_router,
-    config::Config,
     middleware::auth::{AuthMiddlewareParams, AuthMiddlewareState, auth_middleware},
     state::AppState,
 };
 
-pub async fn server(state: AppState, config: Config) -> anyhow::Result<()> {
+pub async fn server(state: AppState) -> anyhow::Result<()> {
     #[cfg(debug_assertions)]
     set_expose_errors(true);
 
+    let bind_address = state.config.bind_address.clone();
     let router = axum::Router::new()
         .nest("/api", api_router::get_router())
         .layer(from_fn_with_state(
             AuthMiddlewareState::new(AuthMiddlewareParams {
-                google_client_id: &config.google_oauth_client_id,
+                google_client_id: &state.config.google_oauth_client_id,
                 pg_pool: state.pg_pool.clone(),
             })
             .await?,
@@ -42,7 +42,7 @@ pub async fn server(state: AppState, config: Config) -> anyhow::Result<()> {
                 .on_response(DefaultOnResponse::new().level(tracing::Level::INFO)),
         );
 
-    info!("Starting server at http://{}", config.bind_address);
+    info!("Starting server at http://{}", bind_address);
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     axum::serve(listener, router).await?;
 

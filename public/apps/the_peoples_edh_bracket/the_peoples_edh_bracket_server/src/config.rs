@@ -2,7 +2,7 @@ use serde::Deserialize;
 use serde_inline_default::serde_inline_default;
 
 #[serde_inline_default]
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     #[serde_inline_default("127.0.0.1:3000".to_string())]
     pub bind_address: String,

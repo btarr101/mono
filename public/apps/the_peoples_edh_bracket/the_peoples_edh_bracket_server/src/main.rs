@@ -41,13 +41,16 @@ async fn main() -> anyhow::Result<()> {
     let config: Config = from_env()?;
 
     let _span = setup_tracing(&config.stage);
+
+    let pg_pool = setup_pg_pool(&config.database_url).await?;
     let state = AppState {
+        config,
         scryfall_client: ScryfallClient::new(),
-        pg_pool: setup_pg_pool(&config.database_url).await?,
+        pg_pool,
     };
 
     match args.mode {
-        RunMode::Server => server(state, config).await?,
+        RunMode::Server => server(state).await?,
         RunMode::SyncCards => sync_cards(state).await?,
         RunMode::Seed => seed(state).await?,
     }
