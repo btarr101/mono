@@ -4,5 +4,5 @@ import { api } from '.'
 export const getHomeMetrics = async () => {
   const uri = 'home/metrics'
 
-  return api.get(uri).json<HomeMetrics[]>()
+  return api.get(uri).json<HomeMetrics>()
 }
