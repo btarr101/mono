@@ -36,6 +36,13 @@
         name: the_peoples_edh_bracket
         enabled: true
 
+    - name: Schedule daily card sync for the_peoples_edh_bracket
+      ansible.builtin.cron:
+        name: the_peoples_edh_bracket sync cards
+        user: svc
+        special_time: daily
+        job: "[ -x /opt/the_peoples_edh_bracket/bin/the_peoples_edh_bracket ] && cd /opt/the_peoples_edh_bracket && /opt/the_peoples_edh_bracket/bin/the_peoples_edh_bracket sync-cards"
+
     - name: Check whether the_peoples_edh_bracket binary exists
       ansible.builtin.stat:
         path: /opt/the_peoples_edh_bracket/bin/the_peoples_edh_bracket
