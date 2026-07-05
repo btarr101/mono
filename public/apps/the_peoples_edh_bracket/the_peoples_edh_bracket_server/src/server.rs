@@ -4,7 +4,7 @@ use axum_anyhow::set_expose_errors;
 use reqwest::header::AUTHORIZATION;
 use tower_http::{
     cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer},
-    trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
+    trace::{DefaultOnRequest, DefaultOnResponse, TraceLayer},
 };
 use tracing::info;
 

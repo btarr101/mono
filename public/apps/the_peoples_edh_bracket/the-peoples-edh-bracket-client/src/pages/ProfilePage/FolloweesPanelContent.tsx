@@ -1,9 +1,8 @@
-import { Autocomplete, Box, Button, Group, Select, Stack, Table } from '@mantine/core'
+import { Autocomplete, Box, Group, Select, Stack, Table } from '@mantine/core'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useLayoutEffect } from 'react'
-import { Link } from 'react-router'
 
 import { EmptyPlaceholder } from '../../components/EmptyPlaceholder'
 import { ViewablePersonProfileLine } from '../../components/ViewablePersonProfileLine'
@@ -77,6 +76,7 @@ export const FolloweesPanelContent = ({ personUUID }: FolloweesPanelContentProps
           }
           filter={({ options }) => options}
           loading={usedGetPersons.isFetching}
+          miw={'fit-content'}
           placeholder="Search for a person..."
           rightSection={<MagnifyingGlassIcon />}
           style={{ flex: 1 }}
@@ -94,49 +94,46 @@ export const FolloweesPanelContent = ({ personUUID }: FolloweesPanelContentProps
           onChange={newSort => setSort(newSort)}
         />
       </Group>
-      <Table stickyHeader>
-        <colgroup>
-          <col style={{ width: '70%' }} />
-          <col style={{ width: '15%' }} />
-          <col style={{ width: '15%' }} />
-        </colgroup>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Followee</Table.Th>
-            <Table.Th>⏲️ Followed On</Table.Th>
-            <Table.Th />
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {usedGetPersons.isLoading ? (
-            <TableRowLoader />
-          ) : (
-            <>
-              <Table.Tr h={first ?? 0} />
-              {virtualizer.getVirtualItems().map(item => {
-                const person = persons[item.index]!
+      <Table.ScrollContainer minWidth={'100%'}>
+        <Table>
+          <colgroup>
+            <col style={{ width: '75%' }} />
+            <col style={{ width: '25%' }} />
+          </colgroup>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Followee</Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}>Followed On</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {usedGetPersons.isLoading ? (
+              <TableRowLoader />
+            ) : (
+              <>
+                <Table.Tr h={first ?? 0} />
+                {virtualizer.getVirtualItems().map(item => {
+                  const person = persons[item.index]!
 
-                return (
-                  <Table.Tr key={person.uuid}>
-                    <Table.Td>
-                      <Box w="fit-content">
-                        <ViewablePersonProfileLine loading={false} person={person} />
-                      </Box>
-                    </Table.Td>
-                    <Table.Td>{person.followed_on && formatTimeStamp(person.followed_on)}</Table.Td>
-                    <Table.Td ta="right">
-                      <Button component={Link} to={{ pathname: `/community/${person.uuid}` }}>
-                        View
-                      </Button>
-                    </Table.Td>
-                  </Table.Tr>
-                )
-              })}
-              <Table.Tr h={end ?? 0} />
-            </>
-          )}
-        </Table.Tbody>
-      </Table>
+                  return (
+                    <Table.Tr key={person.uuid}>
+                      <Table.Td>
+                        <Box w="fit-content">
+                          <ViewablePersonProfileLine loading={false} person={person} />
+                        </Box>
+                      </Table.Td>
+                      <Table.Td style={{ whiteSpace: 'nowrap' }}>
+                        {person.followed_on && formatTimeStamp(person.followed_on)}
+                      </Table.Td>
+                    </Table.Tr>
+                  )
+                })}
+                <Table.Tr h={end ?? 0} />
+              </>
+            )}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
       {showEmptyMessage && (
         <EmptyPlaceholder
           subText="They carve their own path."

@@ -109,6 +109,7 @@ export const BrowsePage = () => {
           }
           filter={({ options }) => options}
           loading={usedGetCards.isFetching}
+          miw="fit-content"
           placeholder="Search for a card..."
           rightSection={<MagnifyingGlassIcon />}
           style={{ flex: 1 }}

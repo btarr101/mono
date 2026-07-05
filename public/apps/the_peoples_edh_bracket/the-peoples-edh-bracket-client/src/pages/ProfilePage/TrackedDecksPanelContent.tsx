@@ -1,4 +1,4 @@
-import { Autocomplete, Button, Group, Select, Skeleton, Stack, Table, Text } from '@mantine/core'
+import { Anchor, Autocomplete, Group, Select, Skeleton, Stack, Table, Text } from '@mantine/core'
 import { FilesIcon, MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { GlobeIcon } from '@phosphor-icons/react/dist/ssr'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
@@ -82,6 +82,7 @@ export const TrackedDecksPanelContent = ({ personUUID }: TrackedDecksPanelConten
               ? [{ value: '...', disabled: true }]
               : uniq(usedSearchTrackedDecks.data?.pages.flat().map(({ name }) => name))
           }
+          miw={'fit-content'}
           placeholder="Search for a tracked deck..."
           rightSection={<MagnifyingGlassIcon />}
           style={{ flex: 1 }}
@@ -118,84 +119,89 @@ export const TrackedDecksPanelContent = ({ personUUID }: TrackedDecksPanelConten
           onChange={newSort => setSort(newSort)}
         />
       </Group>
-      <Table stickyHeader>
-        <colgroup>
-          <col style={{ width: '30%' }} />
-          <col style={{ width: '14%' }} />
-          <col style={{ width: '14%' }} />
-          <col style={{ width: '14%' }} />
-          <col style={{ width: '14%' }} />
-          <col style={{ width: '14%' }} />
-        </colgroup>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Name</Table.Th>
-            <Table.Th>pts</Table.Th>
-            <Table.Th>ppts</Table.Th>
-            <Table.Th>Source</Table.Th>
-            <Table.Th>⏲️ Started Tracking</Table.Th>
-            <Table.Th />
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {usedTrackedDecks.isLoading ? (
-            Array.from({ length: PAGE_SIZE }).map((_, index) => (
-              <Table.Tr key={index}>
-                <Table.Td colSpan={6}>
-                  <Skeleton h={36} />
-                </Table.Td>
-              </Table.Tr>
-            ))
-          ) : (
-            <>
-              <Table.Tr h={first ?? 0} />
-              {virtualizer.getVirtualItems().map(item => {
-                const trackedDeck = trackedDecks[item.index]!
+      <Table.ScrollContainer minWidth={'100%'}>
+        <Table stickyHeader>
+          <colgroup>
+            <col style={{ width: '32%' }} />
+            <col style={{ width: '17%' }} />
+            <col style={{ width: '17%' }} />
+            <col style={{ width: '17%' }} />
+            <col style={{ width: '17%' }} />
+          </colgroup>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Name</Table.Th>
+              <Table.Th>pts</Table.Th>
+              <Table.Th>ppts</Table.Th>
+              <Table.Th>Source</Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}>Started Tracking</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {usedTrackedDecks.isLoading ? (
+              Array.from({ length: PAGE_SIZE }).map((_, index) => (
+                <Table.Tr key={index}>
+                  <Table.Td colSpan={6}>
+                    <Skeleton h={36} />
+                  </Table.Td>
+                </Table.Tr>
+              ))
+            ) : (
+              <>
+                <Table.Tr h={first ?? 0} />
+                {virtualizer.getVirtualItems().map(item => {
+                  const trackedDeck = trackedDecks[item.index]!
 
-                return (
-                  <Table.Tr key={trackedDeck.uuid}>
-                    <Table.Td>{trackedDeck.name}</Table.Td>
-                    <Table.Td>
-                      <PointsNumberFormatter
-                        points={trackedDeck.total_global_points}
-                        suffix=" pts"
-                      />
-                    </Table.Td>
-                    <Table.Td>
-                      <PointsNumberFormatter
-                        points={trackedDeck.total_personal_points}
-                        suffix=" ppts"
-                      />
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs" wrap="nowrap">
-                        {trackedDeck.url_source ? (
-                          <>
-                            <GlobeIcon size={32} />
-                            <Text textWrap="nowrap">URL</Text>
-                          </>
-                        ) : (
-                          <>
-                            <FilesIcon size={32} />
-                            <Text textWrap="nowrap">Decklist</Text>
-                          </>
-                        )}
-                      </Group>
-                    </Table.Td>
-                    <Table.Td>{formatTimeStamp(trackedDeck.created_at)}</Table.Td>
-                    <Table.Td ta="right">
-                      <Button component={Link} to={`/analyze/${trackedDeck.uuid}`}>
-                        View
-                      </Button>
-                    </Table.Td>
-                  </Table.Tr>
-                )
-              })}
-              <Table.Tr h={end ?? 0} />
-            </>
-          )}
-        </Table.Tbody>
-      </Table>
+                  return (
+                    <Table.Tr key={trackedDeck.uuid}>
+                      <Table.Td>
+                        <Anchor
+                          component={Link}
+                          textWrap="nowrap"
+                          to={`/analyze/${trackedDeck.uuid}`}
+                        >
+                          {trackedDeck.name}
+                        </Anchor>
+                      </Table.Td>
+                      <Table.Td style={{ whiteSpace: 'nowrap' }}>
+                        <PointsNumberFormatter
+                          points={trackedDeck.total_global_points}
+                          suffix=" pts"
+                        />
+                      </Table.Td>
+                      <Table.Td style={{ whiteSpace: 'nowrap' }}>
+                        <PointsNumberFormatter
+                          points={trackedDeck.total_personal_points}
+                          suffix=" ppts"
+                        />
+                      </Table.Td>
+                      <Table.Td style={{ whiteSpace: 'nowrap' }}>
+                        <Group gap="xs" wrap="nowrap">
+                          {trackedDeck.url_source ? (
+                            <>
+                              <GlobeIcon size={32} />
+                              <Text textWrap="nowrap">URL</Text>
+                            </>
+                          ) : (
+                            <>
+                              <FilesIcon size={32} />
+                              <Text textWrap="nowrap">Decklist</Text>
+                            </>
+                          )}
+                        </Group>
+                      </Table.Td>
+                      <Table.Td style={{ whiteSpace: 'nowrap' }}>
+                        {formatTimeStamp(trackedDeck.created_at)}
+                      </Table.Td>
+                    </Table.Tr>
+                  )
+                })}
+                <Table.Tr h={end ?? 0} />
+              </>
+            )}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
       {showEmptyMessage && (
         <EmptyPlaceholder subText="Try refining your search." title="🤔 No tracked decks found" />
       )}

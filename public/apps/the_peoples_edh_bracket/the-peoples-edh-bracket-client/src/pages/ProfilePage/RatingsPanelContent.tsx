@@ -86,6 +86,7 @@ export const RatingsPanelContent = ({ personUUID }: RatingsPanelContentProps) =>
               ? [{ value: '...', disabled: true }]
               : usedSearchRatings.data?.pages.flat().map(({ card_name }) => card_name)
           }
+          miw={'fit-content'}
           placeholder="Search for a card..."
           rightSection={<MagnifyingGlassIcon />}
           style={{ flex: 1 }}
@@ -126,43 +127,46 @@ export const RatingsPanelContent = ({ personUUID }: RatingsPanelContentProps) =>
           onChange={newSort => setSort(newSort)}
         />
       </Group>
-      <Table stickyHeader>
-        <colgroup>
-          <col style={{ width: '28%' }} />
-          <col style={{ width: '12%' }} />
-          <col style={{ width: '12%' }} />
-          <col style={{ width: '12%' }} />
-          <col style={{ width: '12%' }} />
-          <col style={{ width: '12%' }} />
-          <col style={{ width: '12%' }} />
-        </colgroup>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Card</Table.Th>
-            <Table.Th>pts</Table.Th>
-            <Table.Th>ppts</Table.Th>
-            <Table.Th style={{ textWrap: 'nowrap' }}>👍 Likes</Table.Th>
-            <Table.Th style={{ textWrap: 'nowrap' }}>👎 Dislikes</Table.Th>
-            <Table.Th style={{ textWrap: 'nowrap' }}>⏲️ Rated</Table.Th>
-            <Table.Th />
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {usedGetRatings.isLoading ? (
-            <TableRowLoader />
-          ) : (
-            <>
-              <Table.Tr h={first ?? 0} />
-              {virtualizer.getVirtualItems().map(item => {
-                const rating = ratings[item.index]!
+      <Table.ScrollContainer minWidth={'100%'}>
+        <Table>
+          <colgroup>
+            <col style={{ width: '28%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '12%' }} />
+          </colgroup>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Card</Table.Th>
+              <Table.Th>pts</Table.Th>
+              <Table.Th>ppts</Table.Th>
+              <Table.Th style={{ textWrap: 'nowrap' }}>Likes</Table.Th>
+              <Table.Th style={{ textWrap: 'nowrap' }}>Dislikes</Table.Th>
+              <Table.Th style={{ textWrap: 'nowrap' }}>Rated</Table.Th>
+              <Table.Th />
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {usedGetRatings.isLoading ? (
+              <TableRowLoader />
+            ) : (
+              <>
+                <Table.Tr h={first ?? 0} />
+                {virtualizer.getVirtualItems().map(item => {
+                  const rating = ratings[item.index]!
 
-                return <RatingRow key={rating.uuid} rating={rating} />
-              })}
-              <Table.Tr h={end ?? 0} />
-            </>
-          )}
-        </Table.Tbody>
-      </Table>
+                  return <RatingRow key={rating.uuid} rating={rating} />
+                })}
+                <Table.Tr h={end ?? 0} />
+              </>
+            )}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
+
       {showEmptyMessage && (
         <EmptyPlaceholder subText="Try refining your search." title="🤔 No people found" />
       )}
@@ -180,21 +184,21 @@ const RatingRow = ({ rating }: RatingRowProps) => {
 
   return (
     <Table.Tr>
-      <Table.Td>
+      <Table.Td style={{ whiteSpace: 'nowrap' }}>
         <Group wrap="nowrap">
           <TableCard imageUri={card.data?.image_uri} />
           {card.data?.name ?? '...'}
         </Group>
       </Table.Td>
-      <Table.Td>
+      <Table.Td style={{ whiteSpace: 'nowrap' }}>
         <PointsNumberFormatter points={rating.global_points} suffix=" pts" />
       </Table.Td>
-      <Table.Td>
+      <Table.Td style={{ whiteSpace: 'nowrap' }}>
         <PointsNumberFormatter points={rating.points} suffix=" ppts" />
       </Table.Td>
-      <Table.Td>{rating.reviews.likes}</Table.Td>
-      <Table.Td>{rating.reviews.dislikes}</Table.Td>
-      <Table.Td>{formatTimeStamp(rating.created_at)}</Table.Td>
+      <Table.Td style={{ whiteSpace: 'nowrap' }}>👍 {rating.reviews.likes}</Table.Td>
+      <Table.Td style={{ whiteSpace: 'nowrap' }}>👎 {rating.reviews.dislikes}</Table.Td>
+      <Table.Td style={{ whiteSpace: 'nowrap' }}>{formatTimeStamp(rating.created_at)}</Table.Td>
       <Table.Td ta="right">
         <Button
           component={Link}

@@ -1,4 +1,4 @@
-import { Autocomplete, Button, Group, Select, Stack, Table } from '@mantine/core'
+import { Anchor, Autocomplete, Group, Select, Stack, Table } from '@mantine/core'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { Link } from 'react-router'
@@ -63,6 +63,7 @@ export const DeckTable = ({ deck }: DeckTableProps) => {
       <Group w={'100%'}>
         <Autocomplete
           data={cardNames}
+          miw={'fit-content'}
           placeholder="Search for a card..."
           rightSection={<MagnifyingGlassIcon />}
           style={{ flex: 1 }}
@@ -79,52 +80,48 @@ export const DeckTable = ({ deck }: DeckTableProps) => {
           onChange={newSort => setSort(newSort)}
         />
       </Group>
-      <Table verticalSpacing={4}>
-        <colgroup>
-          <col />
-          <col />
-          <col />
-          <col style={{ width: '100%' }} />
-        </colgroup>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Count</Table.Th>
-            <Table.Th>Card</Table.Th>
-            <Table.Th>pts</Table.Th>
-            <Table.Th ta="right" />
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {filteredEntries.map(entry => (
-            <Table.Tr key={entry.card.oracle_id}>
-              <Table.Td>{entry.ty === 'commander' ? 1 : entry.count}</Table.Td>
-              <Table.Td
-                style={{
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <Group wrap="nowrap">
-                  <TableCard imageUri={entry.card.image_uri} />
-                  {entry.ty === 'commander' && '👑 '}
-                  {entry.card.name}
-                </Group>
-              </Table.Td>
-              <Table.Td
-                style={{
-                  textWrap: 'nowrap',
-                }}
-              >
-                <PointsNumberFormatter points={entry.card.global_points} suffix=" pts" />
-              </Table.Td>
-              <Table.Td ta="right">
-                <Button component={Link} to={{ pathname: `/browse/${entry.card.oracle_id}` }}>
-                  View
-                </Button>
-              </Table.Td>
+      <Table.ScrollContainer minWidth={'100%'}>
+        <Table stickyHeader verticalSpacing={4}>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>pts</Table.Th>
+              <Table.Th>Card</Table.Th>
             </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
+          </Table.Thead>
+          <Table.Tbody>
+            {filteredEntries.map(entry => (
+              <Table.Tr key={entry.card.oracle_id}>
+                <Table.Td
+                  style={{
+                    textWrap: 'nowrap',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {entry.ty === 'commander' ? 1 : entry.count} ×{' '}
+                  <PointsNumberFormatter points={entry.card.global_points} suffix=" pts" />
+                </Table.Td>
+                <Table.Td
+                  style={{
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <Group wrap="nowrap">
+                    <TableCard imageUri={entry.card.image_uri} />
+                    {entry.ty === 'commander' && '👑 '}
+                    <Anchor
+                      component={Link}
+                      textWrap="nowrap"
+                      to={`/browse/${entry.card.oracle_id}`}
+                    >
+                      {entry.card.name}
+                    </Anchor>
+                  </Group>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
     </Stack>
   )
 }
