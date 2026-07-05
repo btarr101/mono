@@ -19,9 +19,9 @@ export const NewAnalyzedDeckPage = () => {
 
   const { mutateAsync } = useMutation({
     mutationFn: postTrackedDeck,
-    onSuccess: trackedTeck => {
+    onSuccess: trackedDeck => {
       setNewAnalyzedDeck(null)
-      navigate(`/analyze/${trackedTeck.uuid}`)
+      navigate(`/analyze/${trackedDeck.uuid}`)
     },
   })
 
