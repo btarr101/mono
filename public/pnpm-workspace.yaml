@@ -1,8 +1,9 @@
 packages:
-  - '**'
+  - "**"
 allowBuilds:
-  '@swc/core': true
+  "@swc/core": true
   core-js: true
   esbuild: true
   msw: true
   sharp: true
+  unrs-resolver: true

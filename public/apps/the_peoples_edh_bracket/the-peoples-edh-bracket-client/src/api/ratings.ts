@@ -5,37 +5,31 @@ import type { GetRatingsParams } from '../types/bindings/GetRatingsParams'
 import type { PointsHistogramBucket } from '../types/bindings/PointsHistogramBucket'
 import type { PutRatingBody } from '../types/bindings/PutRatingBody'
 import type { PutRatingReviewBody } from '../types/bindings/PutRatingReviewBody'
-import { api, API_BASE_URL } from '.'
+import { api } from '.'
 
 export const getRatings = async (params: GetRatingsParams) => {
-  const uri = new URL(`${API_BASE_URL}/ratings`)
+  const searchParams = new URLSearchParams()
   Object.entries(params).forEach(
-    ([key, value]) => value !== null && uri.searchParams.append(key, String(value)),
+    ([key, value]) => value !== null && searchParams.append(key, String(value)),
   )
 
-  return api.get(uri).json<CardRatingEnriched[]>()
+  return api.get('ratings', { searchParams }).json<CardRatingEnriched[]>()
 }
 
 export const putRating = async (body: PutRatingBody) => {
-  const uri = new URL(`${API_BASE_URL}/ratings`)
-
   return api
-    .put(uri, {
+    .put('ratings', {
       json: body,
     })
     .json<CardRating>()
 }
 
 export const getRating = async (uuid: string) => {
-  const uri = new URL(`${API_BASE_URL}/ratings/${uuid}`)
-
-  return api.get(uri).json<CardRatingEnriched>()
+  return api.get(`ratings/${uuid}`).json<CardRatingEnriched>()
 }
 
 export const putRatingReview = async (uuid: string, body: PutRatingReviewBody) => {
-  const uri = new URL(`${API_BASE_URL}/ratings/${uuid}/review`)
-
-  return api.put(uri, {
+  return api.put(`ratings/${uuid}/review`, {
     json: body,
   })
 }
@@ -44,10 +38,12 @@ export const getRatingHistogramForCard = async (
   oracleId: string,
   params: GetRatingHistogramParams,
 ) => {
-  const uri = new URL(`${API_BASE_URL}/ratings/histogram/card/${oracleId}`)
+  const searchParams = new URLSearchParams()
   Object.entries(params).forEach(
-    ([key, value]) => value !== null && uri.searchParams.append(key, String(value)),
+    ([key, value]) => value !== null && searchParams.append(key, String(value)),
   )
 
-  return api.get(uri).json<PointsHistogramBucket[]>()
+  return api
+    .get(`ratings/histogram/card/${oracleId}`, { searchParams })
+    .json<PointsHistogramBucket[]>()
 }

@@ -2,10 +2,10 @@ import ky from 'ky'
 
 import { type AuthState } from '../hooks/useAuth'
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
 export const api = ky.create({
-  baseUrl: import.meta.env.VITE_API_BASE_URL ?? '/api',
+  prefix: API_BASE_URL,
   hooks: {
     beforeRequest: [
       ({ request }) => {

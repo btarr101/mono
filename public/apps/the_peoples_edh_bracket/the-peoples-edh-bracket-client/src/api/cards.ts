@@ -1,25 +1,21 @@
 import type { CardMetrics } from '../types/bindings/CardMetrics'
 import type { CardWithMetrics } from '../types/bindings/CardWithMetrics'
 import type { GetCardsParams } from '../types/bindings/GetCardsParams'
-import { api, API_BASE_URL } from '.'
+import { api } from '.'
 
 export const getCards = async (params: GetCardsParams) => {
-  const uri = new URL(`${API_BASE_URL}/cards`)
+  const searchParams = new URLSearchParams()
   Object.entries(params).forEach(
-    ([key, value]) => value !== null && uri.searchParams.append(key, String(value)),
+    ([key, value]) => value !== null && searchParams.append(key, String(value)),
   )
 
-  return api.get(uri).json<CardWithMetrics[]>()
+  return api.get('cards', { searchParams }).json<CardWithMetrics[]>()
 }
 
 export const getCard = async (oracleId: string) => {
-  const uri = new URL(`${API_BASE_URL}/cards/${oracleId}`)
-
-  return api.get(uri).json<CardWithMetrics>()
+  return api.get(`cards/${oracleId}`).json<CardWithMetrics>()
 }
 
 export const getCardMetrics = async (oracleId: string) => {
-  const uri = new URL(`${API_BASE_URL}/cards/${oracleId}/pts`)
-
-  return api.get(uri).json<CardMetrics>()
+  return api.get(`cards/${oracleId}/pts`).json<CardMetrics>()
 }

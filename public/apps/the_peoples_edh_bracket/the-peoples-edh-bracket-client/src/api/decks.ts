@@ -5,44 +5,37 @@ import type { PostTrackedDeckBody } from '../types/bindings/PostTrackedDeckBody'
 import type { TrackedDeck } from '../types/bindings/TrackedDeck'
 import type { TrackedDeckWithAnalysis } from '../types/bindings/TrackedDeckWithAnalysis'
 import type { TrackedDeckWithTotalPoints } from '../types/bindings/TrackedDeckWithTotalPoints'
-import { api, API_BASE_URL } from '.'
+import { api } from '.'
 
 export const postAnalyze = async (body: PostAnalyzeBody) => {
-  const uri = new URL(`${API_BASE_URL}/decks/analyze`)
-
   return api
-    .post(uri, {
+    .post('decks/analyze', {
       json: body,
     })
     .json<PostAnalyzeDeckResponse>()
 }
 
 export const getTrackedDecks = async (params: GetTrackedDecksParams) => {
-  const uri = new URL(`${API_BASE_URL}/decks`)
+  const searchParams = new URLSearchParams()
   Object.entries(params).forEach(
-    ([key, value]) => value !== null && uri.searchParams.append(key, String(value)),
+    ([key, value]) => value !== null && searchParams.append(key, String(value)),
   )
 
-  return api.get(uri).json<TrackedDeckWithTotalPoints[]>()
+  return api.get('decks', { searchParams }).json<TrackedDeckWithTotalPoints[]>()
 }
 
 export const postTrackedDeck = async (body: PostTrackedDeckBody) => {
-  const uri = new URL(`${API_BASE_URL}/decks`)
   return api
-    .post(uri, {
+    .post('decks', {
       json: body,
     })
     .json<TrackedDeck>()
 }
 
 export const getTrackedDeck = async (uuid: string) => {
-  const uri = new URL(`${API_BASE_URL}/decks/${uuid}`)
-
-  return api.get(uri).json<TrackedDeckWithAnalysis>()
+  return api.get(`decks/${uuid}`).json<TrackedDeckWithAnalysis>()
 }
 
 export const deleteTrackedDeck = async (uuid: string) => {
-  const uri = new URL(`${API_BASE_URL}/decks/${uuid}`)
-
-  return api.delete(uri).json<TrackedDeck>()
+  return api.delete(`decks/${uuid}`).json<TrackedDeck>()
 }
