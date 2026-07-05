@@ -8,6 +8,8 @@ pub struct Config {
     pub bind_address: String,
     #[serde_inline_default(if cfg!(debug_assertions) { "dev".to_string() } else { "prod".to_string() })]
     pub stage: String,
+    // I am lazy... forgive me.
+    #[serde_inline_default(if cfg!(debug_assertions) { "971820376877-6ficbee232172n33gnjgi4f5gab5n5fn.apps.googleusercontent.com".to_string() } else { "971820376877-fmlngfalfttccr6c4597dqbbrj9vjs9n.apps.googleusercontent.com".to_string() })]
     pub google_oauth_client_id: String,
     pub database_url: String,
 }
