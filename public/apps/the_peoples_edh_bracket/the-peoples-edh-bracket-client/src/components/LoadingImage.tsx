@@ -1,0 +1,24 @@
+import { Image as MantineImage, type ImageProps, Skeleton, Transition } from '@mantine/core'
+import { useState } from 'react'
+
+export const LoadingImage = (props: ImageProps) => {
+  const [loaded, setLoaded] = useState(() => {
+    if (!props.src) return false
+
+    const img = new Image()
+    img.src = props.src
+    return img.complete
+  })
+
+  return (
+    <>
+      <MantineImage onLoad={() => setLoaded(true)} {...props} />
+      <Transition duration={50} mounted={!loaded} transition="fade">
+        {styles => (
+          // @ts-expect-error just fowarding props...
+          <Skeleton {...props} style={styles} />
+        )}
+      </Transition>
+    </>
+  )
+}

@@ -1,0 +1,64 @@
+use axum::{http::Request, middleware::from_fn_with_state};
+#[cfg(debug_assertions)]
+use axum_anyhow::set_expose_errors;
+use reqwest::header::AUTHORIZATION;
+use tower_http::{
+    cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer},
+    trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
+};
+use tracing::info;
+
+use crate::{
+    api_router,
+    client_assets_handler::client_assets_handler,
+    middleware::auth::{AuthMiddlewareParams, AuthMiddlewareState, auth_middleware},
+    state::AppState,
+};
+
+pub async fn server(state: AppState) -> anyhow::Result<()> {
+    #[cfg(debug_assertions)]
+    set_expose_errors(true);
+
+    let bind_address = state.config.bind_address.clone();
+    let router = axum::Router::new()
+        .nest("/api", api_router::get_router())
+        .layer(from_fn_with_state(
+            AuthMiddlewareState::new(AuthMiddlewareParams {
+                google_client_id: &state.config.google_oauth_client_id,
+                pg_pool: state.pg_pool.clone(),
+            })
+            .await?,
+            auth_middleware,
+        ))
+        .with_state(state)
+        .layer(
+            CorsLayer::new()
+                .allow_methods(AllowMethods::any())
+                .allow_origin(AllowOrigin::any())
+                .allow_headers(AllowHeaders::any()),
+        )
+        .fallback(client_assets_handler)
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(|request: &Request<_>| {
+                    let mut headers = request.headers().clone();
+                    headers.remove(AUTHORIZATION);
+
+                    tracing::info_span!(
+                        "request",
+                        method = %request.method(),
+                        uri = %request.uri(),
+                        version = ?request.version(),
+                        headers = ?headers,
+                    )
+                })
+                .on_request(DefaultOnRequest::new().level(tracing::Level::INFO))
+                .on_response(DefaultOnResponse::new().level(tracing::Level::INFO)),
+        );
+
+    info!("Starting server at http://{}", bind_address);
+    let listener = tokio::net::TcpListener::bind(&bind_address).await?;
+    axum::serve(listener, router).await?;
+
+    Ok(())
+}

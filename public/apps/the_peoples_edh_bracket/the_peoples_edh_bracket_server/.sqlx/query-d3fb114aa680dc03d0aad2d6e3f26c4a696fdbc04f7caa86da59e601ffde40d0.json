@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH rating_agg AS (\n            SELECT\n                COUNT(*) as total_ratings,\n                COUNT(DISTINCT card_oracle_id) AS total_cards_rated\n            FROM card_rating\n        ),\n        person_agg AS (\n            SELECT COUNT(*) AS total\n            FROM person\n        )\n        SELECT\n            rating_agg.total_cards_rated AS \"total_cards_rated!\",\n            person_agg.total AS \"total_persons!\",\n            rating_agg.total_ratings AS \"total_ratings!\"\n        FROM person_agg, rating_agg",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total_cards_rated!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "total_persons!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "total_ratings!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "d3fb114aa680dc03d0aad2d6e3f26c4a696fdbc04f7caa86da59e601ffde40d0"
+}

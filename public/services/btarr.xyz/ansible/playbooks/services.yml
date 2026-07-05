@@ -1,42 +1,8 @@
-- name: Set up custom services
-  hosts: all
-  become: true
+- name: Set up postgres service
+  import_playbook: services/postgres.yml
 
-  tasks:
-    - name: Install controlmylights systemd unit
-      ansible.builtin.copy:
-        src: "{{ files }}/controlmylights.service"
-        dest: /etc/systemd/system/controlmylights.service
-        owner: root
-        group: root
-        mode: "0644"
-      notify: controlmylights unit changed
+- name: Set up controlmylights service
+  import_playbook: services/controlmylights.yml
 
-    - name: Ensure controlmylights service is enabled
-      ansible.builtin.service:
-        name: controlmylights
-        enabled: true
-
-    - name: Check whether controlmylights binary exists
-      ansible.builtin.stat:
-        path: /opt/controlmylights/bin/controlmylights
-      register: binary
-
-    - name: Start controlmylights service when binary is present
-      ansible.builtin.service:
-        name: controlmylights
-        state: started
-      when: binary.stat.exists
-
-  handlers:
-    - name: Reload systemd daemon
-      ansible.builtin.systemd_service:
-        daemon_reload: true
-      listen: controlmylights unit changed
-
-    - name: Restart controlmylights service
-      ansible.builtin.service:
-        name: controlmylights
-        state: restarted
-      when: binary.stat.exists
-      listen: controlmylights unit changed
+- name: Set up the_peoples_edh_bracket service
+  import_playbook: services/the_peoples_edh_bracket.yml

@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS card_rating_review;
+DROP TABLE IF EXISTS card_rating;
+DROP TABLE IF EXISTS card;
+DROP TABLE IF EXISTS person;

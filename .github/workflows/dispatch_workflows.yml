@@ -18,6 +18,7 @@ jobs:
       btarr_xyz: ${{ steps.filter.outputs.btarr_xyz }}
       stack_task: ${{ steps.filter.outputs.stack_task }}
       controlmylights: ${{ steps.filter.outputs.controlmylights }}
+      the_peoples_edh_bracket: ${{ steps.filter.outputs.the_peoples_edh_bracket }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,7 +42,9 @@ jobs:
             controlmylights:
               - 'public/apps/controlmylights/**'
               - '.github/workflows/controlmylights.yml'
-
+            the_peoples_edh_bracket:
+              - 'public/apps/the_peoples_edh_bracket/**'
+              - '.github/workflows/the_peoples_edh_bracket.yml'
 
   terraform_backend:
     needs: parse_changes
@@ -92,4 +95,17 @@ jobs:
         needs.btarr_xyz.result == 'success'
       )
     uses: ./.github/workflows/controlmylights.yml
+    secrets: inherit
+
+  the_peoples_edh_bracket:
+    needs:
+      - parse_changes
+      - btarr_xyz
+    if: |
+      always() &&
+      (
+        (needs.parse_changes.outputs.the_peoples_edh_bracket == 'true' && needs.btarr_xyz.result == 'skipped') ||
+        needs.btarr_xyz.result == 'success'
+      )
+    uses: ./.github/workflows/the_peoples_edh_bracket.yml
     secrets: inherit

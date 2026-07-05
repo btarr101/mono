@@ -1,0 +1,82 @@
+on:
+  workflow_call: {}
+  workflow_dispatch: {}
+
+jobs:
+  build_server:
+    name: 🔨 Build the people's edh bracket server
+    runs-on: ubuntu-latest
+    steps:
+      # TODO: Need to check out every rust project atm, need to find
+      # a way to seperate rust projects or build up the list dynamically
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            public/package.json
+            public/pnpm-lock.yaml
+            public/pnpm-workspace.yaml
+            public/Cargo.toml
+            public/Cargo.lock
+            public/apps
+            public/libs
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: public/package.json
+          run_install: |
+            - cwd: ./public
+              args: [--frozen-lockfile, --filter, "the-peoples-edh-bracket-client"]
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-thepeoplesedhbracketclient-${{ hashFiles('public/Cargo.lock') }}
+
+      - run: cargo build --verbose --release --locked
+        working-directory: ./public/apps/the_peoples_edh_bracket/the_peoples_edh_bracket_server
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: the_peoples_edh_bracket_server
+          path: ./public/target/release/the_peoples_edh_bracket_server
+
+  deploy:
+    name: 🚀 Deploy the people's EDH bracket server
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: prod
+    needs:
+      - build_server
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: the_peoples_edh_bracket_server
+
+      - name: Upload new binary
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: btarr.xyz
+          username: deployer
+          key: ${{ secrets.DEPLOYER_SSH_PRIVATE_KEY }}
+          source: ./the_peoples_edh_bracket_server
+          target: /tmp/the_peoples_edh_bracket/
+          overwrite: true
+
+      - name: Install new binary and restart service
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: btarr.xyz
+          username: deployer
+          key: ${{ secrets.DEPLOYER_SSH_PRIVATE_KEY }}
+          script: |
+            set -eu
+            sudo mkdir -p /opt/the_peoples_edh_bracket/bin
+            sudo install -m 755 /tmp/the_peoples_edh_bracket/the_peoples_edh_bracket_server /opt/the_peoples_edh_bracket/bin/the_peoples_edh_bracket
+            rm -rf /tmp/the_peoples_edh_bracket
+            sudo systemctl restart the_peoples_edh_bracket.service
+            sudo systemctl is-active the_peoples_edh_bracket.service

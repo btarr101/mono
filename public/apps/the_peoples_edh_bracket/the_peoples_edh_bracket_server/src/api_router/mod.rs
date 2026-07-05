@@ -1,0 +1,20 @@
+use axum::{Router, routing::get};
+
+use crate::state::AppState;
+
+mod cards_router;
+mod client_config_handler;
+mod decks_router;
+mod home_route;
+mod persons_router;
+mod ratings_router;
+
+pub fn get_router() -> Router<AppState> {
+    Router::new()
+        .nest("/home", home_route::get_router())
+        .nest("/persons", persons_router::get_router())
+        .nest("/cards", cards_router::get_router())
+        .nest("/ratings", ratings_router::get_router())
+        .nest("/decks", decks_router::get_router())
+        .route("/config", get(client_config_handler::get_config))
+}

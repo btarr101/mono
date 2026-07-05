@@ -1,0 +1,39 @@
+- name: Set up Postgres
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install PostgreSQL
+      ansible.builtin.apt:
+        name: postgresql
+        state: present
+
+    - name: Install PostgreSQL Python bindings
+      ansible.builtin.apt:
+        name: python3-psycopg2
+        state: present
+
+    - name: Ensure postgresql service is enabled
+      ansible.builtin.service:
+        name: postgresql
+        enabled: true
+
+    - name: Ensure postgresql service is started
+      ansible.builtin.service:
+        name: postgresql
+        state: started
+
+    - name: Ensure the_peoples_edh_bracket postgres role exists
+      community.postgresql.postgresql_user:
+        name: the_peoples_edh_bracket
+        password: "{{ env.THE_PEOPLES_EDH_BRACKET_PG_PASSWORD }}"
+        role_attr_flags: LOGIN
+        state: present
+      become_user: postgres
+
+    - name: Ensure the_peoples_edh_bracket postgres database exists
+      community.postgresql.postgresql_db:
+        name: the_peoples_edh_bracket
+        owner: the_peoples_edh_bracket
+        state: present
+      become_user: postgres

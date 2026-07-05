@@ -1,0 +1,85 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n            c.oracle_id,\n            c.name,\n            c.image_uri,\n            c.legality as \"legality: CardLegality\",\n            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",\n            COUNT(cr.uuid) as \"total_ratings!\",\n            COALESCE(crc.card_rank, grs.unrated_card_rank) as \"card_rank!\"\n        FROM card c\n        LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = c.oracle_id\n        LEFT JOIN card_rating cr ON cr.card_oracle_id = c.oracle_id\n        CROSS JOIN global_ratings_state grs\n        WHERE c.oracle_id = $1\n        GROUP BY c.oracle_id, c.name, c.image_uri, c.legality, crc.average_global_points, crc.card_rank, grs.unrated_card_rank\n        LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "oracle_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "oracle_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "image_uri",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "image_uri"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "legality: CardLegality",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "legality"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "global_points!",
+        "type_info": "Numeric",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "total_ratings!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "card_rank!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "9789bd529a852afba5d66d7a41912907adc4ac17d0e1d73d2282cff0ebc49cd8"
+}

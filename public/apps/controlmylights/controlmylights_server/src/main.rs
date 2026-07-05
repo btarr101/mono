@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use axum::http::{Request, header::AUTHORIZATION};
 use controlmylights_server::{
     api_router,
     client_assets_handler::client_assets_handler,
@@ -44,7 +45,18 @@ async fn main() -> anyhow::Result<()> {
         .fallback(client_assets_handler)
         .layer(
             TraceLayer::new_for_http()
-                .make_span_with(DefaultMakeSpan::new().include_headers(true).level(tracing::Level::INFO))
+                .make_span_with(|request: &Request<_>| {
+                    let mut headers = request.headers().clone();
+                    headers.remove(AUTHORIZATION);
+
+                    tracing::info_span!(
+                        "request",
+                        method = %request.method(),
+                        uri = %request.uri(),
+                        version = ?request.version(),
+                        headers = ?headers,
+                    )
+                })
                 .on_request(DefaultOnRequest::new().level(tracing::Level::INFO))
                 .on_response(DefaultOnResponse::new().level(tracing::Level::INFO)),
         );
