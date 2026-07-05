@@ -12,7 +12,7 @@ export const ErrorPage = () => {
           <Text inherit c="red" component="span">
             Error
           </Text>{' '}
-          Occured
+          Occurred
         </Title>
         <Text c="dimmed" maw={540} size="xl">
           You must have done something wrong.
