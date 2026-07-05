@@ -1,13 +1,14 @@
-import { NumberFormatter, Stack, Text, Title } from '@mantine/core'
+import { NumberFormatter, Stack, Text, Title, type TitleSize } from '@mantine/core'
 import type { ReactNode } from 'react'
 
 export type StatProps = {
+  titleSize?: TitleSize
   value: number
   label: ReactNode
   suffix?: string
 }
 
-export const Stat = ({ value, label, suffix }: StatProps) => {
+export const Stat = ({ value, label, suffix, titleSize }: StatProps) => {
   const scales = [
     {
       min: 1000000,
@@ -23,7 +24,7 @@ export const Stat = ({ value, label, suffix }: StatProps) => {
 
   return (
     <Stack>
-      <Title size="2rem">
+      <Title size={titleSize ?? '2rem'}>
         <NumberFormatter
           decimalScale={1}
           suffix={[scale.suffix, suffix].filter(Boolean).join('')}

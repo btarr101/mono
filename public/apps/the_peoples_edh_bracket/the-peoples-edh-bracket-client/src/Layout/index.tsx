@@ -1,4 +1,15 @@
-import { AppShell, Box, Menu, NavLink, Space, Stack, Text, Title } from '@mantine/core'
+import {
+  AppShell,
+  Box,
+  Burger,
+  Group,
+  Menu,
+  NavLink,
+  Space,
+  Stack,
+  Text,
+  Title,
+} from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import {
   ChartLineIcon,
@@ -9,66 +20,112 @@ import {
   UsersThreeIcon,
 } from '@phosphor-icons/react'
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v7'
-import { useState } from 'react'
-import { Link, ScrollRestoration } from 'react-router'
-import { Outlet } from 'react-router'
-import { NavLink as RouterNavLink } from 'react-router'
+import { useEffect, useState } from 'react'
+import {
+  Link,
+  NavLink as RouterNavLink,
+  Outlet,
+  ScrollRestoration,
+  useLocation,
+} from 'react-router'
 
 import { PersonProfileLine } from '../components/PersonProfileLine'
 import { useAuthState, useLogin, useLogout } from '../hooks/useAuth'
 import { useDebugPostPerson, useMe, useSearchPersons } from '../hooks/usePersons'
 import { LoginModal } from './LoginModal'
 
-export const Layout = () => (
-  <NuqsAdapter>
-    <AppShell navbar={{ breakpoint: 'xs', width: 280 }} padding={0}>
-      <AppShell.Navbar style={{ overflowY: 'auto' }}>
-        <Stack align="center" gap="xs" p="lg">
-          <HandFistIcon size={96} />
-          <Title ta="center">
-            the people{"'"}s
-            <br />
-            <Text inherit c="var(--mantine-primary-color-filled)" component="span">
-              (edh)
-            </Text>{' '}
-            bracket
-          </Title>
-        </Stack>
-        <NavLink
-          label="Home"
-          leftSection={<HouseIcon />}
-          renderRoot={props => <RouterNavLink to="/" {...props} />}
-        />
-        <NavLink
-          label="Browse"
-          leftSection={<MagnifyingGlassIcon />}
-          renderRoot={props => <RouterNavLink to="/browse" {...props} />}
-        />
-        <NavLink
-          label="Analyze"
-          leftSection={<ChartLineIcon />}
-          renderRoot={props => <RouterNavLink to="/analyze" {...props} />}
-        />
-        <NavLink
-          label="Community"
-          leftSection={<UsersThreeIcon />}
-          renderRoot={props => <RouterNavLink to="/community" {...props} />}
-        />
-        <NavLink
-          label="About"
-          leftSection={<InfoIcon />}
-          renderRoot={props => <RouterNavLink to="/about" {...props} />}
-        />
-        <Space flex={1} />
-        <DebugAuthSection />
-      </AppShell.Navbar>
-      <AppShell.Main>
-        <Outlet />
-      </AppShell.Main>
-      <ScrollRestoration />
-    </AppShell>
-  </NuqsAdapter>
-)
+export const Layout = () => {
+  const [opened, { toggle, close }] = useDisclosure()
+  const location = useLocation()
+
+  // Close disclosure on route change
+  useEffect(() => {
+    close()
+  }, [location.key, close])
+
+  return (
+    <NuqsAdapter>
+      <AppShell
+        header={{
+          collapsed: false,
+          height: {
+            base: 60,
+            xs: 0,
+          },
+        }}
+        navbar={{
+          breakpoint: 'xs',
+          width: {
+            base: 'min(280px, 100vw)',
+            xs: 280,
+          },
+          collapsed: {
+            mobile: !opened,
+          },
+        }}
+        padding={0}
+      >
+        <AppShell.Header hiddenFrom="xs">
+          <Group h="100%" p="xs">
+            <Burger hiddenFrom="sm" opened={opened} size="sm" onClick={toggle} />
+            <HandFistIcon size={32} />
+            <Title size={16} ta="center">
+              the people{"'"}s{' '}
+              <Text inherit c="var(--mantine-primary-color-filled)" component="span">
+                (edh)
+              </Text>{' '}
+              bracket
+            </Title>
+          </Group>
+        </AppShell.Header>
+        <AppShell.Navbar maw={'100vw'}>
+          <Stack align="center" gap="xs" p="lg">
+            <HandFistIcon size={96} />
+            <Title ta="center">
+              the people{"'"}s
+              <br />
+              <Text inherit c="var(--mantine-primary-color-filled)" component="span">
+                (edh)
+              </Text>{' '}
+              bracket
+            </Title>
+          </Stack>
+          <NavLink
+            label="Home"
+            leftSection={<HouseIcon />}
+            renderRoot={props => <RouterNavLink to="/" {...props} />}
+          />
+          <NavLink
+            label="Browse"
+            leftSection={<MagnifyingGlassIcon />}
+            renderRoot={props => <RouterNavLink to="/browse" {...props} />}
+          />
+          <NavLink
+            label="Analyze"
+            leftSection={<ChartLineIcon />}
+            renderRoot={props => <RouterNavLink to="/analyze" {...props} />}
+          />
+          <NavLink
+            label="Community"
+            leftSection={<UsersThreeIcon />}
+            renderRoot={props => <RouterNavLink to="/community" {...props} />}
+          />
+          <NavLink
+            label="About"
+            leftSection={<InfoIcon />}
+            renderRoot={props => <RouterNavLink to="/about" {...props} />}
+          />
+          <Space flex={1} />
+          <DebugAuthSection />
+        </AppShell.Navbar>
+        <AppShell.Main>
+          <Outlet />
+        </AppShell.Main>
+        <ScrollRestoration />
+      </AppShell>
+    </NuqsAdapter>
+  )
+}
 
 const DebugAuthSection = () => {
   const [authState] = useAuthState()

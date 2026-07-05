@@ -1,4 +1,14 @@
-import { Avatar, Button, Group, Stack, Tabs, Text, Title } from '@mantine/core'
+import {
+  Avatar,
+  Button,
+  Group,
+  ScrollArea,
+  Scroller,
+  Stack,
+  Tabs,
+  Text,
+  Title,
+} from '@mantine/core'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useLoaderData, useRevalidator } from 'react-router'
 
@@ -37,18 +47,20 @@ export const ProfilePage = () => {
         }}
       >
         <Tabs.List>
-          <Tabs.Tab value="ratings">
-            <Text size="xl">Ratings</Text>
-          </Tabs.Tab>
-          <Tabs.Tab value="decks">
-            <Text size="xl">Tracked Decks</Text>
-          </Tabs.Tab>
-          <Tabs.Tab value="followers">
-            <Text size="xl">Followers</Text>
-          </Tabs.Tab>
-          <Tabs.Tab value="followees">
-            <Text size="xl">Followees</Text>
-          </Tabs.Tab>
+          <Scroller>
+            <Tabs.Tab value="ratings">
+              <Text>Ratings</Text>
+            </Tabs.Tab>
+            <Tabs.Tab value="decks">
+              <Text textWrap="nowrap">Tracked Decks</Text>
+            </Tabs.Tab>
+            <Tabs.Tab value="followers">
+              <Text>Followers</Text>
+            </Tabs.Tab>
+            <Tabs.Tab value="followees">
+              <Text>Followees</Text>
+            </Tabs.Tab>
+          </Scroller>
         </Tabs.List>
         <Tabs.Panel value="ratings">
           <RatingsPanelContent personUUID={person.uuid} />
@@ -80,39 +92,41 @@ export const HeadSection = ({ person }: HeadSectionProps) => {
 
   return (
     <Stack gap="xl">
-      <Group align="stretch">
-        <Avatar imageProps={{ referrerPolicy: 'no-referrer' }} size="96" src={person.picture_url} />
+      <Group align="center">
+        <Avatar imageProps={{ referrerPolicy: 'no-referrer' }} size="64" src={person.picture_url} />
         <Stack gap="xs" h="100%">
           <Group>
-            <Title size="2rem" textWrap="nowrap">
+            <Title size="xl" textWrap="nowrap">
               {person.username}
             </Title>
-            {!me.isLoading &&
-              me.data?.uuid !== person.uuid &&
-              person.am_following !== null &&
-              (person.am_following ? (
-                <Button onClick={() => unfollow(person.uuid).then(revalidate)}>🔕 Unfollow</Button>
-              ) : (
-                <Button onClick={() => follow(person.uuid).then(revalidate)}>🔔 Follow</Button>
-              ))}
           </Group>
-          <Text c="dimmed" size="xl">
+          <Text c="dimmed" size="md">
             Joined {formatTimeStamp(person.created_at)}
           </Text>
         </Stack>
       </Group>
-      <Group justify="space-between" px="xl" wrap="nowrap">
-        <Stat label="cards rated" value={Number(person.cards_rated)} />
-        <Stack>
-          <Title size="2rem">
-            <PointsNumberFormatter points={person.personal_points_allocated} suffix=" ppts" />
-          </Title>
-          <Text textWrap="nowrap">total points allocated</Text>
-        </Stack>
-        <Stat label="tracked decks" value={Number(person.tracked_decks)} />
-        <Stat label="followers" value={Number(person.followers)} />
-        <Stat label="following" value={Number(person.following)} />
-      </Group>
+      {!me.isLoading &&
+        me.data?.uuid !== person.uuid &&
+        person.am_following !== null &&
+        (person.am_following ? (
+          <Button onClick={() => unfollow(person.uuid).then(revalidate)}>🔕 Unfollow</Button>
+        ) : (
+          <Button onClick={() => follow(person.uuid).then(revalidate)}>🔔 Follow</Button>
+        ))}
+      <ScrollArea>
+        <Group justify="space-between" px="xl" w={'100%'} wrap="nowrap">
+          <Stat label="cards rated" titleSize="lg" value={Number(person.cards_rated)} />
+          <Stack>
+            <Title size="lg">
+              <PointsNumberFormatter points={person.personal_points_allocated} suffix=" ppts" />
+            </Title>
+            <Text textWrap="nowrap">total points allocated</Text>
+          </Stack>
+          <Stat label="tracked decks" titleSize="lg" value={Number(person.tracked_decks)} />
+          <Stat label="followers" titleSize="lg" value={Number(person.followers)} />
+          <Stat label="following" titleSize="lg" value={Number(person.following)} />
+        </Group>
+      </ScrollArea>
     </Stack>
   )
 }

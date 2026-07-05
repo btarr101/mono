@@ -57,6 +57,7 @@ export const NewAnalyzedDeckPage = () => {
           <TextInput
             flex={1}
             key={form.key('deckName')}
+            miw="fit-content"
             placeholder="Enter deck name..."
             size="lg"
             {...form.getInputProps('deckName')}

@@ -163,7 +163,7 @@ export const App = () => {
         <RouterProvider router={router} />
         <Notifications />
       </MantineProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
+      <ReactQueryDevtools buttonPosition="top-right" initialIsOpen={false} />
     </QueryClientProvider>
   )
 }

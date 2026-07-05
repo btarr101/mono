@@ -1,9 +1,8 @@
-import { Autocomplete, Box, Button, Group, Select, Skeleton, Stack, Table } from '@mantine/core'
+import { Autocomplete, Box, Group, Select, Skeleton, Stack, Table } from '@mantine/core'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useLayoutEffect } from 'react'
-import { Link } from 'react-router'
 
 import { EmptyPlaceholder } from '../components/EmptyPlaceholder'
 import { ViewablePersonProfileLine } from '../components/ViewablePersonProfileLine'
@@ -69,6 +68,7 @@ export const CommunityPage = () => {
           }
           filter={({ options }) => options}
           loading={usedGetPersons.isFetching}
+          miw={'fit-content'}
           placeholder="Search for a person..."
           rightSection={<MagnifyingGlassIcon />}
           style={{ flex: 1 }}
@@ -86,64 +86,61 @@ export const CommunityPage = () => {
           onChange={newSort => setSort(newSort)}
         />
       </Group>
-      <Table stickyHeader>
-        <colgroup>
-          <col style={{ width: '50%' }} />
-          <col style={{ width: '11%' }} />
-          <col style={{ width: '11%' }} />
-          <col style={{ width: '11%' }} />
-          <col style={{ width: '11%' }} />
-          <col style={{ width: '6%' }} />
-        </colgroup>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Person</Table.Th>
-            <Table.Th>👥 Followers</Table.Th>
-            <Table.Th>📝 Cards Rated</Table.Th>
-            <Table.Th>👍 Likes</Table.Th>
-            <Table.Th>👎 Dislikes</Table.Th>
-            <Table.Th />
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {usedGetPersons.isLoading ? (
-            Array.from({ length: PAGE_SIZE }).map((_, index) => (
-              <Table.Tr key={index}>
-                <Table.Td colSpan={6}>
-                  <Skeleton h={38} />
-                </Table.Td>
-              </Table.Tr>
-            ))
-          ) : (
-            <>
-              <Table.Tr h={first ?? 0} />
-              {virtualizer.getVirtualItems().map(item => {
-                const person = persons[item.index]!
 
-                return (
-                  <Table.Tr key={person.uuid}>
-                    <Table.Td>
-                      <Box w="fit-content">
-                        <ViewablePersonProfileLine loading={false} person={person} />
-                      </Box>
-                    </Table.Td>
-                    <Table.Td>{person.followers}</Table.Td>
-                    <Table.Td>{person.cards_rated}</Table.Td>
-                    <Table.Td>{person.likes}</Table.Td>
-                    <Table.Td>{person.dislikes}</Table.Td>
-                    <Table.Td ta="right">
-                      <Button component={Link} to={{ pathname: `/community/${person.uuid}` }}>
-                        View
-                      </Button>
-                    </Table.Td>
-                  </Table.Tr>
-                )
-              })}
-              <Table.Tr h={end ?? 0} />
-            </>
-          )}
-        </Table.Tbody>
-      </Table>
+      <Table.ScrollContainer minWidth={'100%'}>
+        <Table>
+          <colgroup>
+            <col style={{ width: '52%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '12%' }} />
+          </colgroup>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}>Person</Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}>Followers</Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}>Cards Rated</Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}>Likes</Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}>Dislikes</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {usedGetPersons.isLoading ? (
+              Array.from({ length: PAGE_SIZE }).map((_, index) => (
+                <Table.Tr key={index}>
+                  <Table.Td colSpan={5}>
+                    <Skeleton h={38} />
+                  </Table.Td>
+                </Table.Tr>
+              ))
+            ) : (
+              <>
+                <Table.Tr h={first ?? 0} />
+                {virtualizer.getVirtualItems().map(item => {
+                  const person = persons[item.index]!
+
+                  return (
+                    <Table.Tr key={person.uuid}>
+                      <Table.Td>
+                        <Box w="fit-content">
+                          <ViewablePersonProfileLine loading={false} person={person} />
+                        </Box>
+                      </Table.Td>
+                      <Table.Td>👥 {person.followers}</Table.Td>
+                      <Table.Td>📝 {person.cards_rated}</Table.Td>
+                      <Table.Td>👍 {person.likes}</Table.Td>
+                      <Table.Td>👎 {person.dislikes}</Table.Td>
+                    </Table.Tr>
+                  )
+                })}
+                <Table.Tr h={end ?? 0} />
+              </>
+            )}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
+
       {showEmptyMessage && (
         <EmptyPlaceholder subText="Try refining your search." title="🤔 No people found" />
       )}

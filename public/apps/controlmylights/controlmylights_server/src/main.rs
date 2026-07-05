@@ -10,7 +10,7 @@ use controlmylights_server::{
 use serde_envfile::from_env;
 use tower_http::{
     cors::{AllowMethods, AllowOrigin, CorsLayer},
-    trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
+    trace::{DefaultOnRequest, DefaultOnResponse, TraceLayer},
 };
 use tracing::{info, level_filters::LevelFilter};
 use tracing_subscriber::EnvFilter;

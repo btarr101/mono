@@ -50,7 +50,7 @@ export const AnalyzePage = () => {
 
 const Hero = () => (
   <Stack gap="lg">
-    <Title size="4rem" textWrap="nowrap">
+    <Title size="4rem">
       Analyze a{' '}
       <Text inherit c="var(--mantine-primary-color-filled)" component="span">
         Deck.
