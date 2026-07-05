@@ -3,6 +3,8 @@ import { useState } from 'react'
 
 export const LoadingImage = (props: ImageProps) => {
   const [loaded, setLoaded] = useState(() => {
+    if (!props.src) return false
+
     const img = new Image()
     img.src = props.src
     return img.complete
