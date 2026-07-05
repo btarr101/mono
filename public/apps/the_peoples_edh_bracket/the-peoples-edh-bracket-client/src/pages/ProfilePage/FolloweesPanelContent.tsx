@@ -108,7 +108,7 @@ export const FolloweesPanelContent = ({ personUUID }: FolloweesPanelContentProps
           </Table.Thead>
           <Table.Tbody>
             {usedGetPersons.isLoading ? (
-              <TableRowLoader />
+              <TableRowLoader colSpan={2} />
             ) : (
               <>
                 <Table.Tr h={first ?? 0} />

@@ -151,7 +151,7 @@ export const RatingsPanelContent = ({ personUUID }: RatingsPanelContentProps) =>
           </Table.Thead>
           <Table.Tbody>
             {usedGetRatings.isLoading ? (
-              <TableRowLoader />
+              <TableRowLoader colSpan={7} />
             ) : (
               <>
                 <Table.Tr h={first ?? 0} />
