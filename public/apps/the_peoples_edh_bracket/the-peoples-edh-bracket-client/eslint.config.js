@@ -13,7 +13,7 @@ import path from 'path'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'src/types/bindings']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
