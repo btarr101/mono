@@ -48,12 +48,6 @@
         path: /opt/the_peoples_edh_bracket/bin/the_peoples_edh_bracket
       register: binary
 
-    - name: Run card sync on deploy for the_peoples_edh_bracket
-      ansible.builtin.command:
-        cmd: /opt/the_peoples_edh_bracket/bin/the_peoples_edh_bracket sync-cards
-        chdir: /opt/the_peoples_edh_bracket
-      when: binary.stat.exists
-
     - name: Start the_peoples_edh_bracket service when binary is present
       ansible.builtin.service:
         name: the_peoples_edh_bracket
