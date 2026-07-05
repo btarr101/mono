@@ -109,7 +109,7 @@ export const CommunityPage = () => {
             {usedGetPersons.isLoading ? (
               Array.from({ length: PAGE_SIZE }).map((_, index) => (
                 <Table.Tr key={index}>
-                  <Table.Td colSpan={6}>
+                  <Table.Td colSpan={5}>
                     <Skeleton h={38} />
                   </Table.Td>
                 </Table.Tr>
