@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO card_rating_review (reviewer_person_uuid, reviewed_card_rating_uuid, liked)\n             VALUES ($1, $2, $3)\n             ON CONFLICT (reviewer_person_uuid, reviewed_card_rating_uuid)\n             DO UPDATE SET liked = EXCLUDED.liked",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "387178630d9c7d33efceac51e090258faa28075477ac1fded2e9cdb1d628e167"
+}

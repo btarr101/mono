@@ -1,0 +1,153 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n            cr.uuid,\n            cr.card_oracle_id,\n            cr.rater_person_uuid,\n            cr.points,\n            cr.reason,\n            crg.global_points,\n            COALESCE(prc.total_personal_points, 0) as \"total_points!\",\n            (\n                SELECT crr_person.liked\n                FROM card_rating_review crr_person\n                WHERE crr_person.reviewed_card_rating_uuid = cr.uuid\n                  AND crr_person.reviewer_person_uuid = $2\n                LIMIT 1\n            ) AS person_review,\n            rc.likes,\n            rc.dislikes,\n            cr.created_at,\n            cr.updated_at,\n            c.name AS \"card_name!\"\n        FROM card_rating cr\n        LEFT JOIN card_rating_global crg ON crg.card_rating_uuid = cr.uuid\n        LEFT JOIN person_ratings_cache prc ON prc.person_uuid = cr.rater_person_uuid\n        LEFT JOIN (\n            SELECT\n                crr.reviewed_card_rating_uuid AS card_rating_uuid,\n                COUNT(*) FILTER (WHERE crr.liked) AS likes,\n                COUNT(*) FILTER (WHERE NOT crr.liked) AS dislikes\n            FROM card_rating_review crr\n            GROUP BY crr.reviewed_card_rating_uuid\n        ) rc ON rc.card_rating_uuid = cr.uuid\n        INNER JOIN card c ON c.oracle_id = cr.card_oracle_id\n        WHERE cr.uuid = $1\n        LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uuid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "uuid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "card_oracle_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "card_oracle_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "rater_person_uuid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "rater_person_uuid"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "points",
+        "type_info": "Numeric",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "points"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "reason",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "reason"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "global_points",
+        "type_info": "Numeric",
+        "origin": {
+          "Table": {
+            "table": "card_rating_global",
+            "name": "global_points"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "total_points!",
+        "type_info": "Numeric",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "person_review",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "likes",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "dislikes",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "card_name!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      null,
+      null,
+      null,
+      null,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "c2435f3376cf416ef8cacfd76fa6263d39aaf8ebca25d280aa2e395d693a7e44"
+}

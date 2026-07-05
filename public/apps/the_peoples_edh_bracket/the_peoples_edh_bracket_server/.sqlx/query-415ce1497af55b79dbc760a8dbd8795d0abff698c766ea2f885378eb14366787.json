@@ -1,0 +1,119 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n            tdc.uuid,\n            tdc.tracked_deck_uuid,\n            tdc.ty as \"ty: TrackedDeckCardType\",\n            tdc.count,\n            c.oracle_id,\n            c.name,\n            c.image_uri,\n            c.legality as \"legality: CardLegality\",\n            COALESCE(crc.average_global_points, 0.0) as \"global_points!\"\n        FROM tracked_deck_card tdc\n        INNER JOIN card c ON c.oracle_id = tdc.card_oracle_id\n        LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = tdc.card_oracle_id\n        WHERE tracked_deck_uuid = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uuid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "tracked_deck_card",
+            "name": "uuid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "tracked_deck_uuid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "tracked_deck_card",
+            "name": "tracked_deck_uuid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "ty: TrackedDeckCardType",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "tracked_deck_card",
+            "name": "ty"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "tracked_deck_card",
+            "name": "count"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "oracle_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "oracle_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "image_uri",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "image_uri"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "legality: CardLegality",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "legality"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "global_points!",
+        "type_info": "Numeric",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      null
+    ]
+  },
+  "hash": "415ce1497af55b79dbc760a8dbd8795d0abff698c766ea2f885378eb14366787"
+}

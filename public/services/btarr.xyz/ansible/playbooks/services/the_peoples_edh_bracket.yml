@@ -1,0 +1,61 @@
+- name: Set up the_peoples_edh_bracket service
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Ensure the_peoples_edh_bracket directory exists
+      ansible.builtin.file:
+        path: /opt/the_peoples_edh_bracket
+        state: directory
+        owner: svc
+        group: svc
+        mode: "0755"
+
+    - name: Set the_peoples_edh_bracket database connection string
+      ansible.builtin.lineinfile:
+        path: /opt/the_peoples_edh_bracket/.env
+        regexp: "^DATABASE_URL="
+        line: "DATABASE_URL=postgresql://{{ postgres_the_peoples_edh_bracket_user }}:{{ env.THE_PEOPLES_EDH_BRACKET_DB_PASSWORD | urlencode }}@127.0.0.1:5432/{{ postgres_the_peoples_edh_bracket_db }}"
+        create: true
+        owner: svc
+        group: svc
+        mode: "0600"
+      notify: Restart the_peoples_edh_bracket service
+
+    - name: Install the_peoples_edh_bracket systemd unit
+      ansible.builtin.copy:
+        src: "{{ files }}/the_peoples_edh_bracket.service"
+        dest: /etc/systemd/system/the_peoples_edh_bracket.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify: the_peoples_edh_bracket unit changed
+
+    - name: Ensure the_peoples_edh_bracket service is enabled
+      ansible.builtin.service:
+        name: the_peoples_edh_bracket
+        enabled: true
+
+    - name: Check whether the_peoples_edh_bracket binary exists
+      ansible.builtin.stat:
+        path: /opt/the_peoples_edh_bracket/bin/the_peoples_edh_bracket
+      register: binary
+
+    - name: Start the_peoples_edh_bracket service when binary is present
+      ansible.builtin.service:
+        name: the_peoples_edh_bracket
+        state: started
+      when: binary.stat.exists
+
+  handlers:
+    - name: Reload systemd daemon
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+      listen: the_peoples_edh_bracket unit changed
+
+    - name: Restart the_peoples_edh_bracket service
+      ansible.builtin.service:
+        name: the_peoples_edh_bracket
+        state: restarted
+      when: binary.stat.exists
+      listen: the_peoples_edh_bracket unit changed

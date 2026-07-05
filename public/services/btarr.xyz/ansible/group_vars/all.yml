@@ -5,6 +5,7 @@ env:
   BTARR_SSH_PUBLIC_KEY: "{{ lookup('dotenv', 'BTARR_SSH_PUBLIC_KEY', file=root ~ '/.env') }}"
   DIGITALOCEAN_TOKEN: "{{ lookup('dotenv', 'DIGITALOCEAN_TOKEN', file=root ~ '/.env') }}"
   CERTBOT_EMAIL: "{{ lookup('dotenv', 'CERTBOT_EMAIL', file=root ~ '/.env') }}"
+  THE_PEOPLES_EDH_BRACKET_PG_PASSWORD: "{{ lookup('dotenv', 'THE_PEOPLES_EDH_BRACKET_PG_PASSWORD', file=root ~ '/.env') }}"
 
 ansible_user: ansible
 ansible_ssh_private_key_file: "{{ lookup('env', 'ANSIBLE_PRIVATE_KEY_FILE') | default('~/.ssh/ansible', true) }}"

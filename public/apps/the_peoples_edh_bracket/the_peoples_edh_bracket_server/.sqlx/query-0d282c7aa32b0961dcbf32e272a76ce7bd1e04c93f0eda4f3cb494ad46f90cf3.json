@@ -1,0 +1,158 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH review_counts AS (\n            SELECT\n                crr.reviewed_card_rating_uuid AS card_rating_uuid,\n                COUNT(*) FILTER (WHERE crr.liked) AS likes,\n                COUNT(*) FILTER (WHERE NOT crr.liked) AS dislikes\n            FROM card_rating_review crr\n            GROUP BY crr.reviewed_card_rating_uuid\n        )\n        SELECT\n            cr.uuid,\n            cr.card_oracle_id,\n            cr.rater_person_uuid,\n            cr.points,\n            cr.reason,\n            crg.global_points,\n            COALESCE(prc.total_personal_points, 0) as \"total_points!\",\n            (\n                SELECT crr_person.liked\n                FROM card_rating_review crr_person\n                WHERE crr_person.reviewed_card_rating_uuid = cr.uuid\n                AND crr_person.reviewer_person_uuid = $5::uuid\n                LIMIT 1\n            ) AS person_review,\n            rc.likes,\n            rc.dislikes,\n            cr.created_at,\n            cr.updated_at,\n            c.name AS \"card_name!\"\n        FROM card_rating cr\n        LEFT JOIN card_rating_global crg ON crg.card_rating_uuid = cr.uuid\n        LEFT JOIN person_ratings_cache prc ON prc.person_uuid = cr.rater_person_uuid\n        LEFT JOIN review_counts rc ON rc.card_rating_uuid = cr.uuid\n        INNER JOIN card c ON c.oracle_id = cr.card_oracle_id\n        WHERE\n            ($1::uuid IS NULL OR cr.card_oracle_id = $1)\n            AND ($2::uuid IS NULL OR cr.rater_person_uuid = $2)\n            AND ($3::text IS NULL OR lower(c.name) LIKE lower($3::text) || '%')\n        ORDER BY\n            CASE WHEN $4::text = 'liked' THEN COALESCE(rc.likes, 0) END DESC,\n            CASE WHEN $4::text = 'liked' THEN COALESCE(rc.dislikes, 0) END ASC,\n            CASE WHEN $4::text = 'disliked' THEN COALESCE(rc.dislikes, 0) END DESC,\n            CASE WHEN $4::text = 'disliked' THEN COALESCE(rc.likes, 0) END ASC,\n            CASE\n                WHEN $4::text = 'controversial'\n                THEN LEAST(COALESCE(rc.likes, 0), COALESCE(rc.dislikes, 0))\n            END DESC,\n            CASE WHEN $4::text = 'recent' THEN cr.created_at END DESC,\n            CASE WHEN $4::text = 'recent' THEN cr.updated_at END DESC NULLS LAST,\n            CASE WHEN $4::text = 'highest_rated' THEN cr.points END DESC,\n            CASE WHEN $4::text = 'lowest_rated' THEN cr.points END ASC,\n            cr.uuid\n        LIMIT $6 OFFSET $7",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uuid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "uuid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "card_oracle_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "card_oracle_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "rater_person_uuid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "rater_person_uuid"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "points",
+        "type_info": "Numeric",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "points"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "reason",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "reason"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "global_points",
+        "type_info": "Numeric",
+        "origin": {
+          "Table": {
+            "table": "card_rating_global",
+            "name": "global_points"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "total_points!",
+        "type_info": "Numeric",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "person_review",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "likes",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "dislikes",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "card_name!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      null,
+      null,
+      null,
+      null,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "0d282c7aa32b0961dcbf32e272a76ce7bd1e04c93f0eda4f3cb494ad46f90cf3"
+}

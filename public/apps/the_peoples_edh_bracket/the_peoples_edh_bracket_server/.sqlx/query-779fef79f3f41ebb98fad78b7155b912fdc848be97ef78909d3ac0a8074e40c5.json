@@ -1,0 +1,83 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n            c.oracle_id as \"oracle_id!\",\n            c.name as \"name!\",\n            c.image_uri,\n            c.legality as \"legality!: CardLegality\",\n            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",\n            acn.alternate_name\n        FROM card c\n        LEFT JOIN card_ratings_cache crc ON c.oracle_id = crc.card_oracle_id\n        LEFT JOIN LATERAL (\n            SELECT name AS alternate_name\n            FROM alternate_card_name acn\n            WHERE acn.card_oracle_id = c.oracle_id\n                AND LOWER(acn.name) = ANY($1)\n            LIMIT 1\n        ) acn ON TRUE\n        WHERE\n            LOWER(c.name) = ANY($1)\n            OR acn.alternate_name IS NOT NULL\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "oracle_id!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "oracle_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "image_uri",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "image_uri"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "legality!: CardLegality",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "legality"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "global_points!",
+        "type_info": "Numeric",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "alternate_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "alternate_card_name",
+            "name": "name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      null,
+      true
+    ]
+  },
+  "hash": "779fef79f3f41ebb98fad78b7155b912fdc848be97ef78909d3ac0a8074e40c5"
+}

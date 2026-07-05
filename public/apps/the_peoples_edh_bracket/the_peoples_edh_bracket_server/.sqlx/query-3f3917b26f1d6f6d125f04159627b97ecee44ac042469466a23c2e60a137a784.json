@@ -1,0 +1,103 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO card_rating (card_oracle_id, rater_person_uuid, points, reason)\n        VALUES ($1, $2, $3, $4)\n        ON CONFLICT (card_oracle_id, rater_person_uuid)\n        DO UPDATE SET\n            points = EXCLUDED.points,\n            reason = EXCLUDED.reason\n        RETURNING *\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uuid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "uuid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "card_oracle_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "card_oracle_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "rater_person_uuid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "rater_person_uuid"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "points",
+        "type_info": "Numeric",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "points"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "reason",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "reason"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "card_rating",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Numeric",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "3f3917b26f1d6f6d125f04159627b97ecee44ac042469466a23c2e60a137a784"
+}

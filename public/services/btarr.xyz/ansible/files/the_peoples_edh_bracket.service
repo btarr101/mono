@@ -1,0 +1,15 @@
+[Unit]
+Description=Serves the people's EDH bracket server.
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/opt/the_peoples_edh_bracket/.env
+ExecStart=/opt/the_peoples_edh_bracket/bin/the_peoples_edh_bracket
+User=svc
+WorkingDirectory=/opt/the_peoples_edh_bracket
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -120,6 +120,26 @@ const router = createBrowserRouter([
 
 export const App = () => {
   const [, setAuthState] = useAuthState()
+
+  const onError = (error: Error) => {
+    if (error instanceof HTTPError && error.response.status === 401) {
+      setAuthState({ ty: null })
+      queryClient.clear()
+
+      notifications.show({
+        message: 'Logged out',
+        autoClose: true,
+      })
+    }
+
+    notifications.show({
+      title: error.name,
+      message: error.message,
+      color: 'red',
+      autoClose: false,
+    })
+  }
+
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -130,34 +150,10 @@ export const App = () => {
       },
     },
     queryCache: new QueryCache({
-      onError: error => {
-        if (error instanceof HTTPError && error.response.status === 401) {
-          setAuthState({ ty: null })
-          queryClient.clear()
-        }
-
-        notifications.show({
-          title: error.name,
-          message: error.message,
-          color: 'red',
-          autoClose: false,
-        })
-      },
+      onError,
     }),
     mutationCache: new MutationCache({
-      onError: error => {
-        if (error instanceof HTTPError && error.response.status === 401) {
-          setAuthState({ ty: null })
-          queryClient.clear()
-        }
-
-        notifications.show({
-          title: error.name,
-          message: error.message,
-          color: 'red',
-          autoClose: false,
-        })
-      },
+      onError,
     }),
   })
 

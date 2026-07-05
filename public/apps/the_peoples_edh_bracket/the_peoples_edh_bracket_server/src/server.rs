@@ -9,6 +9,7 @@ use tracing::info;
 
 use crate::{
     api_router,
+    client_assets_handler::client_assets_handler,
     middleware::auth::{AuthMiddlewareParams, AuthMiddlewareState, auth_middleware},
     state::AppState,
 };
@@ -35,6 +36,7 @@ pub async fn server(state: AppState) -> anyhow::Result<()> {
                 .allow_origin(AllowOrigin::any())
                 .allow_headers(AllowHeaders::any()),
         )
+        .fallback(client_assets_handler)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::new().include_headers(true).level(tracing::Level::INFO))

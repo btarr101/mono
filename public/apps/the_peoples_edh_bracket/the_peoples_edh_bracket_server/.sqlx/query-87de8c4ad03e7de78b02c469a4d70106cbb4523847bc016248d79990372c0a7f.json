@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM card_rating_review\n            WHERE reviewer_person_uuid = $1 AND reviewed_card_rating_uuid = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "87de8c4ad03e7de78b02c469a4d70106cbb4523847bc016248d79990372c0a7f"
+}

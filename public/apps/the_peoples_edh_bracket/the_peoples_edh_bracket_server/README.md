@@ -72,3 +72,11 @@ cargo r seed
 ```
 
 This will seed the database with many debug users, and then simulate them rating a set of 10 cards.
+
+## Deployment
+
+To prepare for deployment, you need to prepare `sqlx` since during CI it won't have acess to a database.
+
+```bash
+cargo sqlx prepare
+```

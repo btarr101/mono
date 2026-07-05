@@ -43,5 +43,5 @@ jobs:
           DEPLOYER_SSH_PUBLIC_KEY: ${{ vars.DEPLOYER_SSH_PUBLIC_KEY }}
           BTARR_SSH_PUBLIC_KEY: ${{ vars.BTARR_SSH_PUBLIC_KEY }}
           CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
+          THE_PEOPLES_EDH_BRACKET_PG_PASSWORD: ${{ secrets.THE_PEOPLES_EDH_BRACKET_PG_PASSWORD }}
         run: ./deploy.sh
-
