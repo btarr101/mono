@@ -14,9 +14,9 @@ export const LoadingImage = (props: ImageProps) => {
     <>
       <MantineImage onLoad={() => setLoaded(true)} {...props} />
       <Transition duration={50} mounted={!loaded} transition="fade">
-        {sytles => (
+        {styles => (
           // @ts-expect-error just fowarding props...
-          <Skeleton {...props} style={sytles} />
+          <Skeleton {...props} style={styles} />
         )}
       </Transition>
     </>
