@@ -11,6 +11,7 @@ import {
   Text,
   Textarea,
   Title,
+  useMatches,
 } from '@mantine/core'
 import { hasLength, useForm } from '@mantine/form'
 import { ShareIcon } from '@phosphor-icons/react'
@@ -48,6 +49,11 @@ export const RatingInput = ({ rating, onSave, onShare }: RatingInputProps) => {
 
     return parseFloat(total_points) - parseFloat(rating?.points ?? '0') + points
   }, [form, rating, me])
+
+  const isMobile = useMatches({
+    base: true,
+    md: false,
+  })
 
   return (
     <form
@@ -103,7 +109,7 @@ export const RatingInput = ({ rating, onSave, onShare }: RatingInputProps) => {
         position="bottom-end"
         size={32}
       >
-        <Card withBorder orientation="horizontal" padding="sm">
+        <Card withBorder orientation={isMobile ? 'vertical' : 'horizontal'} padding="sm">
           <Card.Section withBorder mih={'125px'} p="md" style={{ alignSelf: 'stretch' }}>
             <Center h="100%">
               <Group wrap="nowrap">
