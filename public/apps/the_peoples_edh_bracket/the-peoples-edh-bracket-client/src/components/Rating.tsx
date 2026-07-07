@@ -88,6 +88,7 @@ export const Rating = ({ rating, pinned, onPin, onShare }: RatingProps) => {
         }
         position="bottom-end"
         size={32}
+        zIndex={1}
       >
         <Card withBorder orientation="horizontal" padding="sm">
           <Card.Section withBorder p="md">
