@@ -10,6 +10,7 @@ import {
   Stack,
   Text,
   Title,
+  useMatches,
 } from '@mantine/core'
 import { PushPinIcon, ShareIcon } from '@phosphor-icons/react'
 
@@ -50,6 +51,11 @@ export const Rating = ({ rating, pinned, onPin, onShare }: RatingProps) => {
     })
   }
 
+  const isMobile = useMatches({
+    base: true,
+    md: false,
+  })
+
   return (
     <Box pos="relative">
       <Indicator
@@ -88,8 +94,9 @@ export const Rating = ({ rating, pinned, onPin, onShare }: RatingProps) => {
         }
         position="bottom-end"
         size={32}
+        zIndex={1}
       >
-        <Card withBorder orientation="horizontal" padding="sm">
+        <Card withBorder orientation={isMobile ? 'vertical' : 'horizontal'} padding="sm">
           <Card.Section withBorder p="md">
             <Center h="100%">
               <Stack align="start" gap={'lg'}>
