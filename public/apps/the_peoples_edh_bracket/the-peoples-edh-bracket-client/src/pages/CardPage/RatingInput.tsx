@@ -3,11 +3,9 @@ import {
   Button,
   Card,
   Center,
-  Divider,
   Group,
   Indicator,
   NumberInput,
-  Stack,
   Text,
   Textarea,
   useMatches,
@@ -15,7 +13,6 @@ import {
 import { hasLength, useForm } from '@mantine/form'
 import { ShareIcon } from '@phosphor-icons/react'
 
-import { PointsNumberFormatter } from '../../components/PointsNumberFormatter'
 import type { CardRatingEnriched } from '../../types/bindings/CardRatingEnriched'
 import { formatTimeStamp } from '../../util'
 
