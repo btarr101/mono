@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n            person.*,\n            COALESCE(pldc.likes, 0) AS \"likes!\",\n            COALESCE(pldc.dislikes, 0) AS \"dislikes!\",\n            COALESCE(cr.cards_rated, 0) AS \"cards_rated!\",\n            COALESCE(td.tracked_decks, 0) AS \"tracked_decks!\",\n            COALESCE(prc.total_personal_points, 0) AS \"personal_points_allocated!\",\n            COALESCE(fc.followers, 0) AS \"followers!\",\n            COALESCE(fg.following, 0) AS \"following!\",\n            CASE\n                WHEN $2::uuid IS NULL THEN NULL\n                ELSE EXISTS (\n                    SELECT 1\n                    FROM follower f\n                    WHERE\n                        f.follower_person_uuid = $2\n                        AND f.followed_person_uuid = person.uuid\n                )\n            END AS am_following\n        FROM person\n        LEFT JOIN person_likes_dislikes_cache pldc ON person.uuid = pldc.person_uuid\n        LEFT JOIN (\n            SELECT\n                rater_person_uuid,\n                COUNT(*) AS cards_rated\n            FROM card_rating\n            GROUP BY rater_person_uuid\n        ) cr ON person.uuid = cr.rater_person_uuid\n        LEFT JOIN (\n            SELECT tracker_person_uuid AS person_uuid, COUNT(*) AS tracked_decks\n            FROM tracked_deck\n            GROUP BY tracker_person_uuid\n        ) td ON person.uuid = td.person_uuid\n        LEFT JOIN person_ratings_cache prc ON person.uuid = prc.person_uuid\n        LEFT JOIN (\n            SELECT followed_person_uuid AS person_uuid, COUNT(*) AS followers\n            FROM follower\n            GROUP BY followed_person_uuid\n        ) fc ON person.uuid = fc.person_uuid\n        LEFT JOIN (\n            SELECT follower_person_uuid AS person_uuid, COUNT(*) AS following\n            FROM follower\n            GROUP BY follower_person_uuid\n        ) fg ON person.uuid = fg.person_uuid\n        WHERE person.uuid = $1\n        LIMIT 1",
+  "query": "SELECT\n            person.*,\n            COALESCE(pldc.likes, 0) AS \"likes!\",\n            COALESCE(pldc.dislikes, 0) AS \"dislikes!\",\n            COALESCE(cr.cards_rated, 0) AS \"cards_rated!\",\n            COALESCE(td.tracked_decks, 0) AS \"tracked_decks!\",\n            COALESCE(fc.followers, 0) AS \"followers!\",\n            COALESCE(fg.following, 0) AS \"following!\",\n            CASE\n                WHEN $2::uuid IS NULL THEN NULL\n                ELSE EXISTS (\n                    SELECT 1\n                    FROM follower f\n                    WHERE\n                        f.follower_person_uuid = $2\n                        AND f.followed_person_uuid = person.uuid\n                )\n            END AS am_following\n        FROM person\n        LEFT JOIN person_likes_dislikes_cache pldc ON person.uuid = pldc.person_uuid\n        LEFT JOIN (\n            SELECT\n                rater_person_uuid,\n                COUNT(*) AS cards_rated\n            FROM card_rating\n            GROUP BY rater_person_uuid\n        ) cr ON person.uuid = cr.rater_person_uuid\n        LEFT JOIN (\n            SELECT tracker_person_uuid AS person_uuid, COUNT(*) AS tracked_decks\n            FROM tracked_deck\n            GROUP BY tracker_person_uuid\n        ) td ON person.uuid = td.person_uuid\n        LEFT JOIN (\n            SELECT followed_person_uuid AS person_uuid, COUNT(*) AS followers\n            FROM follower\n            GROUP BY followed_person_uuid\n        ) fc ON person.uuid = fc.person_uuid\n        LEFT JOIN (\n            SELECT follower_person_uuid AS person_uuid, COUNT(*) AS following\n            FROM follower\n            GROUP BY follower_person_uuid\n        ) fg ON person.uuid = fg.person_uuid\n        WHERE person.uuid = $1\n        LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -84,24 +84,18 @@
       },
       {
         "ordinal": 9,
-        "name": "personal_points_allocated!",
-        "type_info": "Numeric",
-        "origin": "Expression"
-      },
-      {
-        "ordinal": 10,
         "name": "followers!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 11,
+        "ordinal": 10,
         "name": "following!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 12,
+        "ordinal": 11,
         "name": "am_following",
         "type_info": "Bool",
         "origin": "Expression"
@@ -125,9 +119,8 @@
       null,
       null,
       null,
-      null,
       null
     ]
   },
-  "hash": "3ed87adf49bc2097b6eec767a5ada1dc1470515d5e7596a239bb4022a23a331d"
+  "hash": "9c740f8197e1cebb6f8574e0d55959753ff7213779fef8311ae12d54d0b11e30"
 }

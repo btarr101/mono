@@ -32,7 +32,7 @@ struct CardMetrics {
     #[ts(type = "number")]
     total_ratings: i64,
     #[ts(type = "number")]
-    card_rank: i32,
+    card_rank: i64,
 }
 
 #[derive(ts_rs::TS, Serialize, FromRow)]
@@ -88,12 +88,12 @@ async fn get_cards(
     });
 
     let rows = sqlx::query!(
-        "WITH card_rating_agg AS (
+        "WITH card_aggregates AS (
             SELECT
                 cr.card_oracle_id,
                 COUNT(*) AS total_ratings,
-                COUNT(*) FILTER (WHERE cr.points > 0) AS likes_count,
-                COUNT(*) FILTER (WHERE cr.points < 0) AS dislikes_count,
+                AVG(cr.points) AS average_global_points,
+                COALESCE(STDDEV_POP(cr.points), 0.0) AS controversy_score,
                 COALESCE(
                     SUM(
                         EXP(
@@ -104,30 +104,42 @@ async fn get_cards(
                 ) AS trending_score
             FROM card_rating cr
             GROUP BY cr.card_oracle_id
+        ),
+        card_ranks AS (
+            SELECT
+                ca.card_oracle_id,
+                ca.total_ratings,
+                ca.average_global_points,
+                ca.controversy_score,
+                ca.trending_score,
+                DENSE_RANK() OVER (ORDER BY ca.average_global_points DESC) AS card_rank
+            FROM card_aggregates ca
+        ),
+        unrated_rank AS (
+            SELECT
+                1 + COUNT(DISTINCT cr.average_global_points)::INT AS unrated_card_rank
+            FROM card_ranks cr
+            WHERE cr.average_global_points > 0.0
         )
         SELECT
             c.oracle_id,
             c.name,
             c.image_uri,
             c.legality as \"legality: CardLegality\",
-            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",
-            COALESCE(cra.total_ratings, 0) as \"total_ratings!\",
-            COALESCE(crc.card_rank, grs.unrated_card_rank) as \"card_rank!\"
+            COALESCE(cr.average_global_points, 0.0) as \"global_points!\",
+            COALESCE(cr.total_ratings, 0) as \"total_ratings!\",
+            COALESCE(cr.card_rank, urr.unrated_card_rank) as \"card_rank!\"
         FROM card c
-        LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = c.oracle_id
-        LEFT JOIN card_rating_agg cra ON cra.card_oracle_id = c.oracle_id
-        CROSS JOIN global_ratings_state grs
+        LEFT JOIN card_ranks cr ON cr.card_oracle_id = c.oracle_id
+        CROSS JOIN unrated_rank urr
         WHERE ($1::text IS NULL OR lower(c.name) LIKE lower($1) || '%')
         ORDER BY
-            CASE WHEN $4::text = 'highest_rated' THEN COALESCE(crc.average_global_points, 0.0) END DESC,
-            CASE WHEN $4::text = 'lowest_rated' THEN COALESCE(crc.average_global_points, 0.0) END ASC,
-            CASE
-                WHEN $4::text = 'most_controversial'
-                THEN ABS(COALESCE(cra.likes_count, 0) - COALESCE(cra.dislikes_count, 0))
-            END DESC,
-            CASE WHEN $4::text = 'most_rated' THEN COALESCE(cra.total_ratings, 0) END DESC,
-            CASE WHEN $4::text = 'least_rated' THEN COALESCE(cra.total_ratings, 0) END ASC,
-            CASE WHEN $4::text = 'trending' THEN COALESCE(cra.trending_score, 0) END DESC,
+            CASE WHEN $4::text = 'highest_rated' THEN COALESCE(cr.average_global_points, 0.0) END DESC,
+            CASE WHEN $4::text = 'lowest_rated' THEN COALESCE(cr.average_global_points, 0.0) END ASC,
+            CASE WHEN $4::text = 'most_controversial' THEN COALESCE(cr.controversy_score, 0.0) END DESC,
+            CASE WHEN $4::text = 'most_rated' THEN COALESCE(cr.total_ratings, 0) END DESC,
+            CASE WHEN $4::text = 'least_rated' THEN COALESCE(cr.total_ratings, 0) END ASC,
+            CASE WHEN $4::text = 'trending' THEN COALESCE(cr.trending_score, 0) END DESC,
             c.name
         LIMIT $2 OFFSET $3",
         q,
@@ -160,20 +172,40 @@ async fn get_cards(
 
 async fn get_card(State(pg_pool): State<PgPool>, Path(oracle_id): Path<uuid::Uuid>) -> ApiResult<Json<CardWithMetrics>> {
     let row = sqlx::query!(
-        "SELECT
+        "WITH card_aggregates AS (
+            SELECT
+                cr.card_oracle_id,
+                COUNT(*) AS total_ratings,
+                AVG(cr.points) AS average_global_points
+            FROM card_rating cr
+            GROUP BY cr.card_oracle_id
+        ),
+        card_ranks AS (
+            SELECT
+                ca.card_oracle_id,
+                ca.total_ratings,
+                ca.average_global_points,
+                DENSE_RANK() OVER (ORDER BY ca.average_global_points DESC) AS card_rank
+            FROM card_aggregates ca
+        ),
+        unrated_rank AS (
+            SELECT
+                1 + COUNT(DISTINCT cr.average_global_points)::INT AS unrated_card_rank
+            FROM card_ranks cr
+            WHERE cr.average_global_points > 0.0
+        )
+        SELECT
             c.oracle_id,
             c.name,
             c.image_uri,
             c.legality as \"legality: CardLegality\",
-            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",
-            COUNT(cr.uuid) as \"total_ratings!\",
-            COALESCE(crc.card_rank, grs.unrated_card_rank) as \"card_rank!\"
+            COALESCE(cr.average_global_points, 0.0) as \"global_points!\",
+            COALESCE(cr.total_ratings, 0) as \"total_ratings!\",
+            COALESCE(cr.card_rank, urr.unrated_card_rank) as \"card_rank!\"
         FROM card c
-        LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = c.oracle_id
-        LEFT JOIN card_rating cr ON cr.card_oracle_id = c.oracle_id
-        CROSS JOIN global_ratings_state grs
+        LEFT JOIN card_ranks cr ON cr.card_oracle_id = c.oracle_id
+        CROSS JOIN unrated_rank urr
         WHERE c.oracle_id = $1
-        GROUP BY c.oracle_id, c.name, c.image_uri, c.legality, crc.average_global_points, crc.card_rank, grs.unrated_card_rank
         LIMIT 1",
         oracle_id
     )
@@ -199,16 +231,36 @@ async fn get_card(State(pg_pool): State<PgPool>, Path(oracle_id): Path<uuid::Uui
 async fn get_card_metrics(State(pg_pool): State<PgPool>, Path(oracle_id): Path<uuid::Uuid>) -> ApiResult<Json<CardMetrics>> {
     let metrics = sqlx::query_as!(
         CardMetrics,
-        "SELECT
-            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",
-            COUNT(cr.uuid) as \"total_ratings!\",
-            COALESCE(crc.card_rank, grs.unrated_card_rank) as \"card_rank!\"
+        "WITH card_aggregates AS (
+            SELECT
+                cr.card_oracle_id,
+                COUNT(*) AS total_ratings,
+                AVG(cr.points) AS average_global_points
+            FROM card_rating cr
+            GROUP BY cr.card_oracle_id
+        ),
+        card_ranks AS (
+            SELECT
+                ca.card_oracle_id,
+                ca.total_ratings,
+                ca.average_global_points,
+                DENSE_RANK() OVER (ORDER BY ca.average_global_points DESC) AS card_rank
+            FROM card_aggregates ca
+        ),
+        unrated_rank AS (
+            SELECT
+                1 + COUNT(DISTINCT cr.average_global_points)::INT AS unrated_card_rank
+            FROM card_ranks cr
+            WHERE cr.average_global_points > 0.0
+        )
+        SELECT
+            COALESCE(cr.average_global_points, 0.0) as \"global_points!\",
+            COALESCE(cr.total_ratings, 0) as \"total_ratings!\",
+            COALESCE(cr.card_rank, urr.unrated_card_rank) as \"card_rank!\"
         FROM card c
-        LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = c.oracle_id
-        LEFT JOIN card_rating cr ON cr.card_oracle_id = c.oracle_id
-        CROSS JOIN global_ratings_state grs
+        LEFT JOIN card_ranks cr ON cr.card_oracle_id = c.oracle_id
+        CROSS JOIN unrated_rank urr
         WHERE c.oracle_id = $1
-        GROUP BY c.oracle_id, crc.average_global_points, crc.card_rank, grs.unrated_card_rank
         LIMIT 1",
         oracle_id
     )

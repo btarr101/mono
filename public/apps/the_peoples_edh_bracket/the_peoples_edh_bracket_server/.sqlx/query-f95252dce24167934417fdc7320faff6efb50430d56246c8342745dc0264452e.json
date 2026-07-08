@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n            tdc.uuid,\n            tdc.tracked_deck_uuid,\n            tdc.ty as \"ty: TrackedDeckCardType\",\n            tdc.count,\n            c.oracle_id,\n            c.name,\n            c.image_uri,\n            c.legality as \"legality: CardLegality\",\n            COALESCE(crc.average_global_points, 0.0) as \"global_points!\"\n        FROM tracked_deck_card tdc\n        INNER JOIN card c ON c.oracle_id = tdc.card_oracle_id\n        LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = tdc.card_oracle_id\n        WHERE tracked_deck_uuid = $1\n        ",
+  "query": "WITH relevant_cards AS (\n            SELECT DISTINCT tdc.card_oracle_id\n            FROM tracked_deck_card tdc\n            WHERE tdc.tracked_deck_uuid = $1\n        ),\n        card_global_points AS (\n            SELECT\n                cr.card_oracle_id,\n                AVG(cr.points) AS average_global_points\n            FROM card_rating cr\n            INNER JOIN relevant_cards rc ON rc.card_oracle_id = cr.card_oracle_id\n            GROUP BY cr.card_oracle_id\n        )\n        SELECT\n            tdc.uuid,\n            tdc.tracked_deck_uuid,\n            tdc.ty as \"ty: TrackedDeckCardType\",\n            tdc.count,\n            c.oracle_id,\n            c.name,\n            c.image_uri,\n            c.legality as \"legality: CardLegality\",\n            COALESCE(cgp.average_global_points, 0.0) as \"global_points!\"\n        FROM tracked_deck_card tdc\n        INNER JOIN card c ON c.oracle_id = tdc.card_oracle_id\n        LEFT JOIN card_global_points cgp ON cgp.card_oracle_id = tdc.card_oracle_id\n        WHERE tdc.tracked_deck_uuid = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -115,5 +115,5 @@
       null
     ]
   },
-  "hash": "415ce1497af55b79dbc760a8dbd8795d0abff698c766ea2f885378eb14366787"
+  "hash": "f95252dce24167934417fdc7320faff6efb50430d56246c8342745dc0264452e"
 }

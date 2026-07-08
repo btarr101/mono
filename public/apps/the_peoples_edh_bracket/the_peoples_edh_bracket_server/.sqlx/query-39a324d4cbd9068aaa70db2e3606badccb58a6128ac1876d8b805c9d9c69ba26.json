@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n            c.oracle_id,\n            c.name,\n            c.image_uri,\n            c.legality as \"legality: CardLegality\",\n            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",\n            COUNT(cr.uuid) as \"total_ratings!\",\n            COALESCE(crc.card_rank, grs.unrated_card_rank) as \"card_rank!\"\n        FROM card c\n        LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = c.oracle_id\n        LEFT JOIN card_rating cr ON cr.card_oracle_id = c.oracle_id\n        CROSS JOIN global_ratings_state grs\n        WHERE c.oracle_id = $1\n        GROUP BY c.oracle_id, c.name, c.image_uri, c.legality, crc.average_global_points, crc.card_rank, grs.unrated_card_rank\n        LIMIT 1",
+  "query": "WITH card_aggregates AS (\n            SELECT\n                cr.card_oracle_id,\n                COUNT(*) AS total_ratings,\n                AVG(cr.points) AS average_global_points\n            FROM card_rating cr\n            GROUP BY cr.card_oracle_id\n        ),\n        card_ranks AS (\n            SELECT\n                ca.card_oracle_id,\n                ca.total_ratings,\n                ca.average_global_points,\n                DENSE_RANK() OVER (ORDER BY ca.average_global_points DESC) AS card_rank\n            FROM card_aggregates ca\n        ),\n        unrated_rank AS (\n            SELECT\n                1 + COUNT(DISTINCT cr.average_global_points)::INT AS unrated_card_rank\n            FROM card_ranks cr\n            WHERE cr.average_global_points > 0.0\n        )\n        SELECT\n            c.oracle_id,\n            c.name,\n            c.image_uri,\n            c.legality as \"legality: CardLegality\",\n            COALESCE(cr.average_global_points, 0.0) as \"global_points!\",\n            COALESCE(cr.total_ratings, 0) as \"total_ratings!\",\n            COALESCE(cr.card_rank, urr.unrated_card_rank) as \"card_rank!\"\n        FROM card c\n        LEFT JOIN card_ranks cr ON cr.card_oracle_id = c.oracle_id\n        CROSS JOIN unrated_rank urr\n        WHERE c.oracle_id = $1\n        LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -62,7 +62,7 @@
       {
         "ordinal": 6,
         "name": "card_rank!",
-        "type_info": "Int4",
+        "type_info": "Int8",
         "origin": "Expression"
       }
     ],
@@ -81,5 +81,5 @@
       null
     ]
   },
-  "hash": "9789bd529a852afba5d66d7a41912907adc4ac17d0e1d73d2282cff0ebc49cd8"
+  "hash": "39a324d4cbd9068aaa70db2e3606badccb58a6128ac1876d8b805c9d9c69ba26"
 }

@@ -6,6 +6,7 @@ use axum::{
     routing::{get, put},
 };
 use axum_anyhow::{ApiResult, IntoApiError, OptionExt};
+use axum_valid::Valid;
 use bigdecimal::{BigDecimal, Signed};
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
@@ -36,8 +37,6 @@ pub fn get_router() -> Router<AppState> {
 struct CardRatingEnriched {
     #[serde(flatten)]
     card_rating: CardRating,
-    total_points: BigDecimal,
-    global_points: BigDecimal,
     reviews: CardRatingReviews,
     card_name: String,
 }
@@ -118,8 +117,6 @@ async fn get_ratings(
             cr.rater_person_uuid,
             cr.points,
             cr.reason,
-            crg.global_points,
-            COALESCE(prc.total_personal_points, 0) as \"total_points!\",
             (
                 SELECT crr_person.liked
                 FROM card_rating_review crr_person
@@ -133,8 +130,6 @@ async fn get_ratings(
             cr.updated_at,
             c.name AS \"card_name!\"
         FROM card_rating cr
-        LEFT JOIN card_rating_global crg ON crg.card_rating_uuid = cr.uuid
-        LEFT JOIN person_ratings_cache prc ON prc.person_uuid = cr.rater_person_uuid
         LEFT JOIN review_counts rc ON rc.card_rating_uuid = cr.uuid
         INNER JOIN card c ON c.oracle_id = cr.card_oracle_id
         WHERE
@@ -179,8 +174,6 @@ async fn get_ratings(
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             },
-            total_points: row.total_points,
-            global_points: row.global_points.unwrap_or_default(),
             reviews: CardRatingReviews {
                 person_review: row.person_review,
                 likes: row.likes.unwrap_or_default(),
@@ -193,9 +186,9 @@ async fn get_ratings(
     Ok(Json(ratings))
 }
 
-fn validate_big_decimal_not_negative(value: &BigDecimal) -> Result<(), validator::ValidationError> {
-    if value.is_negative() {
-        return Err(validator::ValidationError::new("value cannot be negative"));
+fn validate_points_between_zero_and_ten(value: &BigDecimal) -> Result<(), validator::ValidationError> {
+    if value.is_negative() || value > &BigDecimal::from(10) {
+        return Err(validator::ValidationError::new("value must be between 0 and 10"));
     }
 
     Ok(())
@@ -206,7 +199,7 @@ fn validate_big_decimal_not_negative(value: &BigDecimal) -> Result<(), validator
 #[derive(Deserialize, Validate)]
 struct PutRatingBody {
     card_oracle_id: uuid::Uuid,
-    #[validate(custom(function = validate_big_decimal_not_negative))]
+    #[validate(custom(function = validate_points_between_zero_and_ten))]
     points: BigDecimal,
     #[validate(length(max = 400))]
     reason: Option<String>,
@@ -215,11 +208,11 @@ struct PutRatingBody {
 async fn put_rating(
     State(pg_pool): State<PgPool>,
     Auth { person_uuid }: Auth,
-    Json(PutRatingBody {
+    Valid(Json(PutRatingBody {
         card_oracle_id,
         points,
         reason,
-    }): Json<PutRatingBody>,
+    })): Valid<Json<PutRatingBody>>,
 ) -> ApiResult<Json<CardRating>> {
     let card_rating = rate_card(
         RateCardParams {
@@ -253,8 +246,6 @@ async fn get_rating(
             cr.rater_person_uuid,
             cr.points,
             cr.reason,
-            crg.global_points,
-            COALESCE(prc.total_personal_points, 0) as \"total_points!\",
             (
                 SELECT crr_person.liked
                 FROM card_rating_review crr_person
@@ -268,8 +259,6 @@ async fn get_rating(
             cr.updated_at,
             c.name AS \"card_name!\"
         FROM card_rating cr
-        LEFT JOIN card_rating_global crg ON crg.card_rating_uuid = cr.uuid
-        LEFT JOIN person_ratings_cache prc ON prc.person_uuid = cr.rater_person_uuid
         LEFT JOIN (
             SELECT
                 crr.reviewed_card_rating_uuid AS card_rating_uuid,
@@ -298,8 +287,6 @@ async fn get_rating(
             created_at: row.created_at,
             updated_at: row.updated_at,
         },
-        total_points: row.total_points,
-        global_points: row.global_points.unwrap_or_default(),
         reviews: CardRatingReviews {
             person_review: row.person_review,
             likes: row.likes.unwrap_or(0),
@@ -385,7 +372,7 @@ async fn get_rating_histogram_for_card(
                     1,
                     LEAST(
                         width_bucket(
-                            crg.global_points,
+                            cr.points,
                             p.min_global_points,
                             p.max_global_points,
                             p.fixed_buckets
@@ -394,9 +381,9 @@ async fn get_rating_histogram_for_card(
                     )
                 ) AS bucket_index,
                 COUNT(*)::bigint AS count
-            FROM card_rating_global crg
+            FROM card_rating cr
             CROSS JOIN params p
-            WHERE crg.card_oracle_id = $1
+            WHERE cr.card_oracle_id = $1
             GROUP BY 1
         )
         SELECT

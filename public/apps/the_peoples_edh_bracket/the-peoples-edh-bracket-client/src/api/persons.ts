@@ -1,7 +1,6 @@
 import type { GetPersonsParams } from '../types/bindings/GetPersonsParams'
 import type { Person } from '../types/bindings/Person'
 import type { PersonEnriched } from '../types/bindings/PersonEnriched'
-import type { PersonWithTotalPoints } from '../types/bindings/PersonWithTotalPoints'
 import { api } from '.'
 
 export const getPersons = (params: GetPersonsParams) => {
@@ -18,7 +17,7 @@ export const debugPostPerson = () => {
 }
 
 export const getMe = () => {
-  return api.get('persons/me').json<PersonWithTotalPoints>()
+  return api.get('persons/me').json<Person>()
 }
 
 export const getPerson = (uuid: string) => {

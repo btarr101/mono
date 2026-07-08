@@ -39,15 +39,15 @@ export const AboutPage = () => (
     <Title order={2}>How it works</Title>
 
     <Text>
-      Each player assigns <strong>personal points (ppts)</strong> to cards based on their own scale.
-      Those points are then normalized into a <strong>0–10 personal scale (pts)</strong>, and each
-      card’s global score is the average of everyone’s normalized score.
+      Each player assigns <strong>personal points (ppts)</strong> to cards on a fixed{' '}
+      <strong>0–10 scale</strong>. A card’s global score (<strong>pts</strong>) is the average of
+      everyone’s ppts for that card.
     </Text>
 
     <List spacing="xs">
-      <List.Item>Power is treated like a limited budget you distribute across cards.</List.Item>
-      <List.Item>You can’t meaningfully make everything a 10.</List.Item>
-      <List.Item>Every unrated card is implicitly 0 ppts.</List.Item>
+      <List.Item>0 means “not powerful in Commander”; 10 means “format-defining power.”</List.Item>
+      <List.Item>Every unrated card is implicitly 0 ppts in deck analysis.</List.Item>
+      <List.Item>Your ppts are capped at 10 per card.</List.Item>
     </List>
 
     <Text>
@@ -61,17 +61,14 @@ export const AboutPage = () => (
     <Title order={3}>Quick example</Title>
 
     <Text>
-      John assigns 5 ppts to Storm Crow and 5 ppts to Force of Will. Will assigns 1 ppts to Storm
+      John assigns 5 ppts to Storm Crow and 9 ppts to Force of Will. Will assigns 1 ppts to Storm
       Crow.
     </Text>
 
     <List spacing="xs">
-      <List.Item>John total = 10 ppts → Storm Crow = 5.0 pts, Force of Will = 5.0 pts.</List.Item>
-      <List.Item>Will total = 1 ppts → Storm Crow = 10.0 pts.</List.Item>
-      <List.Item>
-        Global averages: Storm Crow = (5.0 + 10.0) / 2 = 7.5 pts, Force of Will = (5.0 + 0.0) / 2 =
-        2.5 pts.
-      </List.Item>
+      <List.Item>Storm Crow ppts: 5 and 1 → global score = 3.0 pts.</List.Item>
+      <List.Item>Force of Will ppts: 9 (one submitted rating) → global score = 9.0 pts.</List.Item>
+      <List.Item>Global scores are averages over submitted ratings only.</List.Item>
     </List>
 
     <Divider />
@@ -90,8 +87,8 @@ export const AboutPage = () => (
         <strong>Card pages:</strong> view a card’s community score, rank, and rating distribution.
       </List.Item>
       <List.Item>
-        <strong>Rate cards:</strong> submit your own points (and optional reasoning) to feed the
-        model.
+        <strong>Rate cards:</strong> submit your own 0–10 rating (and optional reasoning) to feed
+        the model.
       </List.Item>
       <List.Item>
         <strong>Analyze:</strong> paste a decklist to get a community-driven estimate of deck power.
