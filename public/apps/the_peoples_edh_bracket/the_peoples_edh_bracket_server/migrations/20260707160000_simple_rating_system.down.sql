@@ -7,10 +7,14 @@
 ALTER TABLE card_rating
 DROP CONSTRAINT IF EXISTS card_rating_points_between_0_and_10;
 
-DROP VIEW IF EXISTS global_ratings_state;
-DROP VIEW IF EXISTS card_ratings_cache;
+-- Drop possibly conflicting relation types (view first, then table) for reliable rollback.
 DROP VIEW IF EXISTS card_rating_global;
+DROP VIEW IF EXISTS global_ratings_state;
+DROP TABLE IF EXISTS global_ratings_state;
+DROP VIEW IF EXISTS card_ratings_cache;
+DROP TABLE IF EXISTS card_ratings_cache;
 DROP VIEW IF EXISTS person_ratings_cache;
+DROP TABLE IF EXISTS person_ratings_cache;
 
 DROP FUNCTION IF EXISTS calculate_global_points(NUMERIC, NUMERIC);
 
