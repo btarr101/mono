@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH card_aggregates AS (\n            SELECT\n                cr.card_oracle_id,\n                COUNT(*) AS total_ratings,\n                COUNT(*) FILTER (WHERE cr.points > 0) AS likes_count,\n                COUNT(*) FILTER (WHERE cr.points < 0) AS dislikes_count,\n                AVG(cr.points) AS average_global_points,\n                COALESCE(\n                    SUM(\n                        EXP(\n                            -LN(2) * (EXTRACT(EPOCH FROM (NOW() - cr.created_at)) / 3600.0) / 72.0\n                        )\n                    ),\n                    0\n                ) AS trending_score\n            FROM card_rating cr\n            GROUP BY cr.card_oracle_id\n        ),\n        card_ranks AS (\n            SELECT\n                ca.card_oracle_id,\n                ca.total_ratings,\n                ca.likes_count,\n                ca.dislikes_count,\n                ca.average_global_points,\n                ca.trending_score,\n                DENSE_RANK() OVER (ORDER BY ca.average_global_points DESC) AS card_rank\n            FROM card_aggregates ca\n        ),\n        unrated_rank AS (\n            SELECT\n                1 + COUNT(DISTINCT cr.average_global_points)::INT AS unrated_card_rank\n            FROM card_ranks cr\n            WHERE cr.average_global_points > 0.0\n        )\n        SELECT\n            c.oracle_id,\n            c.name,\n            c.image_uri,\n            c.legality as \"legality: CardLegality\",\n            COALESCE(cr.average_global_points, 0.0) as \"global_points!\",\n            COALESCE(cr.total_ratings, 0) as \"total_ratings!\",\n            COALESCE(cr.card_rank, urr.unrated_card_rank) as \"card_rank!\"\n        FROM card c\n        LEFT JOIN card_ranks cr ON cr.card_oracle_id = c.oracle_id\n        CROSS JOIN unrated_rank urr\n        WHERE ($1::text IS NULL OR lower(c.name) LIKE lower($1) || '%')\n        ORDER BY\n            CASE WHEN $4::text = 'highest_rated' THEN COALESCE(cr.average_global_points, 0.0) END DESC,\n            CASE WHEN $4::text = 'lowest_rated' THEN COALESCE(cr.average_global_points, 0.0) END ASC,\n            CASE\n                WHEN $4::text = 'most_controversial'\n                THEN ABS(COALESCE(cr.likes_count, 0) - COALESCE(cr.dislikes_count, 0))\n            END DESC,\n            CASE WHEN $4::text = 'most_rated' THEN COALESCE(cr.total_ratings, 0) END DESC,\n            CASE WHEN $4::text = 'least_rated' THEN COALESCE(cr.total_ratings, 0) END ASC,\n            CASE WHEN $4::text = 'trending' THEN COALESCE(cr.trending_score, 0) END DESC,\n            c.name\n        LIMIT $2 OFFSET $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "oracle_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "oracle_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "image_uri",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "image_uri"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "legality: CardLegality",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "legality"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "global_points!",
+        "type_info": "Numeric",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "total_ratings!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "card_rank!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "7adfda69b82111bf5f7ec5d0bc63dbd88eb632ff3574c3a8c740bc024eeabe8b"
+}
