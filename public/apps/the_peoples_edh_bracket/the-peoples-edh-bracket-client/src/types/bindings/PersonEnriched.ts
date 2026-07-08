@@ -29,10 +29,6 @@ cards_rated: number,
  */
 tracked_decks: number, 
 /**
- * How many total personal points this person has allocated to their ratings
- */
-personal_points_allocated: string, 
-/**
  * If authenticated, if the current user is following this person
  */
 am_following: boolean | null, 

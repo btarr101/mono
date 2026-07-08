@@ -6,7 +6,6 @@ use axum::{
     routing::{get, post},
 };
 use axum_anyhow::{ApiResult, OptionExt};
-use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -91,8 +90,6 @@ struct PersonEnriched {
     /// How many decks this person is tracking
     #[ts(type = "number")]
     tracked_decks: i64,
-    /// How many total personal points this person has allocated to their ratings
-    personal_points_allocated: BigDecimal,
     /// If authenticated, if the current user is following this person
     am_following: Option<bool>,
     /// If the `person_following` was passed, this is the date this person has started following that person
@@ -127,7 +124,6 @@ async fn get_persons(
             COALESCE(pldc.dislikes, 0) AS \"dislikes!\",
             COALESCE(cr.cards_rated, 0) AS \"cards_rated!\",
             COALESCE(td.tracked_decks, 0) AS \"tracked_decks!\",
-            10.0::numeric AS \"personal_points_allocated!\",
             COALESCE(fc.followers, 0) AS \"followers!\",
             COALESCE(fg.following, 0) AS \"following!\",
             CASE
@@ -210,7 +206,6 @@ async fn get_persons(
         dislikes: row.dislikes,
         cards_rated: row.cards_rated,
         tracked_decks: row.tracked_decks,
-        personal_points_allocated: row.personal_points_allocated,
         followed_on: row.followed_on,
         started_following: row.started_following,
     })
@@ -237,7 +232,6 @@ async fn get_person(
             COALESCE(pldc.dislikes, 0) AS \"dislikes!\",
             COALESCE(cr.cards_rated, 0) AS \"cards_rated!\",
             COALESCE(td.tracked_decks, 0) AS \"tracked_decks!\",
-            10.0::numeric AS \"personal_points_allocated!\",
             COALESCE(fc.followers, 0) AS \"followers!\",
             COALESCE(fg.following, 0) AS \"following!\",
             CASE
@@ -297,26 +291,17 @@ async fn get_person(
         dislikes: row.dislikes,
         cards_rated: row.cards_rated,
         tracked_decks: row.tracked_decks,
-        personal_points_allocated: row.personal_points_allocated,
         am_following: row.am_following,
         followed_on: None,
         started_following: None,
     }))
 }
 
-#[derive(ts_rs::TS, Deserialize, Serialize)]
-#[ts(export, export_to = TS_RS_EXPORT_TO)]
-struct PersonWithTotalPoints {
-    #[serde(flatten)]
-    person: Person,
-    total_points: BigDecimal,
-}
-
-async fn get_me(State(pg_pool): State<PgPool>, Auth { person_uuid }: Auth) -> ApiResult<Json<PersonWithTotalPoints>> {
-    let row = sqlx::query!(
+async fn get_me(State(pg_pool): State<PgPool>, Auth { person_uuid }: Auth) -> ApiResult<Json<Person>> {
+    let person = sqlx::query_as!(
+        Person,
         "SELECT
-            person.*,
-            10.0::numeric AS \"total_points!\"
+            person.*
         FROM person
         WHERE person.uuid = $1
         LIMIT 1",
@@ -326,16 +311,7 @@ async fn get_me(State(pg_pool): State<PgPool>, Auth { person_uuid }: Auth) -> Ap
     .await?
     .context_not_found("person could not be found")?;
 
-    Ok(Json(PersonWithTotalPoints {
-        person: Person {
-            uuid: row.uuid,
-            username: row.username,
-            picture_url: row.picture_url,
-            created_at: row.created_at,
-            updated_at: row.updated_at,
-        },
-        total_points: row.total_points,
-    }))
+    Ok(Json(person))
 }
 
 async fn post_follow_person(

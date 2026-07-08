@@ -102,7 +102,7 @@ export const Rating = ({ rating, pinned, onPin, onShare }: RatingProps) => {
               <Stack align="start" gap={'lg'}>
                 <Group wrap="nowrap">
                   <Title order={2} textWrap="nowrap">
-                    <PointsNumberFormatter points={rating.global_points} suffix=" pts" />
+                    <PointsNumberFormatter points={rating.points} suffix=" pts" />
                   </Title>
                   <Divider orientation="vertical" />
                   <Stack gap={0}>
@@ -111,7 +111,7 @@ export const Rating = ({ rating, pinned, onPin, onShare }: RatingProps) => {
                     </Title>
                     <Divider />
                     <Text span c="dimmed" size="sm">
-                      <PointsNumberFormatter points={rating.total_points} suffix=" ppts" />
+                      <PointsNumberFormatter points="10" suffix=" ppts" />
                     </Text>
                   </Stack>
                 </Group>

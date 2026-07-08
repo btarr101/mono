@@ -37,7 +37,7 @@ pub async fn seed(state: AppState) -> anyhow::Result<()> {
             RateCardParams {
                 card_oracle_id: card.oracle_id,
                 person_uuid: person.uuid,
-                points: BigDecimal::from_f64(fastrand::f64() * 100.).unwrap_or_default(),
+                points: BigDecimal::from_f64(fastrand::f64() * 10.).unwrap_or_default(),
                 reason: Some(gen_sentence(config)),
             },
             &state.pg_pool,

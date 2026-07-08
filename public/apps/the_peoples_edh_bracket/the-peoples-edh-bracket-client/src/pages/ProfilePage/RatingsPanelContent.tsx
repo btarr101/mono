@@ -191,7 +191,7 @@ const RatingRow = ({ rating }: RatingRowProps) => {
         </Group>
       </Table.Td>
       <Table.Td style={{ whiteSpace: 'nowrap' }}>
-        <PointsNumberFormatter points={rating.global_points} suffix=" pts" />
+        <PointsNumberFormatter points={rating.points} suffix=" pts" />
       </Table.Td>
       <Table.Td style={{ whiteSpace: 'nowrap' }}>
         <PointsNumberFormatter points={rating.points} suffix=" ppts" />

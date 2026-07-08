@@ -13,7 +13,6 @@ import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useLoaderData, useRevalidator } from 'react-router'
 
 import { BackAnchor } from '../../components/BackAnchor'
-import { PointsNumberFormatter } from '../../components/PointsNumberFormatter'
 import { Stat } from '../../components/Stat'
 import { useFollowPerson, useMe, useUnfollowPerson } from '../../hooks/usePersons'
 import type { PersonEnriched } from '../../types/bindings/PersonEnriched'
@@ -116,12 +115,6 @@ export const HeadSection = ({ person }: HeadSectionProps) => {
       <ScrollArea>
         <Group justify="space-between" px="xl" w={'100%'} wrap="nowrap">
           <Stat label="cards rated" titleSize="lg" value={Number(person.cards_rated)} />
-          <Stack>
-            <Title size="lg">
-              <PointsNumberFormatter points={person.personal_points_allocated} suffix=" ppts" />
-            </Title>
-            <Text textWrap="nowrap">total points allocated</Text>
-          </Stack>
           <Stat label="tracked decks" titleSize="lg" value={Number(person.tracked_decks)} />
           <Stat label="followers" titleSize="lg" value={Number(person.followers)} />
           <Stat label="following" titleSize="lg" value={Number(person.following)} />
