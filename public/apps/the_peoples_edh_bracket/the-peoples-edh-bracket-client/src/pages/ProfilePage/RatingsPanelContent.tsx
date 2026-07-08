@@ -130,18 +130,16 @@ export const RatingsPanelContent = ({ personUUID }: RatingsPanelContentProps) =>
       <Table.ScrollContainer minWidth={'100%'}>
         <Table>
           <colgroup>
-            <col style={{ width: '28%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '12%' }} />
+            <col style={{ width: '35%' }} />
+            <col style={{ width: '13%' }} />
+            <col style={{ width: '13%' }} />
+            <col style={{ width: '13%' }} />
+            <col style={{ width: '13%' }} />
+            <col style={{ width: '13%' }} />
           </colgroup>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Card</Table.Th>
-              <Table.Th>pts</Table.Th>
               <Table.Th>ppts</Table.Th>
               <Table.Th style={{ textWrap: 'nowrap' }}>Likes</Table.Th>
               <Table.Th style={{ textWrap: 'nowrap' }}>Dislikes</Table.Th>
@@ -151,7 +149,7 @@ export const RatingsPanelContent = ({ personUUID }: RatingsPanelContentProps) =>
           </Table.Thead>
           <Table.Tbody>
             {usedGetRatings.isLoading ? (
-              <TableRowLoader colSpan={7} />
+              <TableRowLoader colSpan={6} />
             ) : (
               <>
                 <Table.Tr h={first ?? 0} />
@@ -189,9 +187,6 @@ const RatingRow = ({ rating }: RatingRowProps) => {
           <TableCard imageUri={card.data?.image_uri} />
           {card.data?.name ?? '...'}
         </Group>
-      </Table.Td>
-      <Table.Td style={{ whiteSpace: 'nowrap' }}>
-        <PointsNumberFormatter points={rating.points} suffix=" pts" />
       </Table.Td>
       <Table.Td style={{ whiteSpace: 'nowrap' }}>
         <PointsNumberFormatter points={rating.points} suffix=" ppts" />

@@ -3,7 +3,6 @@ import {
   Button,
   Card,
   Center,
-  Divider,
   Group,
   Indicator,
   Skeleton,
@@ -102,18 +101,8 @@ export const Rating = ({ rating, pinned, onPin, onShare }: RatingProps) => {
               <Stack align="start" gap={'lg'}>
                 <Group wrap="nowrap">
                   <Title order={2} textWrap="nowrap">
-                    <PointsNumberFormatter points={rating.points} suffix=" pts" />
+                    <PointsNumberFormatter points={rating.points} suffix=" ppts" />
                   </Title>
-                  <Divider orientation="vertical" />
-                  <Stack gap={0}>
-                    <Title c="dimmed" order={4} textWrap="nowrap">
-                      <PointsNumberFormatter points={rating.points} suffix=" ppts" />
-                    </Title>
-                    <Divider />
-                    <Text span c="dimmed" size="sm">
-                      <PointsNumberFormatter points="10" suffix=" ppts" />
-                    </Text>
-                  </Stack>
                 </Group>
                 <ViewablePersonProfileLine loading={person.isLoading} person={person.data} />
               </Stack>

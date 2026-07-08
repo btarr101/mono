@@ -10,7 +10,6 @@ import {
   Stack,
   Text,
   Textarea,
-  Title,
   useMatches,
 } from '@mantine/core'
 import { hasLength, useForm } from '@mantine/form'
@@ -105,35 +104,23 @@ export const RatingInput = ({ rating, onSave, onShare }: RatingInputProps) => {
         <Card withBorder orientation={isMobile ? 'vertical' : 'horizontal'} padding="sm">
           <Card.Section withBorder mih={'125px'} p="md" style={{ alignSelf: 'stretch' }}>
             <Center h="100%">
-              <Group wrap="nowrap">
-                <Title order={2} textWrap="nowrap">
-                  <PointsNumberFormatter points={rating?.points ?? '0.0'} suffix=" pts" />
-                </Title>
-                <Divider orientation="vertical" />
-                <Stack gap="xs">
-                  <NumberInput
-                    clampBehavior="strict"
-                    key={form.key('points')}
-                    max={10}
-                    min={0}
-                    placeholder="0 ppts"
-                    size="lg"
-                    styles={{
-                      input: {
-                        fieldSizing: 'content',
-                        paddingRight:
-                          'calc(var(--input-right-section-width) + var(--mantine-spacing-md))',
-                      },
-                    }}
-                    suffix=" ppts"
-                    {...form.getInputProps('points')}
-                  />
-                  <Divider />
-                  <Text span c="dimmed" size="sm">
-                    / <PointsNumberFormatter points="10" suffix=" ppts" />
-                  </Text>
-                </Stack>
-              </Group>
+              <NumberInput
+                clampBehavior="strict"
+                key={form.key('points')}
+                max={10}
+                min={0}
+                placeholder="0 ppts"
+                size="lg"
+                styles={{
+                  input: {
+                    fieldSizing: 'content',
+                    paddingRight:
+                      'calc(var(--input-right-section-width) + var(--mantine-spacing-md))',
+                  },
+                }}
+                suffix=" ppts"
+                {...form.getInputProps('points')}
+              />
             </Center>
           </Card.Section>
           <Card.Section flex={1}>
