@@ -67,8 +67,8 @@ export const AboutPage = () => (
 
     <List spacing="xs">
       <List.Item>Storm Crow ppts: 5 and 1 → global score = 3.0 pts.</List.Item>
-      <List.Item>Force of Will ppts: 9 and unrated (0) → global score = 4.5 pts.</List.Item>
-      <List.Item>All ratings are now on the same fixed 0–10 scale.</List.Item>
+      <List.Item>Force of Will ppts: 9 (one submitted rating) → global score = 9.0 pts.</List.Item>
+      <List.Item>Global scores are averages over submitted ratings only.</List.Item>
     </List>
 
     <Divider />

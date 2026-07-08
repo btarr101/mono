@@ -92,9 +92,8 @@ async fn get_cards(
             SELECT
                 cr.card_oracle_id,
                 COUNT(*) AS total_ratings,
-                COUNT(*) FILTER (WHERE cr.points > 0) AS likes_count,
-                COUNT(*) FILTER (WHERE cr.points < 0) AS dislikes_count,
                 AVG(cr.points) AS average_global_points,
+                COALESCE(STDDEV_POP(cr.points), 0.0) AS controversy_score,
                 COALESCE(
                     SUM(
                         EXP(
@@ -110,9 +109,8 @@ async fn get_cards(
             SELECT
                 ca.card_oracle_id,
                 ca.total_ratings,
-                ca.likes_count,
-                ca.dislikes_count,
                 ca.average_global_points,
+                ca.controversy_score,
                 ca.trending_score,
                 DENSE_RANK() OVER (ORDER BY ca.average_global_points DESC) AS card_rank
             FROM card_aggregates ca
@@ -138,10 +136,7 @@ async fn get_cards(
         ORDER BY
             CASE WHEN $4::text = 'highest_rated' THEN COALESCE(cr.average_global_points, 0.0) END DESC,
             CASE WHEN $4::text = 'lowest_rated' THEN COALESCE(cr.average_global_points, 0.0) END ASC,
-            CASE
-                WHEN $4::text = 'most_controversial'
-                THEN ABS(COALESCE(cr.likes_count, 0) - COALESCE(cr.dislikes_count, 0))
-            END DESC,
+            CASE WHEN $4::text = 'most_controversial' THEN COALESCE(cr.controversy_score, 0.0) END DESC,
             CASE WHEN $4::text = 'most_rated' THEN COALESCE(cr.total_ratings, 0) END DESC,
             CASE WHEN $4::text = 'least_rated' THEN COALESCE(cr.total_ratings, 0) END ASC,
             CASE WHEN $4::text = 'trending' THEN COALESCE(cr.trending_score, 0) END DESC,
