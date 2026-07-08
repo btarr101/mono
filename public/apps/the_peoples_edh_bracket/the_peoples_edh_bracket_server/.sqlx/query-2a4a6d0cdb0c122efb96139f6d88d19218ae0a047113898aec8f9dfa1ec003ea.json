@@ -1,0 +1,155 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n            person.*,\n            COALESCE(pldc.likes, 0) AS \"likes!\",\n            COALESCE(pldc.dislikes, 0) AS \"dislikes!\",\n            COALESCE(cr.cards_rated, 0) AS \"cards_rated!\",\n            COALESCE(td.tracked_decks, 0) AS \"tracked_decks!\",\n            COALESCE(fc.followers, 0) AS \"followers!\",\n            COALESCE(fg.following, 0) AS \"following!\",\n            CASE\n                WHEN $3::uuid is NULL THEN NULL\n                ELSE EXISTS (\n                    SELECT 1\n                    FROM follower\n                    WHERE\n                        follower_person_uuid = $3\n                            AND followed_person_uuid = person.uuid\n                )\n            END AS am_following,\n            fr.created_at AS \"started_following?\",\n            fb.created_at AS \"followed_on?\"\n        FROM person\n        LEFT JOIN person_likes_dislikes_cache pldc ON person.uuid = pldc.person_uuid\n        LEFT JOIN (\n            SELECT\n                rater_person_uuid,\n                COUNT(*) AS cards_rated\n            FROM card_rating\n            GROUP BY rater_person_uuid\n        ) cr ON person.uuid = cr.rater_person_uuid\n        LEFT JOIN (\n            SELECT tracker_person_uuid AS person_uuid, COUNT(*) AS tracked_decks\n            FROM tracked_deck\n            GROUP BY tracker_person_uuid\n        ) td ON person.uuid = td.person_uuid\n        LEFT JOIN (\n            SELECT followed_person_uuid AS person_uuid, COUNT(*) AS followers\n            FROM follower\n            GROUP BY followed_person_uuid\n        ) fc ON person.uuid = fc.person_uuid\n        LEFT JOIN (\n            SELECT follower_person_uuid AS person_uuid, COUNT(*) AS following\n            FROM follower\n            GROUP BY follower_person_uuid\n        ) fg ON person.uuid = fg.person_uuid\n        LEFT JOIN follower AS fr\n            ON $1::uuid IS NOT NULL\n            AND person.uuid = fr.follower_person_uuid\n            AND fr.followed_person_uuid = $1\n        LEFT JOIN follower AS fb\n            ON $2::uuid IS NOT NULL\n            AND person.uuid = fb.followed_person_uuid\n            AND fb.follower_person_uuid = $2\n        WHERE\n            ($4::text IS NULL OR lower(username) LIKE lower($4) || '%')\n            AND ($1 IS NULL OR fr.uuid IS NOT NULL)\n            AND ($2 IS NULL OR fb.uuid IS NOT NULL)\n        ORDER BY\n            CASE WHEN $5::TEXT = 'likes' THEN COALESCE(likes, 0) END DESC,\n            CASE WHEN $5::TEXT = 'likes' THEN COALESCE(dislikes, 0) END ASC,\n            CASE WHEN $5::TEXT = 'cards_rated' THEN COALESCE(cr.cards_rated, 0) END DESC,\n            username\n        LIMIT $6 OFFSET $7",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uuid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "person",
+            "name": "uuid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "person",
+            "name": "username"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "person",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "person",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "picture_url",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "person",
+            "name": "picture_url"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "likes!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "dislikes!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "cards_rated!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "tracked_decks!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "followers!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "following!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 11,
+        "name": "am_following",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 12,
+        "name": "started_following?",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "follower",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "followed_on?",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "follower",
+            "name": "created_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      false,
+      false
+    ]
+  },
+  "hash": "2a4a6d0cdb0c122efb96139f6d88d19218ae0a047113898aec8f9dfa1ec003ea"
+}

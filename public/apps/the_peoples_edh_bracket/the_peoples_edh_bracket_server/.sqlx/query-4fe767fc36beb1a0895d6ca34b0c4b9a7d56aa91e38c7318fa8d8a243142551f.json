@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n            person.*,\n            COALESCE(prc.total_personal_points, 0) AS \"total_points!\"\n        FROM person\n        LEFT JOIN person_ratings_cache prc ON prc.person_uuid = person.uuid\n        WHERE person.uuid = $1\n        LIMIT 1",
+  "query": "SELECT\n            person.*\n        FROM person\n        WHERE person.uuid = $1\n        LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -57,12 +57,6 @@
             "name": "picture_url"
           }
         }
-      },
-      {
-        "ordinal": 5,
-        "name": "total_points!",
-        "type_info": "Numeric",
-        "origin": "Expression"
       }
     ],
     "parameters": {
@@ -75,9 +69,8 @@
       false,
       false,
       true,
-      true,
-      null
+      true
     ]
   },
-  "hash": "53276d53498cef3a0ae911dc7df71c3cc7f9155d54c1e3e44619248a1ab7a55f"
+  "hash": "4fe767fc36beb1a0895d6ca34b0c4b9a7d56aa91e38c7318fa8d8a243142551f"
 }

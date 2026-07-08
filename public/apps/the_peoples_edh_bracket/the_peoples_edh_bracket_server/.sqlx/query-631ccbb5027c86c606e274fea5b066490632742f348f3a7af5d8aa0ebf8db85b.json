@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n            c.oracle_id as \"oracle_id!\",\n            c.name as \"name!\",\n            c.image_uri,\n            c.legality as \"legality!: CardLegality\",\n            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",\n            acn.alternate_name\n        FROM card c\n        LEFT JOIN card_ratings_cache crc ON c.oracle_id = crc.card_oracle_id\n        LEFT JOIN LATERAL (\n            SELECT name AS alternate_name\n            FROM alternate_card_name acn\n            WHERE acn.card_oracle_id = c.oracle_id\n                AND LOWER(acn.name) = ANY($1)\n            LIMIT 1\n        ) acn ON TRUE\n        WHERE\n            LOWER(c.name) = ANY($1)\n            OR acn.alternate_name IS NOT NULL\n        ",
+  "query": "WITH card_global_points AS (\n            SELECT\n                cr.card_oracle_id,\n                AVG(cr.points) AS average_global_points\n            FROM card_rating cr\n            GROUP BY cr.card_oracle_id\n        )\n        SELECT\n            c.oracle_id as \"oracle_id!\",\n            c.name as \"name!\",\n            c.image_uri,\n            c.legality as \"legality!: CardLegality\",\n            COALESCE(cgp.average_global_points, 0.0) as \"global_points!\",\n            acn.alternate_name\n        FROM card c\n        LEFT JOIN card_global_points cgp ON c.oracle_id = cgp.card_oracle_id\n        LEFT JOIN LATERAL (\n            SELECT name AS alternate_name\n            FROM alternate_card_name acn\n            WHERE acn.card_oracle_id = c.oracle_id\n                AND LOWER(acn.name) = ANY($1)\n            LIMIT 1\n        ) acn ON TRUE\n        WHERE\n            LOWER(c.name) = ANY($1)\n            OR acn.alternate_name IS NOT NULL\n        ",
   "describe": {
     "columns": [
       {
@@ -79,5 +79,5 @@
       true
     ]
   },
-  "hash": "779fef79f3f41ebb98fad78b7155b912fdc848be97ef78909d3ac0a8074e40c5"
+  "hash": "631ccbb5027c86c606e274fea5b066490632742f348f3a7af5d8aa0ebf8db85b"
 }
