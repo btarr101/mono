@@ -22,6 +22,11 @@ END
 FROM person_max_ppts pmp
 WHERE cr.rater_person_uuid = pmp.person_uuid;
 
+-- Enforce fixed 0-10 rating scale at the database layer.
+ALTER TABLE card_rating
+ADD CONSTRAINT card_rating_points_between_0_and_10
+CHECK (points >= 0 AND points <= 10);
+
 -- Remove remaining allocation/caching infrastructure.
 
 DROP VIEW IF EXISTS card_rating_global;
@@ -35,5 +40,10 @@ DROP TABLE IF EXISTS global_ratings_state;
 DROP TABLE IF EXISTS card_ratings_cache;
 DROP TABLE IF EXISTS person_ratings_cache;
 
-DROP INDEX IF EXISTS idx_card_rating_rater_person_uuid_points;
-DROP INDEX IF EXISTS idx_card_rating_card_oracle_id_points;
+-- Keep these query-supporting indexes now that reads aggregate/filter directly from card_rating.
+-- Re-create defensively in case they were removed previously.
+CREATE INDEX IF NOT EXISTS idx_card_rating_rater_person_uuid_points
+ON card_rating (rater_person_uuid, points);
+
+CREATE INDEX IF NOT EXISTS idx_card_rating_card_oracle_id_points
+ON card_rating (card_oracle_id, points);

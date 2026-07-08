@@ -1,6 +1,11 @@
--- Rehydrate old allocation-style points from simple rating scale.
-UPDATE card_rating cr
-SET points = (cr.points / 10.0) * 10.0;
+-- NOTE: lossy rollback.
+-- The up migration converted historical allocation-style values into a fixed 0–10 per-card scale
+-- using per-user totals. The original allocation totals cannot be reconstructed from current data.
+-- We intentionally do not transform card_rating.points here.
+
+-- Remove the fixed 0-10 guard introduced by the up migration.
+ALTER TABLE card_rating
+DROP CONSTRAINT IF EXISTS card_rating_points_between_0_and_10;
 
 DROP VIEW IF EXISTS global_ratings_state;
 DROP VIEW IF EXISTS card_ratings_cache;
