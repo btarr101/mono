@@ -92,14 +92,21 @@ async fn get_tracked_decks(
     });
 
     let tracked_decks = sqlx::query!(
-        "WITH deck_points AS (
+        "WITH card_global_points AS (
+            SELECT
+                cr.card_oracle_id,
+                AVG(cr.points) AS average_global_points
+            FROM card_rating cr
+            GROUP BY cr.card_oracle_id
+        ),
+        deck_points AS (
             SELECT
                 tdc.tracked_deck_uuid,
-                COALESCE(SUM(COALESCE(crc.average_global_points, 0.0) * tdc.count), 0.0) AS total_global_points,
+                COALESCE(SUM(COALESCE(cgp.average_global_points, 0.0) * tdc.count), 0.0) AS total_global_points,
                 COALESCE(SUM(COALESCE(cr.points, 0.0) * tdc.count), 0.0) AS total_personal_points
             FROM tracked_deck_card tdc
             INNER JOIN tracked_deck td ON td.uuid = tdc.tracked_deck_uuid
-            LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = tdc.card_oracle_id
+            LEFT JOIN card_global_points cgp ON cgp.card_oracle_id = tdc.card_oracle_id
             LEFT JOIN card_rating cr
                 ON cr.card_oracle_id = tdc.card_oracle_id
                 AND cr.rater_person_uuid = td.tracker_person_uuid
@@ -338,15 +345,22 @@ async fn find_cards_by_names(
     let lowercased = input.iter().map(|n| n.to_lowercase()).collect::<Vec<_>>();
 
     let cards = sqlx::query!(
-        "SELECT
+        "WITH card_global_points AS (
+            SELECT
+                cr.card_oracle_id,
+                AVG(cr.points) AS average_global_points
+            FROM card_rating cr
+            GROUP BY cr.card_oracle_id
+        )
+        SELECT
             c.oracle_id as \"oracle_id!\",
             c.name as \"name!\",
             c.image_uri,
             c.legality as \"legality!: CardLegality\",
-            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",
+            COALESCE(cgp.average_global_points, 0.0) as \"global_points!\",
             acn.alternate_name
         FROM card c
-        LEFT JOIN card_ratings_cache crc ON c.oracle_id = crc.card_oracle_id
+        LEFT JOIN card_global_points cgp ON c.oracle_id = cgp.card_oracle_id
         LEFT JOIN LATERAL (
             SELECT name AS alternate_name
             FROM alternate_card_name acn
@@ -546,7 +560,14 @@ async fn get_tracked_deck(
         .context_not_found("deck not found")?;
 
     let rows = sqlx::query!(
-        "SELECT
+        "WITH card_global_points AS (
+            SELECT
+                cr.card_oracle_id,
+                AVG(cr.points) AS average_global_points
+            FROM card_rating cr
+            GROUP BY cr.card_oracle_id
+        )
+        SELECT
             tdc.uuid,
             tdc.tracked_deck_uuid,
             tdc.ty as \"ty: TrackedDeckCardType\",
@@ -555,10 +576,10 @@ async fn get_tracked_deck(
             c.name,
             c.image_uri,
             c.legality as \"legality: CardLegality\",
-            COALESCE(crc.average_global_points, 0.0) as \"global_points!\"
+            COALESCE(cgp.average_global_points, 0.0) as \"global_points!\"
         FROM tracked_deck_card tdc
         INNER JOIN card c ON c.oracle_id = tdc.card_oracle_id
-        LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = tdc.card_oracle_id
+        LEFT JOIN card_global_points cgp ON cgp.card_oracle_id = tdc.card_oracle_id
         WHERE tracked_deck_uuid = $1
         ",
         uuid

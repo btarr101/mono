@@ -118,8 +118,8 @@ async fn get_ratings(
             cr.rater_person_uuid,
             cr.points,
             cr.reason,
-            crg.global_points,
-            COALESCE(prc.total_personal_points, 0) as \"total_points!\",
+            cr.points AS \"global_points!\",
+            10.0::numeric AS \"total_points!\",
             (
                 SELECT crr_person.liked
                 FROM card_rating_review crr_person
@@ -133,8 +133,6 @@ async fn get_ratings(
             cr.updated_at,
             c.name AS \"card_name!\"
         FROM card_rating cr
-        LEFT JOIN card_rating_global crg ON crg.card_rating_uuid = cr.uuid
-        LEFT JOIN person_ratings_cache prc ON prc.person_uuid = cr.rater_person_uuid
         LEFT JOIN review_counts rc ON rc.card_rating_uuid = cr.uuid
         INNER JOIN card c ON c.oracle_id = cr.card_oracle_id
         WHERE
@@ -180,7 +178,7 @@ async fn get_ratings(
                 updated_at: row.updated_at,
             },
             total_points: row.total_points,
-            global_points: row.global_points.unwrap_or_default(),
+            global_points: row.global_points,
             reviews: CardRatingReviews {
                 person_review: row.person_review,
                 likes: row.likes.unwrap_or_default(),
@@ -253,8 +251,8 @@ async fn get_rating(
             cr.rater_person_uuid,
             cr.points,
             cr.reason,
-            crg.global_points,
-            COALESCE(prc.total_personal_points, 0) as \"total_points!\",
+            cr.points AS \"global_points!\",
+            10.0::numeric AS \"total_points!\",
             (
                 SELECT crr_person.liked
                 FROM card_rating_review crr_person
@@ -268,8 +266,6 @@ async fn get_rating(
             cr.updated_at,
             c.name AS \"card_name!\"
         FROM card_rating cr
-        LEFT JOIN card_rating_global crg ON crg.card_rating_uuid = cr.uuid
-        LEFT JOIN person_ratings_cache prc ON prc.person_uuid = cr.rater_person_uuid
         LEFT JOIN (
             SELECT
                 crr.reviewed_card_rating_uuid AS card_rating_uuid,
@@ -299,7 +295,7 @@ async fn get_rating(
             updated_at: row.updated_at,
         },
         total_points: row.total_points,
-        global_points: row.global_points.unwrap_or_default(),
+        global_points: row.global_points,
         reviews: CardRatingReviews {
             person_review: row.person_review,
             likes: row.likes.unwrap_or(0),
@@ -385,7 +381,7 @@ async fn get_rating_histogram_for_card(
                     1,
                     LEAST(
                         width_bucket(
-                            crg.global_points,
+                            cr.points,
                             p.min_global_points,
                             p.max_global_points,
                             p.fixed_buckets
@@ -394,9 +390,9 @@ async fn get_rating_histogram_for_card(
                     )
                 ) AS bucket_index,
                 COUNT(*)::bigint AS count
-            FROM card_rating_global crg
+            FROM card_rating cr
             CROSS JOIN params p
-            WHERE crg.card_oracle_id = $1
+            WHERE cr.card_oracle_id = $1
             GROUP BY 1
         )
         SELECT

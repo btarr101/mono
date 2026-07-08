@@ -32,7 +32,7 @@ struct CardMetrics {
     #[ts(type = "number")]
     total_ratings: i64,
     #[ts(type = "number")]
-    card_rank: i32,
+    card_rank: i64,
 }
 
 #[derive(ts_rs::TS, Serialize, FromRow)]
@@ -104,23 +104,37 @@ async fn get_cards(
                 ) AS trending_score
             FROM card_rating cr
             GROUP BY cr.card_oracle_id
+        ),
+        card_ratings AS (
+            SELECT
+                cr.card_oracle_id,
+                AVG(cr.points) AS average_global_points,
+                DENSE_RANK() OVER (ORDER BY AVG(cr.points) DESC) AS card_rank
+            FROM card_rating cr
+            GROUP BY cr.card_oracle_id
+        ),
+        unrated_rank AS (
+            SELECT
+                1 + COUNT(DISTINCT cr.average_global_points)::INT AS unrated_card_rank
+            FROM card_ratings cr
+            WHERE cr.average_global_points > 0.0
         )
         SELECT
             c.oracle_id,
             c.name,
             c.image_uri,
             c.legality as \"legality: CardLegality\",
-            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",
+            COALESCE(crs.average_global_points, 0.0) as \"global_points!\",
             COALESCE(cra.total_ratings, 0) as \"total_ratings!\",
-            COALESCE(crc.card_rank, grs.unrated_card_rank) as \"card_rank!\"
+            COALESCE(crs.card_rank, urr.unrated_card_rank) as \"card_rank!\"
         FROM card c
-        LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = c.oracle_id
+        LEFT JOIN card_ratings crs ON crs.card_oracle_id = c.oracle_id
         LEFT JOIN card_rating_agg cra ON cra.card_oracle_id = c.oracle_id
-        CROSS JOIN global_ratings_state grs
+        CROSS JOIN unrated_rank urr
         WHERE ($1::text IS NULL OR lower(c.name) LIKE lower($1) || '%')
         ORDER BY
-            CASE WHEN $4::text = 'highest_rated' THEN COALESCE(crc.average_global_points, 0.0) END DESC,
-            CASE WHEN $4::text = 'lowest_rated' THEN COALESCE(crc.average_global_points, 0.0) END ASC,
+            CASE WHEN $4::text = 'highest_rated' THEN COALESCE(crs.average_global_points, 0.0) END DESC,
+            CASE WHEN $4::text = 'lowest_rated' THEN COALESCE(crs.average_global_points, 0.0) END ASC,
             CASE
                 WHEN $4::text = 'most_controversial'
                 THEN ABS(COALESCE(cra.likes_count, 0) - COALESCE(cra.dislikes_count, 0))
@@ -160,20 +174,34 @@ async fn get_cards(
 
 async fn get_card(State(pg_pool): State<PgPool>, Path(oracle_id): Path<uuid::Uuid>) -> ApiResult<Json<CardWithMetrics>> {
     let row = sqlx::query!(
-        "SELECT
+        "WITH card_ratings AS (
+            SELECT
+                cr.card_oracle_id,
+                AVG(cr.points) AS average_global_points,
+                DENSE_RANK() OVER (ORDER BY AVG(cr.points) DESC) AS card_rank
+            FROM card_rating cr
+            GROUP BY cr.card_oracle_id
+        ),
+        unrated_rank AS (
+            SELECT
+                1 + COUNT(DISTINCT cr.average_global_points)::INT AS unrated_card_rank
+            FROM card_ratings cr
+            WHERE cr.average_global_points > 0.0
+        )
+        SELECT
             c.oracle_id,
             c.name,
             c.image_uri,
             c.legality as \"legality: CardLegality\",
-            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",
+            COALESCE(crs.average_global_points, 0.0) as \"global_points!\",
             COUNT(cr.uuid) as \"total_ratings!\",
-            COALESCE(crc.card_rank, grs.unrated_card_rank) as \"card_rank!\"
+            COALESCE(crs.card_rank, urr.unrated_card_rank) as \"card_rank!\"
         FROM card c
-        LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = c.oracle_id
+        LEFT JOIN card_ratings crs ON crs.card_oracle_id = c.oracle_id
         LEFT JOIN card_rating cr ON cr.card_oracle_id = c.oracle_id
-        CROSS JOIN global_ratings_state grs
+        CROSS JOIN unrated_rank urr
         WHERE c.oracle_id = $1
-        GROUP BY c.oracle_id, c.name, c.image_uri, c.legality, crc.average_global_points, crc.card_rank, grs.unrated_card_rank
+        GROUP BY c.oracle_id, c.name, c.image_uri, c.legality, crs.average_global_points, crs.card_rank, urr.unrated_card_rank
         LIMIT 1",
         oracle_id
     )
@@ -199,16 +227,30 @@ async fn get_card(State(pg_pool): State<PgPool>, Path(oracle_id): Path<uuid::Uui
 async fn get_card_metrics(State(pg_pool): State<PgPool>, Path(oracle_id): Path<uuid::Uuid>) -> ApiResult<Json<CardMetrics>> {
     let metrics = sqlx::query_as!(
         CardMetrics,
-        "SELECT
-            COALESCE(crc.average_global_points, 0.0) as \"global_points!\",
+        "WITH card_ratings AS (
+            SELECT
+                cr.card_oracle_id,
+                AVG(cr.points) AS average_global_points,
+                DENSE_RANK() OVER (ORDER BY AVG(cr.points) DESC) AS card_rank
+            FROM card_rating cr
+            GROUP BY cr.card_oracle_id
+        ),
+        unrated_rank AS (
+            SELECT
+                1 + COUNT(DISTINCT cr.average_global_points)::INT AS unrated_card_rank
+            FROM card_ratings cr
+            WHERE cr.average_global_points > 0.0
+        )
+        SELECT
+            COALESCE(crs.average_global_points, 0.0) as \"global_points!\",
             COUNT(cr.uuid) as \"total_ratings!\",
-            COALESCE(crc.card_rank, grs.unrated_card_rank) as \"card_rank!\"
+            COALESCE(crs.card_rank, urr.unrated_card_rank) as \"card_rank!\"
         FROM card c
-        LEFT JOIN card_ratings_cache crc ON crc.card_oracle_id = c.oracle_id
+        LEFT JOIN card_ratings crs ON crs.card_oracle_id = c.oracle_id
         LEFT JOIN card_rating cr ON cr.card_oracle_id = c.oracle_id
-        CROSS JOIN global_ratings_state grs
+        CROSS JOIN unrated_rank urr
         WHERE c.oracle_id = $1
-        GROUP BY c.oracle_id, crc.average_global_points, crc.card_rank, grs.unrated_card_rank
+        GROUP BY c.oracle_id, crs.average_global_points, crs.card_rank, urr.unrated_card_rank
         LIMIT 1",
         oracle_id
     )

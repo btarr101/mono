@@ -127,7 +127,7 @@ async fn get_persons(
             COALESCE(pldc.dislikes, 0) AS \"dislikes!\",
             COALESCE(cr.cards_rated, 0) AS \"cards_rated!\",
             COALESCE(td.tracked_decks, 0) AS \"tracked_decks!\",
-            COALESCE(prc.total_personal_points, 0) AS \"personal_points_allocated!\",
+            10.0::numeric AS \"personal_points_allocated!\",
             COALESCE(fc.followers, 0) AS \"followers!\",
             COALESCE(fg.following, 0) AS \"following!\",
             CASE
@@ -156,7 +156,6 @@ async fn get_persons(
             FROM tracked_deck
             GROUP BY tracker_person_uuid
         ) td ON person.uuid = td.person_uuid
-        LEFT JOIN person_ratings_cache prc ON person.uuid = prc.person_uuid
         LEFT JOIN (
             SELECT followed_person_uuid AS person_uuid, COUNT(*) AS followers
             FROM follower
@@ -238,7 +237,7 @@ async fn get_person(
             COALESCE(pldc.dislikes, 0) AS \"dislikes!\",
             COALESCE(cr.cards_rated, 0) AS \"cards_rated!\",
             COALESCE(td.tracked_decks, 0) AS \"tracked_decks!\",
-            COALESCE(prc.total_personal_points, 0) AS \"personal_points_allocated!\",
+            10.0::numeric AS \"personal_points_allocated!\",
             COALESCE(fc.followers, 0) AS \"followers!\",
             COALESCE(fg.following, 0) AS \"following!\",
             CASE
@@ -265,7 +264,6 @@ async fn get_person(
             FROM tracked_deck
             GROUP BY tracker_person_uuid
         ) td ON person.uuid = td.person_uuid
-        LEFT JOIN person_ratings_cache prc ON person.uuid = prc.person_uuid
         LEFT JOIN (
             SELECT followed_person_uuid AS person_uuid, COUNT(*) AS followers
             FROM follower
@@ -318,9 +316,8 @@ async fn get_me(State(pg_pool): State<PgPool>, Auth { person_uuid }: Auth) -> Ap
     let row = sqlx::query!(
         "SELECT
             person.*,
-            COALESCE(prc.total_personal_points, 0) AS \"total_points!\"
+            10.0::numeric AS \"total_points!\"
         FROM person
-        LEFT JOIN person_ratings_cache prc ON prc.person_uuid = person.uuid
         WHERE person.uuid = $1
         LIMIT 1",
         person_uuid
