@@ -6,6 +6,7 @@ pub mod controller;
 pub mod db;
 pub mod middleware;
 pub mod model;
+pub mod moxfield;
 pub mod scripts;
 pub mod scryfall;
 pub mod server;
