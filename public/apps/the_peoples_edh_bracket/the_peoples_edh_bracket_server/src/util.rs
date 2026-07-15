@@ -11,10 +11,10 @@ pub fn parse_pagination(page: NonZeroUsize, page_size: NonZeroUsize) -> (i64, i6
     (limit, offset)
 }
 
-pub async fn find_cards_by_names(
+pub async fn find_cards_by_names_with_alternate_name(
     cards_names: impl IntoIterator<Item = impl AsRef<str>>,
     pg_pool: &PgPool,
-) -> anyhow::Result<(Vec<CardWithGlobalPoints>, Vec<String>)> {
+) -> anyhow::Result<(Vec<(CardWithGlobalPoints, Option<String>)>, Vec<String>)> {
     let input = cards_names.into_iter().map(|n| n.as_ref().to_string()).collect::<Vec<_>>();
     let lowercased = input.iter().map(|n| n.to_lowercase()).collect::<Vec<_>>();
 
@@ -95,7 +95,24 @@ pub async fn find_cards_by_names(
         .cloned()
         .collect::<Vec<_>>();
 
-    let cards = cards.into_iter().map(|(_, card)| card).collect::<Vec<_>>();
+    let cards = cards
+        .into_iter()
+        .map(|(alternate_name, card)| (card, alternate_name))
+        .collect::<Vec<_>>();
+
+    Ok((cards, invalid_card_names))
+}
+
+pub async fn find_cards_by_names(
+    cards_names: impl IntoIterator<Item = impl AsRef<str>>,
+    pg_pool: &PgPool,
+) -> anyhow::Result<(Vec<CardWithGlobalPoints>, Vec<String>)> {
+    let (cards_with_alternate_name, invalid_card_names) = find_cards_by_names_with_alternate_name(cards_names, pg_pool).await?;
+
+    let cards = cards_with_alternate_name
+        .into_iter()
+        .map(|(card, _)| card)
+        .collect::<Vec<_>>();
 
     Ok((cards, invalid_card_names))
 }

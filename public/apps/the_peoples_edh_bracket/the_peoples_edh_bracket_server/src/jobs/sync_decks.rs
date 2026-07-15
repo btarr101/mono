@@ -7,7 +7,7 @@ use tracing::instrument;
 use crate::{
     model::tracked_deck::{DeckMaindeckEntry, TrackedDeck, TrackedDeckCardType},
     state::AppState,
-    util::find_cards_by_names,
+    util::{find_cards_by_names, find_cards_by_names_with_alternate_name},
 };
 
 #[instrument(skip(state))]
@@ -76,7 +76,7 @@ pub async fn sync_deck(state: &AppState, tracked_deck: &TrackedDeck) -> anyhow::
         .values()
         .map(|entry| entry.card.name.clone())
         .collect::<Vec<_>>();
-    let (valid_cards, invalid_card_names) = find_cards_by_names(&card_names, &state.pg_pool).await?;
+    let (valid_cards, invalid_card_names) = find_cards_by_names_with_alternate_name(&card_names, &state.pg_pool).await?;
     let card_counts = mainboard_cards
         .values()
         .map(|entry| {
@@ -97,9 +97,10 @@ pub async fn sync_deck(state: &AppState, tracked_deck: &TrackedDeck) -> anyhow::
 
     let valid_cards = valid_cards
         .into_iter()
-        .map(|card| DeckMaindeckEntry {
+        .map(|(card, alternate_name)| DeckMaindeckEntry {
             count: card_counts
                 .get(&card.card.name.to_lowercase())
+                .or_else(|| alternate_name.as_ref().and_then(|name| card_counts.get(&name.to_lowercase())))
                 .cloned()
                 .unwrap_or(NonZeroUsize::MIN),
             card,
