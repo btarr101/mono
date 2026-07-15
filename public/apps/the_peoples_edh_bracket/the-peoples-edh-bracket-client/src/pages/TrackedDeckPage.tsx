@@ -47,9 +47,16 @@ export const TrackedDeckPage = () => {
         <Group align="center">
           Tracked by <ViewablePersonProfileLine loading={tracker.isPending} person={tracker.data} />
         </Group>
-        <Text c="dimmed" size="xs">
-          {formatTimeStamp(trackedDeck.created_at)}
-        </Text>
+        <Group>
+          <Text c="dimmed" size="xs">
+            {formatTimeStamp(trackedDeck.created_at)}
+          </Text>
+          {trackedDeck.url_source && (
+            <Text c="dimmed" size="xs">
+              (last synced {formatTimeStamp(trackedDeck.last_synced)})
+            </Text>
+          )}
+        </Group>
       </Stack>
       <DeckAnalysis analyzedDeck={trackedDeck} />
     </Stack>

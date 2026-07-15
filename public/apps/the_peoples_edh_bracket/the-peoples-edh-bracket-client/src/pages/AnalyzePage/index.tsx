@@ -1,4 +1,4 @@
-import { Button, Group, Input, Stack, Text, Textarea, Title } from '@mantine/core'
+import { Button, Group, Stack, Text, Textarea, TextInput, Title } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { notifications } from '@mantine/notifications'
 import { useMutation } from '@tanstack/react-query'
@@ -9,6 +9,7 @@ import { postAnalyze } from '../../api/decks'
 import type { DecklistMaindeckEntry } from '../../types/bindings/DecklistMaindeckEntry'
 import type { PostAnalyzeBody } from '../../types/bindings/PostAnalyzeBody'
 import { setNewAnalyzedDeck } from '../../util/analyzed-deck'
+import { AnalyzeErrorModal } from './AnalyzeErrorModal'
 import { DecklistFormModal } from './DecklistFormModal'
 import { parseDecklist } from './parse-decklist'
 
@@ -37,14 +38,22 @@ export const AnalyzePage = () => {
       setNewAnalyzedDeck(analyzeDeckResponse)
       navigate('/analyze/new')
     },
+    onError: (error: unknown) => {
+      setErrorText(String(error))
+    },
   })
 
+  const [errorText, setErrorText] = useState<string | null>(null)
+
   return (
-    <Stack justify="stretch" mih="100dvh" p="xl" w="100%">
-      <Hero />
-      <MoxfieldUrlForm />
-      <DecklistForm onAnalyze={mutateAsync} />
-    </Stack>
+    <>
+      <Stack justify="stretch" mih="100dvh" p="xl" w="100%">
+        <Hero />
+        <MoxfieldUrlForm onAnalyze={mutateAsync} />
+        <DecklistForm onAnalyze={mutateAsync} />
+      </Stack>
+      <AnalyzeErrorModal errorText={errorText} onClose={() => setErrorText(null)} />
+    </>
   )
 }
 
@@ -66,14 +75,47 @@ export type AnalyzeFormProps = {
   onAnalyze: (body: PostAnalyzeBody) => Promise<unknown>
 }
 
-const MoxfieldUrlForm = () => {
+const MoxfieldUrlForm = ({ onAnalyze }: AnalyzeFormProps) => {
+  const form = useForm({
+    mode: 'controlled',
+    initialValues: {
+      url: '',
+    },
+    validate: {
+      url: value => {
+        const moxfieldUrlRegex = /^https:\/\/moxfield.com\/decks\/[^/]+$/
+        if (!moxfieldUrlRegex.test(value)) {
+          return 'Invalid Moxfield URL'
+        }
+
+        return null
+      },
+    },
+  })
+
   return (
-    <form>
+    <form
+      onSubmit={form.onSubmit(({ url }) =>
+        onAnalyze({
+          type: 'url',
+          url,
+        }),
+      )}
+    >
       <Stack flex={1} gap="md">
-        <Title order={1}>Option 1: Moxfield URL (🚧 Under construction 🚧)</Title>
-        <Group>
-          <Input disabled placeholder="https://moxfield.com/decks/..." w="50%" />
-          <Button disabled w={'fit-content'}>
+        <Title order={1}>Option 1: Moxfield URL</Title>
+        <Group
+          style={{
+            alignItems: 'start',
+          }}
+        >
+          <TextInput
+            key={form.key('url')}
+            placeholder="https://moxfield.com/decks/..."
+            w="50%"
+            {...form.getInputProps('url', { type: 'input' })}
+          />
+          <Button loading={form.submitting} type="submit" w={'fit-content'}>
             Analyze
           </Button>
         </Group>

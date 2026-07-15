@@ -130,13 +130,15 @@ export const App = () => {
         message: 'Logged out',
         autoClose: true,
       })
+
+      return
     }
 
     notifications.show({
       title: error.name,
       message: error.message,
       color: 'red',
-      autoClose: false,
+      autoClose: true,
     })
   }
 

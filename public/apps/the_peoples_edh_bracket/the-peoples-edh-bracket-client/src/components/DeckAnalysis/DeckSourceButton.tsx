@@ -11,8 +11,9 @@ import {
 } from '@mantine/core'
 import { useClipboard, useDisclosure } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
-import { FilesIcon, GlobeIcon } from '@phosphor-icons/react'
+import { ArrowSquareOutIcon, FilesIcon, GlobeIcon } from '@phosphor-icons/react'
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { match } from 'ts-pattern'
 
 import type { Deck } from '../../types/bindings/Deck'
@@ -59,20 +60,37 @@ export const DeckSourceButton = ({ source }: DeckSourceButtonProps) => {
         <Center h="100%" p="sm">
           <Stack>
             {label}
-            <Button onClick={open}>View</Button>
+            {source.ty === 'decklist' ? (
+              <Button onClick={open}>View</Button>
+            ) : (
+              <Button
+                component={Link}
+                rightSection={<ArrowSquareOutIcon />}
+                target="_blank"
+                to={source.url}
+                w="100%"
+              >
+                View
+              </Button>
+            )}
           </Stack>
         </Center>
       </Paper>
-      <ViewDeckSourceModal opened={opened} source={source} title={label} onClose={close} />
+      {source.ty === 'decklist' && (
+        <ViewDeckSourceModal deck={source.deck} opened={opened} title={label} onClose={close} />
+      )}
     </>
   )
 }
 
 export type ViewDecklistSourceModalProps = ModalProps & {
-  source: DeckSource
+  deck: Deck
 }
 
-export const ViewDeckSourceModal = ({ source, ...modalProps }: ViewDecklistSourceModalProps) => {
+export const ViewDeckSourceModal = ({
+  deck: { commanders, maindeck },
+  ...modalProps
+}: ViewDecklistSourceModalProps) => {
   const clipboard = useClipboard()
 
   const onCopy = (content: string) => {
@@ -83,6 +101,10 @@ export const ViewDeckSourceModal = ({ source, ...modalProps }: ViewDecklistSourc
       autoClose: 1000,
     })
   }
+
+  const commanderLines = commanders.map(({ name }) => `1 ${name}`)
+  const mainDeckLines = maindeck.map(({ count, card: { name } }) => `${count} ${name}`)
+  const content = [...commanderLines, ...mainDeckLines].join('\n')
 
   return (
     <Modal
@@ -95,16 +117,7 @@ export const ViewDeckSourceModal = ({ source, ...modalProps }: ViewDecklistSourc
       }}
       {...modalProps}
     >
-      {match(source)
-        .with({ ty: 'url' }, () => <></>)
-        .with({ ty: 'decklist' }, ({ deck: { commanders, maindeck } }) => {
-          const commanderLines = commanders.map(({ name }) => `1 ${name}`)
-          const mainDeckLines = maindeck.map(({ count, card: { name } }) => `${count} ${name}`)
-          const content = [...commanderLines, ...mainDeckLines].join('\n')
-
-          return <ViewDeckSourceModalDecklistContent decklist={content} onCopy={onCopy} />
-        })
-        .exhaustive()}
+      <ViewDeckSourceModalDecklistContent decklist={content} onCopy={onCopy} />
     </Modal>
   )
 }

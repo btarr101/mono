@@ -1,7 +1,10 @@
+use std::num::NonZeroUsize;
+
+use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
-use crate::constants::TS_RS_EXPORT_TO;
+use crate::{constants::TS_RS_EXPORT_TO, model::card::CardWithGlobalPoints, types::PointsHistogramBucket};
 
 /// The type of card in a tracked deck.
 ///
@@ -39,4 +42,27 @@ pub struct TrackedDeck {
     pub url_source: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,
+    pub last_synced: DateTime<Utc>,
+}
+
+#[derive(ts_rs::TS, Serialize, Debug)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
+pub struct DeckMaindeckEntry {
+    pub count: NonZeroUsize,
+    pub card: CardWithGlobalPoints,
+}
+
+#[derive(ts_rs::TS, Serialize, Debug)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
+pub struct Deck {
+    pub commanders: Vec<CardWithGlobalPoints>,
+    pub maindeck: Vec<DeckMaindeckEntry>,
+}
+
+#[derive(ts_rs::TS, Serialize, Debug)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
+pub struct AnalyzedDeck {
+    pub deck: Deck,
+    pub total_points: BigDecimal,
+    pub histogram: Vec<PointsHistogramBucket>,
 }

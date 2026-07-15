@@ -46,6 +46,12 @@ Run from the project root (where the `migrations/` folder lives):
 sqlx migrate run
 ```
 
+### Generating Typescript
+
+This projects uses `ts_rs` to generate Typescript types from rust structs. `ts_rs` automatically adds tests for each type we want to generate - so running all tests generates all the types.
+
+Additionally, an alias is defined `cargo generate-ts` which runs `cargo test export_` to generate all the types.
+
 ### Syncing cards to the server
 
 In order to get every magic card synced into the server, you must run the application with the `sync-cards` options.

@@ -1,3 +1,4 @@
+use bigdecimal::BigDecimal;
 use serde::Serialize;
 
 use crate::constants::TS_RS_EXPORT_TO;
@@ -31,4 +32,12 @@ pub struct Card {
     pub image_uri: Option<String>,
     /// The legality of the card
     pub legality: CardLegality,
+}
+
+#[derive(ts_rs::TS, Serialize, sqlx::FromRow, Debug)]
+#[ts(export, export_to = TS_RS_EXPORT_TO)]
+pub struct CardWithGlobalPoints {
+    #[serde(flatten)]
+    pub card: Card,
+    pub global_points: BigDecimal,
 }

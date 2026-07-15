@@ -25,8 +25,8 @@ export const parseDecklist = (decklist: string) => {
   }
 
   const totalCount = validLines.reduce((acc, line) => acc + line.count, 0)
-  if (totalCount !== 100) {
-    return err([`Decklist must have exactly 100 cards, but has ${totalCount}`])
+  if (totalCount > 100) {
+    return err([`Decklist must have no more than 100 cards, but has ${totalCount}`])
   }
 
   return ok(validLines)

@@ -1,7 +1,11 @@
+use std::time::Duration;
+
 use axum::{http::Request, middleware::from_fn_with_state};
 #[cfg(debug_assertions)]
 use axum_anyhow::set_expose_errors;
+use futures_util::TryFutureExt;
 use reqwest::header::AUTHORIZATION;
+use tokio_cron_scheduler::{Job, JobScheduler};
 use tower_http::{
     cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer},
     trace::{DefaultOnRequest, DefaultOnResponse, TraceLayer},
@@ -11,6 +15,7 @@ use tracing::info;
 use crate::{
     api_router,
     client_assets_handler::client_assets_handler,
+    jobs::sync_decks,
     middleware::auth::{AuthMiddlewareParams, AuthMiddlewareState, auth_middleware},
     state::AppState,
 };
@@ -30,7 +35,7 @@ pub async fn server(state: AppState) -> anyhow::Result<()> {
             .await?,
             auth_middleware,
         ))
-        .with_state(state)
+        .with_state(state.clone())
         .layer(
             CorsLayer::new()
                 .allow_methods(AllowMethods::any())
@@ -56,9 +61,26 @@ pub async fn server(state: AppState) -> anyhow::Result<()> {
                 .on_response(DefaultOnResponse::new().level(tracing::Level::INFO)),
         );
 
+    let scheduler = JobScheduler::new().await?;
+    // 10 seconds = 6 tracked decks per minute
+    // definitely not scaleable but good enough for now
+    let job = Job::new_repeated_async(Duration::from_secs(10), move |_uuid, _l| {
+        let state = state.clone();
+        Box::pin(async move {
+            if let Err(e) = sync_decks::sync_last_synced_deck(state).await {
+                tracing::error!("Failed to sync decks: {}", e);
+            }
+        })
+    })?;
+    scheduler.add(job).await?;
+
     info!("Starting server at http://{}", bind_address);
     let listener = tokio::net::TcpListener::bind(&bind_address).await?;
-    axum::serve(listener, router).await?;
+
+    tokio::try_join!(
+        async move { axum::serve(listener, router).await }.map_err(anyhow::Error::new),
+        scheduler.start().map_err(anyhow::Error::new)
+    )?;
 
     Ok(())
 }

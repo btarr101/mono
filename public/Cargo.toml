@@ -5,6 +5,3 @@ members = [
 	"apps/controlmylights/controlmylights_server",
 	"apps/the_peoples_edh_bracket/the_peoples_edh_bracket_server",
 ]
-
-[profile.dev.package.sqlx-macros]
-opt-level = 3

@@ -1,10 +1,8 @@
-use std::{env, path::Path};
-
 use clap::{Parser, ValueEnum};
-use serde_envfile::from_env;
 use the_peoples_edh_bracket_server::{
     config::Config,
     db::setup_pg_pool,
+    moxfield::client::{MoxfieldClient, MoxfieldClientConfig},
     scripts::{seed::seed, sync_cards::sync_cards},
     scryfall::client::ScryfallClient,
     server::server,
@@ -31,21 +29,19 @@ struct Args {
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
-    if cfg!(debug_assertions) {
-        let manifest_dir = env::var("CARGO_MANIFEST_DIR")?;
-        let env_path = Path::new(&manifest_dir).join(".env");
-        let _ = dotenvy::from_filename(&env_path);
-    }
-
-    let _ = dotenvy::dotenv();
-    let config: Config = from_env()?;
+    let config: Config = Config::from_env_with_dotenv()?;
 
     let _span = setup_tracing(&config.stage);
 
     let pg_pool = setup_pg_pool(&config.database_url).await?;
+    let moxfield_client = MoxfieldClient::new(MoxfieldClientConfig {
+        user_agent: &config.moxfield_user_agent.as_str(),
+    });
+
     let state = AppState {
         config,
         scryfall_client: ScryfallClient::new(),
+        moxfield_client,
         pg_pool,
     };
 
