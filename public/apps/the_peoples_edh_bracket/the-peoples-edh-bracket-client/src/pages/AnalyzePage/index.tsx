@@ -83,7 +83,8 @@ const MoxfieldUrlForm = ({ onAnalyze }: AnalyzeFormProps) => {
     },
     validate: {
       url: value => {
-        const moxfieldUrlRegex = /^https:\/\/moxfield.com\/decks\/[^/]+$/
+        const moxfieldUrlRegex =
+          /^https?:\/\/(?:www\.)?moxfield\.com\/decks\/[A-Za-z0-9_-]+(?:[/?#].*)?$/
         if (!moxfieldUrlRegex.test(value)) {
           return 'Invalid Moxfield URL'
         }
