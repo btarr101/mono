@@ -1,0 +1,2 @@
+[alias]
+generate-ts = "test export_"

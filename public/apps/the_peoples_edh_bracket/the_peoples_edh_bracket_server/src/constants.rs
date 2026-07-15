@@ -4,3 +4,4 @@ pub const TS_RS_EXPORT_TO: &str = concat!(
 );
 
 pub const MAX_TRACKED_DECKS_PER_PERSON: usize = 100;
+pub const MAX_IN_FLIGHT_ANALYZE_REQUESTS: usize = 10;

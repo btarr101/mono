@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO tracked_deck (tracker_person_uuid, name, url_source) VALUES ($1, $2, $3) RETURNING *",
+  "query": "SELECT *\n        FROM tracked_deck\n        WHERE url_source IS NOT NULL\n        ORDER BY last_synced ASC\n        LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -82,11 +82,7 @@
       }
     ],
     "parameters": {
-      "Left": [
-        "Uuid",
-        "Text",
-        "Text"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -98,5 +94,5 @@
       false
     ]
   },
-  "hash": "edc6ed360de8eb6176cc93ca363a1dd96e80f739192d4c1f14c14042354309f1"
+  "hash": "b5da15271d8133e393d61ace34ab5855974a26c7a121fbba75c75c9c4f612f14"
 }

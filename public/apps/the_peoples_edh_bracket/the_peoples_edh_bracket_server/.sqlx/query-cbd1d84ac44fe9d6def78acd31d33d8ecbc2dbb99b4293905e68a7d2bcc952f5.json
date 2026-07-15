@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM tracked_deck_card\n        WHERE tracked_deck_uuid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cbd1d84ac44fe9d6def78acd31d33d8ecbc2dbb99b4293905e68a7d2bcc952f5"
+}

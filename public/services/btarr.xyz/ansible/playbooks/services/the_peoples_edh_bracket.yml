@@ -20,6 +20,11 @@
         owner: svc
         group: svc
         mode: "0600"
+      loop:
+        - regexp: "^DATABASE_URL="
+          line: "DATABASE_URL=postgresql://the_peoples_edh_bracket:{{ env.THE_PEOPLES_EDH_BRACKET_PG_PASSWORD | urlencode }}@127.0.0.1:5432/the_peoples_edh_bracket"
+        - regexp: "^MOXFIELD_USER_AGENT="
+          line: "MOXFIELD_USER_AGENT={{ env.THE_PEOPLES_EDH_BRACKET_MOXFIELD_USER_AGENT }}"
       notify: Restart the_peoples_edh_bracket service
 
     - name: Install the_peoples_edh_bracket systemd unit

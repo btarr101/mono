@@ -5,34 +5,40 @@ use axum::{
     extract::{Path, Query, State},
     routing::{get, post},
 };
-use axum_anyhow::{ApiError, ApiResult, OptionExt};
+use axum_anyhow::{ApiError, ApiResult, IntoApiError, OptionExt};
 use axum_valid::Valid;
 use bigdecimal::{BigDecimal, ToPrimitive};
 use itertools::{Either, Itertools};
+use lazy_regex::regex;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
-use sqlx::{PgPool, QueryBuilder, prelude::FromRow};
+use sqlx::{PgPool, QueryBuilder};
 use strum::Display;
+use tower::limit::ConcurrencyLimitLayer;
 use validator::{Validate, ValidationError, ValidationErrors};
 
 use crate::{
     api_router::decks_router::PostAnalyzeBody::Url,
-    constants::{MAX_TRACKED_DECKS_PER_PERSON, TS_RS_EXPORT_TO},
+    constants::{MAX_IN_FLIGHT_ANALYZE_REQUESTS, MAX_TRACKED_DECKS_PER_PERSON, TS_RS_EXPORT_TO},
     middleware::auth::Auth,
     model::{
-        card::{Card, CardLegality},
-        tracked_deck::{TrackedDeck, TrackedDeckCardType},
+        card::{Card, CardLegality, CardWithGlobalPoints},
+        tracked_deck::{AnalyzedDeck, Deck, DeckMaindeckEntry, TrackedDeck, TrackedDeckCardType},
     },
+    moxfield::client::{MoxfieldClient, MoxfieldDeckError},
     state::AppState,
     types::PointsHistogramBucket,
-    util::parse_pagination,
+    util::{find_cards_by_names, find_cards_by_names_with_alternate_name, parse_pagination},
 };
 
 pub fn get_router() -> Router<AppState> {
     Router::new()
         .route("/", get(get_tracked_decks).post(post_tracked_deck))
-        .route("/analyze", post(post_analyze))
+        .route(
+            "/analyze",
+            post(post_analyze).layer(ConcurrencyLimitLayer::new(MAX_IN_FLIGHT_ANALYZE_REQUESTS)),
+        )
         .route("/{uuid}", get(get_tracked_deck).delete(delete_tracked_deck))
 }
 
@@ -99,7 +105,8 @@ async fn get_tracked_decks(
                 td.name,
                 td.url_source,
                 td.created_at,
-                td.updated_at
+                td.updated_at,
+                td.last_synced
             FROM tracked_deck td
             WHERE
                 ($1::uuid IS NULL OR td.tracker_person_uuid = $1)
@@ -138,6 +145,7 @@ async fn get_tracked_decks(
             fd.url_source,
             fd.created_at,
             fd.updated_at,
+            fd.last_synced,
             COALESCE(dp.total_global_points, 0.0) AS \"total_global_points!\",
             COALESCE(dp.total_personal_points, 0.0) AS \"total_personal_points!\"
         FROM filtered_decks fd
@@ -169,6 +177,7 @@ async fn get_tracked_decks(
             url_source: row.url_source,
             created_at: row.created_at,
             updated_at: row.updated_at,
+            last_synced: row.last_synced,
         },
         total_global_points: row.total_global_points,
         total_personal_points: row.total_personal_points,
@@ -236,36 +245,6 @@ impl Validate for PostAnalyzeBody {
     }
 }
 
-#[derive(ts_rs::TS, Serialize, FromRow, Debug)]
-#[ts(export, export_to = TS_RS_EXPORT_TO)]
-struct CardWithGlobalPoints {
-    #[serde(flatten)]
-    card: Card,
-    global_points: BigDecimal,
-}
-
-#[derive(ts_rs::TS, Serialize, Debug)]
-#[ts(export, export_to = TS_RS_EXPORT_TO)]
-struct DeckMaindeckEntry {
-    count: NonZeroUsize,
-    card: CardWithGlobalPoints,
-}
-
-#[derive(ts_rs::TS, Serialize, Debug)]
-#[ts(export, export_to = TS_RS_EXPORT_TO)]
-struct Deck {
-    commanders: Vec<CardWithGlobalPoints>,
-    maindeck: Vec<DeckMaindeckEntry>,
-}
-
-#[derive(ts_rs::TS, Serialize, Debug)]
-#[ts(export, export_to = TS_RS_EXPORT_TO)]
-struct AnalyzedDeck {
-    deck: Deck,
-    total_points: BigDecimal,
-    histogram: Vec<PointsHistogramBucket>,
-}
-
 #[derive(ts_rs::TS, Serialize, Debug)]
 #[ts(export, export_to = TS_RS_EXPORT_TO)]
 struct AnalyzedDeckWithSource {
@@ -291,15 +270,70 @@ enum PostAnalyzeDeckResponse {
 
 async fn post_analyze(
     State(pg_pool): State<PgPool>,
+    State(moxfield_client): State<MoxfieldClient>,
     Valid(Json(body)): Valid<Json<PostAnalyzeBody>>,
 ) -> ApiResult<Json<PostAnalyzeDeckResponse>> {
     let ((commanders, invalid_commanders), (maindeck, invalid_maindeck)) = match &body {
-        PostAnalyzeBody::Url(_) => unimplemented!("Deck urls are not implemented yet!"),
+        PostAnalyzeBody::Url(DeckUrl { url }) => {
+            let deck_id = regex!(r"^https?://(?:www\.)?moxfield\.com/decks/([A-Za-z0-9_-]+)(?:[/?#].*)?$")
+                .captures(url)
+                .and_then(|captures| captures.get(1))
+                .map(|deck_id| deck_id.as_str().to_string())
+                .ok_or_else(|| {
+                    ApiError::builder()
+                        .status(StatusCode::BAD_REQUEST)
+                        .title("Invalid Moxfield deck URL")
+                        .detail("Expected URL format: https://moxfield.com/decks/<deck-id>")
+                        .build()
+                })?;
+
+            let moxfield_deck = moxfield_client.deck(&deck_id).await.map_err(|error| match error {
+                MoxfieldDeckError::NotFound => ApiError::builder()
+                    .status(StatusCode::NOT_FOUND)
+                    .title("Deck not found")
+                    .detail("Deck for the moxfield url could not be found")
+                    .build(),
+                MoxfieldDeckError::Other(err) => err.context_bad_request("Unable to fetch deck from Moxfield"),
+            })?;
+            let commanders_cards = moxfield_deck.boards.commanders.cards;
+            let mainboard_cards = moxfield_deck.boards.mainboard.cards;
+
+            let (valid_commanders, invalid_commanders) =
+                find_cards_by_names(commanders_cards.values().map(|entry| &entry.card.name), &pg_pool).await?;
+
+            let card_names = mainboard_cards
+                .values()
+                .map(|entry| entry.card.name.clone())
+                .collect::<Vec<_>>();
+            let (valid_cards, invalid_card_names) = find_cards_by_names_with_alternate_name(&card_names, &pg_pool).await?;
+            let card_counts = mainboard_cards
+                .values()
+                .map(|entry| {
+                    (
+                        entry.card.name.to_lowercase(),
+                        NonZeroUsize::try_from(entry.quantity).unwrap_or(NonZeroUsize::MIN),
+                    )
+                })
+                .collect::<HashMap<_, _>>();
+            let valid_cards = valid_cards
+                .into_iter()
+                .map(|(card, alternate_name)| DeckMaindeckEntry {
+                    count: card_counts
+                        .get(&card.card.name.to_lowercase())
+                        .or_else(|| alternate_name.as_ref().and_then(|name| card_counts.get(&name.to_lowercase())))
+                        .cloned()
+                        .unwrap_or(NonZeroUsize::MIN),
+                    card,
+                })
+                .collect::<Vec<_>>();
+
+            ((valid_commanders, invalid_commanders), (valid_cards, invalid_card_names))
+        }
         PostAnalyzeBody::Decklist(decklist) => (
             find_cards_by_names(&decklist.commanders, &pg_pool).await?,
             async {
                 let card_names = decklist.maindeck.iter().map(|entry| entry.name.clone()).collect::<Vec<_>>();
-                let (valid_cards, invalid_card_names) = find_cards_by_names(&card_names, &pg_pool).await?;
+                let (valid_cards, invalid_card_names) = find_cards_by_names_with_alternate_name(&card_names, &pg_pool).await?;
 
                 let card_counts = decklist
                     .maindeck
@@ -309,9 +343,10 @@ async fn post_analyze(
 
                 let valid_cards = valid_cards
                     .into_iter()
-                    .map(|card| DeckMaindeckEntry {
+                    .map(|(card, alternate_name)| DeckMaindeckEntry {
                         count: card_counts
                             .get(&card.card.name.to_lowercase())
+                            .or_else(|| alternate_name.as_ref().and_then(|name| card_counts.get(&name.to_lowercase())))
                             .cloned()
                             .unwrap_or(NonZeroUsize::MIN),
                         card,
@@ -351,95 +386,6 @@ async fn post_analyze(
             histogram,
         },
     })))
-}
-
-async fn find_cards_by_names(
-    cards_names: impl IntoIterator<Item = impl AsRef<str>>,
-    pg_pool: &PgPool,
-) -> anyhow::Result<(Vec<CardWithGlobalPoints>, Vec<String>)> {
-    let input = cards_names.into_iter().map(|n| n.as_ref().to_string()).collect::<Vec<_>>();
-    let lowercased = input.iter().map(|n| n.to_lowercase()).collect::<Vec<_>>();
-
-    let cards = sqlx::query!(
-        "WITH matched_cards AS (
-            SELECT DISTINCT c.oracle_id
-            FROM card c
-            LEFT JOIN LATERAL (
-                SELECT name AS alternate_name
-                FROM alternate_card_name acn
-                WHERE acn.card_oracle_id = c.oracle_id
-                    AND LOWER(acn.name) = ANY($1)
-                LIMIT 1
-            ) acn ON TRUE
-            WHERE LOWER(c.name) = ANY($1)
-               OR acn.alternate_name IS NOT NULL
-        ),
-        card_global_points AS (
-            SELECT
-                cr.card_oracle_id,
-                AVG(cr.points) AS average_global_points
-            FROM card_rating cr
-            INNER JOIN matched_cards mc ON mc.oracle_id = cr.card_oracle_id
-            GROUP BY cr.card_oracle_id
-        )
-        SELECT
-            c.oracle_id as \"oracle_id!\",
-            c.name as \"name!\",
-            c.image_uri,
-            c.legality as \"legality!: CardLegality\",
-            COALESCE(cgp.average_global_points, 0.0) as \"global_points!\",
-            acn.alternate_name
-        FROM matched_cards mc
-        INNER JOIN card c ON c.oracle_id = mc.oracle_id
-        LEFT JOIN card_global_points cgp ON c.oracle_id = cgp.card_oracle_id
-        LEFT JOIN LATERAL (
-            SELECT name AS alternate_name
-            FROM alternate_card_name acn
-            WHERE acn.card_oracle_id = c.oracle_id
-                AND LOWER(acn.name) = ANY($1)
-            LIMIT 1
-        ) acn ON TRUE
-        ",
-        &lowercased
-    )
-    .fetch_all(pg_pool)
-    .await?
-    .into_iter()
-    .map(|row| {
-        (
-            row.alternate_name,
-            CardWithGlobalPoints {
-                card: Card {
-                    oracle_id: row.oracle_id,
-                    name: row.name,
-                    image_uri: row.image_uri,
-                    legality: row.legality,
-                },
-                global_points: row.global_points,
-            },
-        )
-    })
-    .collect::<Vec<_>>();
-
-    let invalid_card_names = input
-        .iter()
-        .filter(|name| {
-            !cards
-                .iter()
-                .find(|(alternate_name, card)| {
-                    card.card.name.eq_ignore_ascii_case(name.as_str())
-                        || alternate_name
-                            .as_deref()
-                            .map_or(false, |alternate_name| alternate_name.eq_ignore_ascii_case(name.as_str()))
-                })
-                .is_some()
-        })
-        .cloned()
-        .collect::<Vec<_>>();
-
-    let cards = cards.into_iter().map(|(_, card)| card).collect::<Vec<_>>();
-
-    Ok((cards, invalid_card_names))
 }
 
 fn build_histogram(all_points: impl Iterator<Item = BigDecimal>) -> Vec<PointsHistogramBucket> {
@@ -488,10 +434,10 @@ fn validate_post_tracked_deck_body(body: &PostTrackedDeckBody) -> Result<(), Val
 
     let total_cards = total_maindeck + total_commanders;
 
-    if total_cards != 100 {
+    if total_cards > 100 {
         return Err(ValidationError::new("invalid count").with_message(
             format!(
-                "The total count of a commander deck must add up to exactly 100 (decklist had {} cards)",
+                "The total count of a commander deck must not exceed 100 (decklist had {} cards)",
                 total_cards
             )
             .into(),
@@ -691,7 +637,17 @@ async fn delete_tracked_deck(
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::db::setup_pg_pool;
+    use crate::{config::Config, db::setup_pg_pool, moxfield::client::MoxfieldClientConfig};
+
+    async fn post_analyze_by_body(body: PostAnalyzeBody) -> Result<Json<PostAnalyzeDeckResponse>, ApiError> {
+        let config = Config::from_env_with_dotenv()?;
+        let pg_pool = setup_pg_pool(&config.database_url).await?;
+        let moxfield_client = MoxfieldClient::new(MoxfieldClientConfig {
+            user_agent: config.moxfield_user_agent.as_str(),
+        });
+
+        post_analyze(State(pg_pool), State(moxfield_client), Valid(Json(body))).await
+    }
 
     #[tokio::test]
     async fn test_analyze_by_decklist() -> anyhow::Result<()> {
@@ -708,9 +664,27 @@ mod test {
                 },
             ],
         };
-        let pg_pool = setup_pg_pool("postgres://admin:root@localhost:5432/db").await?;
 
-        let analyzation = post_analyze(State(pg_pool), Valid(Json(PostAnalyzeBody::Decklist(decklist)))).await;
+        let analyzation = post_analyze_by_body(PostAnalyzeBody::Decklist(decklist)).await;
+
+        match analyzation {
+            Ok(json) => {
+                let _ = dbg!(json.0);
+            }
+            Err(err) => {
+                dbg!(err);
+            }
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_analyze_by_url() -> anyhow::Result<()> {
+        let analyzation = post_analyze_by_body(PostAnalyzeBody::Url(DeckUrl {
+            url: "https://moxfield.com/decks/rvCYyItbQUWjS8QKaxSuEQ".to_string(),
+        }))
+        .await;
 
         match analyzation {
             Ok(json) => {
