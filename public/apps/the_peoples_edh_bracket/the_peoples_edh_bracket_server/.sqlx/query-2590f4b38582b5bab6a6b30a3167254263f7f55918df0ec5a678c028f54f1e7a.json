@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE tracked_deck\n        SET last_synced = NOW()\n        WHERE uuid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2590f4b38582b5bab6a6b30a3167254263f7f55918df0ec5a678c028f54f1e7a"
+}

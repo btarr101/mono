@@ -68,6 +68,17 @@
             "name": "updated_at"
           }
         }
+      },
+      {
+        "ordinal": 6,
+        "name": "last_synced",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "tracked_deck",
+            "name": "last_synced"
+          }
+        }
       }
     ],
     "parameters": {
@@ -81,7 +92,8 @@
       false,
       true,
       false,
-      true
+      true,
+      false
     ]
   },
   "hash": "cc5fd86cfdc4cb2b21fcc78d6d3fa09362bfa1658bac7f74be443009ad0a7b62"
