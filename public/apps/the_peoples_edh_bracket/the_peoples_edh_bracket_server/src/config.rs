@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use serde::Deserialize;
 use serde_inline_default::serde_inline_default;
 
@@ -21,7 +19,7 @@ impl Config {
     pub fn from_env_with_dotenv() -> Result<Self, serde_envfile::Error> {
         #[cfg(debug_assertions)]
         {
-            let env_path = Path::new(env!("CARGO_MANIFEST_DIR")).join(".env");
+            let env_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(".env");
             let _ = dotenvy::from_filename(&env_path);
         }
 
