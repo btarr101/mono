@@ -3,7 +3,7 @@
 > We need dem grids
 
 Griddy is a simple store for a 2D grid of cells. What's unique about it is it doesn't care about having fixed dimensions.
-Logically, the grid is infinitely sized. But physically, grid starts out with the center at (0, 0) and has dimensions of (0, 0).
+Logically, the grid is infinitely sized. But physically, the grid starts out with the center at (0, 0) and has dimensions of (0, 0).
 
 - If you need to immediately add a cell at (-5678, 42), go for it!
 - If you need to access cell (2045, 29) right way, go for it!
