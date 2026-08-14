@@ -24,7 +24,7 @@ cargo add griddy
 ## Usage
 
 ```rust
-use griddy::Grid;
+use griddy::grid::Grid;
 
 let mut grid = Grid::<isize>::new();
 let previous = grid.upsert((-5678, 42), 42);
