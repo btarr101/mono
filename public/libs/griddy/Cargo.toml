@@ -1,0 +1,7 @@
+[package]
+name = "griddy"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+glam = { version = "0.33.3", features = ["isize", "usize", "std"], default-features = false }
