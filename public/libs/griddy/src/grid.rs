@@ -42,7 +42,7 @@ impl<C: GridCell> Grid<C> {
 
     /// Gets the maximum position of the grid
     pub fn max(&self) -> (isize, isize) {
-        (self.top_left_offset + glam::isizevec2(self.width() as isize, self.height() as isize)).into()
+        (-self.top_left_offset + glam::isizevec2(self.width() as isize, self.height() as isize)).into()
     }
 
     /// Gets the bounds of the grid
