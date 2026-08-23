@@ -1,11 +1,13 @@
 use std::{collections::VecDeque, iter::repeat_n};
 
-use crate::grid_bounds::{GridBoundExt, GridBounds};
-
-pub trait GridCell: Default + Clone {}
-impl<T: Default + Clone> GridCell for T {}
+use crate::{
+    grid_bounds::{GridBoundExt, GridBounds},
+    grid_cell::GridCell,
+    grid_data::GridData,
+};
 
 /// A grid of cells
+#[derive(Clone, Debug)]
 pub struct Grid<C: GridCell> {
     width: usize,
     cells: VecDeque<C>,
@@ -15,6 +17,25 @@ pub struct Grid<C: GridCell> {
 
 impl<C: GridCell> Default for Grid<C> {
     fn default() -> Self { Self::new() }
+}
+
+impl<D: Into<C>, C: GridCell + From<D>> From<GridData<D>> for Grid<C> {
+    fn from(data: GridData<D>) -> Self {
+        let mut cells = data.cells.into_iter().map(C::from).collect::<VecDeque<_>>();
+        let required_length = if data.width == 0 {
+            0
+        } else {
+            cells.len().next_multiple_of(data.width)
+        };
+        cells.resize(required_length, C::default());
+
+        Self {
+            width: data.width,
+            cells,
+            top_left_offset: data.top_left_offset.into(),
+            default_cell: C::default(),
+        }
+    }
 }
 
 impl<C: GridCell> Grid<C> {
@@ -32,17 +53,17 @@ impl<C: GridCell> Grid<C> {
     pub fn width(&self) -> usize { self.width }
 
     /// Gets the height of the grid
-    pub fn height(&self) -> usize { if self.width > 0 { self.cells.len() / self.width } else { 0 } }
+    pub fn height(&self) -> usize { self.cells.len().checked_div(self.width).unwrap_or_default() }
 
     /// Gets the size of the grid
     pub fn size(&self) -> (usize, usize) { (self.width(), self.height()) }
 
     /// Gets the minimum position of the grid
-    pub fn min(&self) -> (isize, isize) { (-self.top_left_offset).into() }
+    pub fn min(&self) -> (isize, isize) { self.top_left_offset.into() }
 
     /// Gets the maximum position of the grid
     pub fn max(&self) -> (isize, isize) {
-        (-self.top_left_offset + glam::isizevec2(self.width() as isize, self.height() as isize)).into()
+        (self.top_left_offset + glam::isizevec2(self.width() as isize, self.height() as isize)).into()
     }
 
     /// Gets the bounds of the grid
@@ -64,7 +85,7 @@ impl<C: GridCell> Grid<C> {
             .unwrap_or(&self.default_cell)
     }
 
-    /// Gets the cell at the given position mutably, if it exists
+    /// Gets the cell at the given position mutably
     pub fn get_mut(&mut self, position: impl Into<(isize, isize)>) -> &mut C {
         let position = position.into();
 
@@ -87,6 +108,22 @@ impl<C: GridCell> Grid<C> {
         (!expanded).then_some(replacement)
     }
 
+    /// Iterates over all positions and cells in the grid in row major order
+    pub fn iter(&self) -> impl Iterator<Item = ((isize, isize), &C)> {
+        self.cells.iter().enumerate().map(|(index, cell)| {
+            let position = self.index_to_position(index);
+            (position.into(), cell)
+        })
+    }
+
+    /// Iterates over all cells in the grid in row major order
+    pub fn cells(&self) -> impl Iterator<Item = &C> { self.cells.iter() }
+
+    /// Converts an index into the grid to a canonical grid position
+    fn index_to_position(&self, index: usize) -> glam::ISizeVec2 {
+        glam::ISizeVec2::new((index % self.width) as isize, (index / self.width) as isize) + self.top_left_offset
+    }
+
     /// Converts a canonical grid position to an index into the grid
     fn position_to_index(&self, position: impl Into<glam::ISizeVec2>) -> Option<usize> {
         self.local_position_to_index(self.position_to_local(position.into())?)
@@ -94,7 +131,7 @@ impl<C: GridCell> Grid<C> {
 
     /// Converts a canonical grid position to a local indexible position
     fn position_to_local(&self, position: glam::ISizeVec2) -> Option<glam::USizeVec2> {
-        glam::USizeVec2::try_from(self.top_left_offset + position).ok()
+        glam::USizeVec2::try_from(position - self.top_left_offset).ok()
     }
 
     /// Converts a local position to an index into the grid
@@ -124,7 +161,7 @@ impl<C: GridCell> Grid<C> {
             if width > 0 && height > 0 {
                 self.width = width;
                 self.cells.extend(repeat_n(C::default(), width * height));
-                self.top_left_offset = -new_min;
+                self.top_left_offset = new_min;
 
                 return true;
             }
@@ -152,7 +189,7 @@ impl<C: GridCell> Grid<C> {
         }
         self.width += columns_after;
 
-        self.top_left_offset = -new_min;
+        self.top_left_offset = new_min;
 
         columns_before != 0 || columns_after != 0 || rows_before != 0 || rows_after != 0
     }
@@ -187,5 +224,18 @@ mod test {
 
         assert_eq!(previous, None);
         assert_eq!(grid.get((56, -32)), &42);
+    }
+
+    #[test]
+    fn test_iter_respects_top_left_offset() {
+        let grid = Grid::<usize>::from(GridData {
+            width: 2,
+            cells: vec![1usize, 2, 3, 4],
+            top_left_offset: (-1, -1),
+        });
+
+        let items = grid.iter().map(|(position, cell)| (position, *cell)).collect::<Vec<_>>();
+
+        assert_eq!(items, vec![((-1, -1), 1), ((0, -1), 2), ((-1, 0), 3), ((0, 0), 4)]);
     }
 }
