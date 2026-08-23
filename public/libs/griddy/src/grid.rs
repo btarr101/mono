@@ -136,7 +136,7 @@ impl<C: GridCell> Grid<C> {
 
     /// Converts a local position to an index into the grid
     fn local_position_to_index(&self, position: glam::USizeVec2) -> Option<usize> {
-        (position.x < self.width() && position.y < self.height()).then(|| (position.y * self.width() + position.x) as usize)
+        (position.x < self.width() && position.y < self.height()).then(|| position.y * self.width() + position.x)
     }
 
     /// Expand this grid internally to contain the given positions
