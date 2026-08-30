@@ -116,13 +116,25 @@ impl<C: GridCell> Grid<C> {
         })
     }
 
+    /// Iterates over all positions and cells in the grid in row major order
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = ((isize, isize), &mut C)> {
+        let index_to_position = |index: usize| -> glam::ISizeVec2 { index_to_position(index, self.width, self.top_left_offset) };
+        self.cells.iter_mut().enumerate().map(move |(index, cell)| {
+            let position = index_to_position(index);
+            (position.into(), cell)
+        })
+    }
+
     /// Iterates over all cells in the grid in row major order
     pub fn cells(&self) -> impl Iterator<Item = &C> { self.cells.iter() }
 
-    /// Converts an index into the grid to a canonical grid position
-    fn index_to_position(&self, index: usize) -> glam::ISizeVec2 {
-        glam::ISizeVec2::new((index % self.width) as isize, (index / self.width) as isize) + self.top_left_offset
+    /// Iterates over all positions in the grid in row major order
+    pub fn positions(&self) -> impl Iterator<Item = (isize, isize)> {
+        (0..self.cells.len()).map(|index| self.index_to_position(index).into())
     }
+
+    /// Converts an index into the grid to a canonical grid position
+    fn index_to_position(&self, index: usize) -> glam::ISizeVec2 { index_to_position(index, self.width, self.top_left_offset) }
 
     /// Converts a canonical grid position to an index into the grid
     fn position_to_index(&self, position: impl Into<glam::ISizeVec2>) -> Option<usize> {
@@ -193,6 +205,10 @@ impl<C: GridCell> Grid<C> {
 
         columns_before != 0 || columns_after != 0 || rows_before != 0 || rows_after != 0
     }
+}
+
+fn index_to_position(index: usize, width: usize, top_left_offset: glam::ISizeVec2) -> glam::ISizeVec2 {
+    glam::ISizeVec2::new((index % width) as isize, (index / width) as isize) + top_left_offset
 }
 
 #[cfg(test)]
