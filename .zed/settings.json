@@ -8,5 +8,8 @@
                 }
             }
         }
+    },
+    "edit_predictions": {
+        "mode": "subtle"
     }
 }

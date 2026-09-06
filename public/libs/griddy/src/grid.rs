@@ -74,6 +74,9 @@ impl<C: GridCell> Grid<C> {
         (min.0..max.0, min.1..max.1)
     }
 
+    /// Translates this grid by shifting its top-left coordinate offset.
+    pub fn translate(&mut self, delta: impl Into<glam::ISizeVec2>) { self.top_left_offset += delta.into(); }
+
     /// Gets the cell at the given position, if it exists
     pub fn get(&self, position: impl Into<(isize, isize)>) -> &C {
         let position = position.into();
