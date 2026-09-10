@@ -68,6 +68,26 @@ impl<T, I: SparseSetIndex> SparseSet<T, I> {
         })
     }
 
+    /// Iterates over all entries in the sparse set mutably, in order of index
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&I, &mut T)> + '_ {
+        let dense_ptr = self.dense.as_mut_ptr();
+
+        self.sparse
+            .iter()
+            .filter_map(|dense_index| *dense_index)
+            .map(move |dense_index| {
+                // SAFETY:
+                // - `dense_index` comes from `self.sparse`, which only stores valid
+                //   indices into `self.dense`.
+                // - Each dense index occurs at most once in a valid sparse set, so
+                //   the iterator never yields overlapping mutable references.
+                let entry = unsafe { &mut *dense_ptr.add(dense_index) };
+
+                let (index, value) = entry;
+                (&*index, value)
+            })
+    }
+
     /// Gets an element mutably given an index
     pub fn get_mut(&mut self, index: I) -> Option<&mut T> {
         let dense_index = self.get_dense_index(&index)?;
