@@ -1,4 +1,7 @@
-use crate::sparse_set_index::SparseSetIndex;
+use crate::{
+    sparse_set_entry::{SparseSetEntry, SparseSetOccupiedEntry, SparseSetVacantEntry},
+    sparse_set_index::SparseSetIndex,
+};
 
 /// A sparse set, which is a data structure that stores key value pairs where
 /// the key is an index and the value is anything.
@@ -7,9 +10,9 @@ use crate::sparse_set_index::SparseSetIndex;
 /// so storring values where indices may be sparse or spread apart should have minimal consequence.
 pub struct SparseSet<T, I: SparseSetIndex = usize> {
     /// Mapping from sparse index to dense index
-    sparse: Vec<Option<usize>>,
+    pub(crate) sparse: Vec<Option<usize>>,
     /// Contains the raw data as well as the full sparse set index
-    dense: Vec<(I, T)>,
+    pub(crate) dense: Vec<(I, T)>,
 }
 
 impl<T, I: SparseSetIndex> SparseSet<T, I> {
@@ -39,6 +42,20 @@ impl<T, I: SparseSetIndex> SparseSet<T, I> {
         self.sparse[raw_index] = Some(dense_index);
 
         None
+    }
+
+    /// Gets an entry for in-place manipulation.
+    pub fn entry(&mut self, index: I) -> SparseSetEntry<'_, T, I> {
+        if let Some(dense_index) = self.get_dense_index(&index)
+            && self
+                .dense
+                .get(dense_index)
+                .is_some_and(|(current_index, _)| *current_index == index)
+        {
+            SparseSetEntry::Occupied(SparseSetOccupiedEntry { set: self, dense_index })
+        } else {
+            SparseSetEntry::Vacant(SparseSetVacantEntry { set: self, index })
+        }
     }
 
     /// Gets an element given an index
