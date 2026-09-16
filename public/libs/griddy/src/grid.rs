@@ -7,7 +7,7 @@ use crate::{
 };
 
 /// A grid of cells
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct Grid<C: GridCell> {
     width: usize,
     cells: VecDeque<C>,
