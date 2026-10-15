@@ -44,6 +44,19 @@ impl<T, I: SparseSetIndex> SparseSet<T, I> {
         None
     }
 
+    /// Inserts a new element at the next free index, returning the index.
+    pub fn insert_at_free(&mut self, value: T) -> I
+    where
+        I: From<usize> + Clone,
+    {
+        let raw_index = self.sparse.iter().position(Option::is_none).unwrap_or(self.sparse.len());
+        let index = I::from(raw_index);
+
+        self.insert(index.clone(), value);
+
+        index
+    }
+
     /// Gets an entry for in-place manipulation.
     pub fn entry(&mut self, index: I) -> SparseSetEntry<'_, T, I> {
         if let Some(dense_index) = self.get_dense_index(&index)
@@ -126,6 +139,19 @@ impl<T, I: SparseSetIndex> SparseSet<T, I> {
         }
 
         Some(removed_value)
+    }
+
+    /// Retains only the elements specified by the predicate.
+    pub fn retain(&mut self, mut predicate: impl FnMut(&T) -> bool) {
+        let sparse = &mut self.sparse;
+        let mut next_dense_index = 0;
+
+        self.dense.retain(|(sparse_index, value)| {
+            let retained = predicate(value);
+            sparse[sparse_index.index()] = retained.then_some(next_dense_index);
+            next_dense_index += usize::from(retained);
+            retained
+        });
     }
 
     /// Clears the sparse set
