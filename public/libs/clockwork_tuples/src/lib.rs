@@ -1,4 +1,7 @@
 #![deny(missing_docs)]
+// Tuple traits are generated up to 16 elements by a muncher whose expansion
+// depth grows quadratically with the arity.
+#![recursion_limit = "512"]
 
 //! Tuple-oriented type-level utilities.
 //!
