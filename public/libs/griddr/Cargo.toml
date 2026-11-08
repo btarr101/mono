@@ -1,7 +1,10 @@
 [package]
-name = "griddy"
+name = "griddr"
 version = "0.1.0"
 edition = "2024"
+description = "A grid/matrix store with unbounded, lazily-expanded dimensions."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/btarr101/mono"
 
 [dependencies]
 glam = { version = "0.33.3", features = ["isize", "usize", "std"], default-features = false }
