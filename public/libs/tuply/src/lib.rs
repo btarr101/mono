@@ -18,7 +18,7 @@
 //!
 //! # Examples
 //! ```
-//! use clockwork_tuples::traits::{
+//! use tuply::traits::{
 //!     as_cons_tuple::AsConsTuple,
 //!     as_ref_tuple::AsRefTuple,
 //!     has::Has,

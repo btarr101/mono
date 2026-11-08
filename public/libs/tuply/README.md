@@ -1,4 +1,4 @@
-# clockwork-tuples
+# tuply
 
 Type-level tuple utilities for building APIs that need compile-time
 reasoning over structure, ordering, and membership. The crate exposes a
@@ -28,13 +28,13 @@ Add the crate to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tuples = "0.1"
+tuply = "0.1"
 ```
 
 ## Example
 
 ```rust
-use clockwork_tuples::traits::{
+use tuply::traits::{
     as_cons_tuple::AsConsTuple,
     as_ref_tuple::AsRefTuple,
     has::Has,
@@ -103,7 +103,7 @@ fn borrow_refs() {
 ## Development
 
 ```bash
-cargo test -p tuples
+cargo test -p tuply
 ```
 
 All public modules and traits are documented, and CI will fail on missing

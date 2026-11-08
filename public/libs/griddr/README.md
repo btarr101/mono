@@ -1,4 +1,4 @@
-# griddy
+# griddr
 
 > We need dem grids
 
@@ -18,13 +18,13 @@ I'm making a game with grids. I need 'em.
 ## Installation
 
 ```bash
-cargo add griddy
+cargo add griddr
 ```
 
 ## Usage
 
 ```rust
-use griddy::grid::Grid;
+use griddr::grid::Grid;
 
 let mut grid = Grid::<isize>::new();
 let previous = grid.upsert((-5678, 42), 42);
