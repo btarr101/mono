@@ -1,10 +1,15 @@
 # Publishes every workspace crate whose current version is not yet on
 # crates.io. Bump the version in a crate's Cargo.toml, merge, and it ships.
-# No commit message conventions involved.
+# On pull requests it only runs the dry-run check. No commit message
+# conventions involved.
 on:
     push:
         branches:
             - main
+        paths:
+            - "public/**"
+            - ".github/workflows/publish_crates.yml"
+    pull_request:
         paths:
             - "public/**"
             - ".github/workflows/publish_crates.yml"
@@ -30,12 +35,25 @@ jobs:
               uses: dtolnay/rust-toolchain@nightly
 
             - name: Publish crates
+              id: publish
               uses: katyo/publish-crates@v2
               with:
                   path: ./public
                   registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+                  # PRs only verify; pushes actually publish.
+                  dry-run: ${{ github.event_name == 'pull_request' }}
                   # Fail if a crate's source changed after its published version
-                  # without a matching version bump.
-                  check-repo: true
-                  # Do not swallow that consistency error.
-                  ignore-unpublished-changes: false
+                  # without a matching version bump (push only; the check needs
+                  # commit history that isn't reliable on PR merge refs).
+                  check-repo: ${{ github.event_name != 'pull_request' }}
+                  ignore-unpublished-changes: ${{ github.event_name == 'pull_request' }}
+
+            - name: Verify changed crates compile
+              if: github.event_name == 'pull_request'
+              working-directory: public
+              env:
+                  PUBLISHED: ${{ steps.publish.outputs.published }}
+              run: |
+                  echo "$PUBLISHED" \
+                    | jq -r '.[].name' \
+                    | xargs -r -n1 cargo publish --dry-run --allow-dirty -p
