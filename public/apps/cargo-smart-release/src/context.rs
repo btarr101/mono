@@ -55,15 +55,23 @@ impl Context {
     }
 
     pub(crate) fn repo_relative_path<'a>(&self, p: &'a Package) -> Option<&'a Utf8Path> {
+        // Paths used for git tree and history lookups must be relative to the
+        // repository workdir, not the Cargo workspace root. Those differ when
+        // the workspace lives in a subdirectory of the repository.
+        let repo_root = self
+            .repo
+            .workdir()
+            .expect("smart-release requires a non-bare repository");
+        let repo_root = Utf8Path::from_path(repo_root).expect("repository path must be valid UTF-8");
         let dir = p
             .manifest_path
             .parent()
             .expect("parent of a file is always present")
-            .strip_prefix(&self.root)
+            .strip_prefix(repo_root)
             .unwrap_or_else(|_| {
                 panic!(
-                    "workspace members are relative to the root directory: {:?} should contain {:?}",
-                    self.root,
+                    "workspace members must be inside the repository: {:?} should contain {:?}",
+                    repo_root,
                     p.manifest_path.parent()
                 )
             });
