@@ -1,19 +1,27 @@
-# Publishes every workspace crate whose current version is not yet on
-# crates.io. Bump the version in a crate's Cargo.toml, merge, and it ships.
-# On pull requests it only runs the dry-run check. No commit message
-# conventions involved.
+# Publishes the public crates that changed since their last release, using the
+# vendored cargo-smart-release in public/apps/cargo-smart-release. It generates
+# a changelog, publishes to crates.io, tags the release, and creates a GitHub
+# release. Versions are controlled by hand: bump the `version` in Cargo.toml
+# and merge. On pull requests it only runs the dry-run plan, including
+# `cargo publish --dry-run` for the crates that would ship.
 on:
     push:
         branches:
             - main
         paths:
-            - "public/**"
-            - ".github/workflows/publish_crates.yml"
+            # Any published crate change on main re-runs the plan, which fails
+            # when a crate's source moved without a version bump.
+            - "public/libs/**"
     pull_request:
         paths:
-            - "public/**"
-            - ".github/workflows/publish_crates.yml"
+            # A release PR is one that bumps a crate version.
+            - "public/libs/**/Cargo.toml"
     workflow_dispatch:
+
+permissions:
+    # Needed to push the generated changelog commit and release tags, and to
+    # create GitHub releases.
+    contents: write
 
 concurrency:
     group: publish-crates
@@ -23,37 +31,51 @@ jobs:
     publish:
         name: 📦 Publish crates
         runs-on: ubuntu-latest
-        permissions:
-            contents: read
+        defaults:
+            run:
+                working-directory: public
         steps:
             - name: Checkout
               uses: actions/checkout@v6
+              with:
+                  # Changelog generation walks the full history since the last
+                  # release tag.
+                  fetch-depth: 0
 
             - name: Install Rust toolchain
-              # The public crates use nightly features, and `cargo publish` verifies
-              # by building the crate.
+              # The public crates use nightly features, and `cargo publish`
+              # verifies by building the crate.
               uses: dtolnay/rust-toolchain@nightly
 
-            - name: Publish crates
-              id: publish
-              uses: katyo/publish-crates@v2
-              with:
-                  path: ./public
-                  registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-                  # PRs only verify; pushes actually publish.
-                  dry-run: ${{ github.event_name == 'pull_request' }}
-                  # Fail if a crate's source changed after its published version
-                  # without a matching version bump (push only; the check needs
-                  # commit history that isn't reliable on PR merge refs).
-                  check-repo: ${{ github.event_name != 'pull_request' }}
-                  ignore-unpublished-changes: ${{ github.event_name == 'pull_request' }}
+            - name: Install cargo-smart-release
+              # Vendored build carrying the fix that resolves crate paths
+              # against the git repository root, so a workspace in `public/`
+              # works.
+              run: cargo install --path apps/cargo-smart-release --locked
 
-            - name: Verify changed crates compile
-              if: github.event_name == 'pull_request'
-              working-directory: public
-              env:
-                  PUBLISHED: ${{ steps.publish.outputs.published }}
+            - name: Configure git identity
               run: |
-                  echo "$PUBLISHED" \
-                    | jq -r '.[].name' \
-                    | xargs -r -n1 cargo publish --dry-run --allow-dirty -p
+                  git config user.name "publish-crates[bot]"
+                  git config user.email "publish-crates[bot]@users.noreply.github.com"
+
+            - name: Release
+              run: |
+                  git fetch --tags --force
+                  cargo smart-release \
+                    $(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.publish != []) | .name') \
+                    $EXECUTE \
+                    $DRY_RUN \
+                    --bump keep \
+                    --bump-dependencies keep \
+                    --allow-fully-generated-changelogs \
+                    --allow-empty-release-message \
+                    --no-changelog-preview \
+                    --changelog-github-release-for-namespaced-tags
+              env:
+                  CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  # Publish on push/manual dispatch; on PRs plan and verify
+                  # packaging without publishing.
+                  EXECUTE: ${{ github.event_name != 'pull_request' && '--execute' || '' }}
+                  DRY_RUN: ${{ github.event_name == 'pull_request' && '--dry-run-cargo-publish' || '' }}
