@@ -1,0 +1,203 @@
+use std::process::Command;
+
+use anyhow::{anyhow, bail, Context};
+use cargo_metadata::Package;
+use gix::{
+    bstr::{BStr, ByteSlice},
+    object,
+    refs::FullNameRef,
+};
+
+use crate::utils::{component_to_bytes, release_tag_name};
+
+pub mod history;
+
+#[derive(Clone, Debug)]
+pub enum PackageChangeKind {
+    Untagged {
+        #[allow(dead_code)] // only used for debug printing maybe?
+        wanted_tag_name: String,
+    },
+    ChangedOrNew,
+}
+
+pub fn change_since_last_release(package: &Package, ctx: &crate::Context) -> anyhow::Result<Option<PackageChangeKind>> {
+    let version_tag_name = release_tag_name(package, &package.version, &ctx.repo)?;
+    let mut tag_ref = match ctx
+        .repo
+        .try_find_reference(format!("refs/tags/{version_tag_name}").as_str())?
+    {
+        None => {
+            return Ok(Some(PackageChangeKind::Untagged {
+                wanted_tag_name: version_tag_name,
+            }));
+        }
+        Some(r) => r,
+    };
+    let repo_relative_crate_dir = ctx.repo_relative_path(package);
+    Ok(match ctx.repo.head()?.try_into_peeled_id()? {
+        Some(current_commit) => {
+            let released_target = tag_ref.peel_to_id()?;
+
+            match repo_relative_crate_dir {
+                None if ctx.meta.workspace_members.len() != 1 => {
+                    let current_tree = current_commit.object()?.peel_to_kind(object::Kind::Tree)?;
+                    let released_tree = released_target.object()?.peel_to_kind(object::Kind::Tree)?;
+                    top_level_package_changed(&current_tree.data, Some(&released_tree.data), current_commit.kind())
+                        .then_some(PackageChangeKind::ChangedOrNew)
+                }
+                None => (current_commit != released_target).then_some(PackageChangeKind::ChangedOrNew),
+                Some(dir) => {
+                    let components = dir.components().map(component_to_bytes);
+                    let current_dir_id = current_commit
+                        .object()?
+                        .peel_to_kind(object::Kind::Tree)?
+                        .into_tree()
+                        .peel_to_entry(components.clone())?
+                        .unwrap_or_else(|| panic!("path '{dir}' must exist in current_commit `{current_commit}`"))
+                        .object_id();
+                    if let Some(released_dir_entry) = released_target
+                        .object()?
+                        .peel_to_kind(object::Kind::Tree)?
+                        .into_tree()
+                        .peel_to_entry(components)?
+                    {
+                        let released_dir_id = released_dir_entry.object_id();
+                        (released_dir_id != current_dir_id).then_some(PackageChangeKind::ChangedOrNew)
+                    } else {
+                        log::warn!("Expected path '{dir}' to exist in the last released commit `{released_target}` but it doesn't. Was it moved from a different directory? The generated changelog may miss some changes.");
+                        Some(PackageChangeKind::ChangedOrNew)
+                    }
+                }
+            }
+        }
+        None => Some(PackageChangeKind::ChangedOrNew),
+    })
+}
+
+pub(crate) fn top_level_package_changed(
+    current_tree: &[u8],
+    previous_tree: Option<&[u8]>,
+    hash_kind: gix::hash::Kind,
+) -> bool {
+    let package_entries = |tree: &[u8]| {
+        gix::objs::TreeRefIter::from_bytes(tree, hash_kind)
+            .filter_map(Result::ok)
+            .filter(|entry| entry.filename == b"src".as_bstr() || entry.filename == b"Cargo.toml".as_bstr())
+            .map(|entry| (entry.filename.to_owned(), entry.oid.to_owned()))
+            .collect::<Vec<_>>()
+    };
+    package_entries(current_tree) != package_entries(previous_tree.unwrap_or_default())
+}
+
+pub fn assure_clean_working_tree() -> anyhow::Result<()> {
+    let tracked_changed = !Command::new(gix::path::env::exe_invocation())
+        .arg("diff")
+        .arg("HEAD")
+        .arg("--exit-code")
+        .arg("--name-only")
+        .status()?
+        .success();
+    if tracked_changed {
+        bail!("Detected working tree changes. Please commit beforehand as otherwise these would be committed as part of manifest changes, or use --allow-dirty to force it.")
+    }
+
+    let untracked = Command::new(gix::path::env::exe_invocation())
+        .arg("ls-files")
+        .arg("--exclude-standard")
+        .arg("--others")
+        .output()?
+        .stdout;
+    if !untracked.trim().is_empty() {
+        let err = anyhow!(gix::bstr::BString::from(untracked));
+        return Err(err.context("Found untracked files which would possibly be packaged when publishing."));
+    }
+    Ok(())
+}
+
+pub fn has_tracked_modifications(repo: &gix::Repository) -> anyhow::Result<bool> {
+    let mut status = repo
+        .status(gix::progress::Discard)?
+        .untracked_files(gix::status::UntrackedFiles::None)
+        .index_worktree_rewrites(None)
+        .index_worktree_submodules(None)
+        .into_index_worktree_iter(None)
+        .context("While creating git status for tracked modifications")?;
+
+    for item in &mut status {
+        match item.context("While reading git status for tracked modifications")? {
+            item if item.summary().is_some() => return Ok(true),
+            _ => {}
+        }
+    }
+    Ok(false)
+}
+
+pub fn has_staged_changes(repo: &gix::Repository) -> anyhow::Result<bool> {
+    let head_tree_id = repo.head_tree_id_or_empty()?;
+    let index = repo.index_or_empty()?;
+    let mut has_staged_changes = false;
+    repo.tree_index_status(
+        &head_tree_id,
+        &index,
+        None,
+        gix::status::tree_index::TrackRenames::Disabled,
+        |_, _, _| {
+            has_staged_changes = true;
+            Ok(std::ops::ControlFlow::Break(()))
+        },
+    )?;
+    Ok(has_staged_changes)
+}
+
+pub fn remote_url(repo: &gix::Repository) -> anyhow::Result<Option<gix::Url>> {
+    Ok(repo
+        .head()?
+        .into_remote(gix::remote::Direction::Push)
+        .transpose()?
+        .and_then(|r| r.url(gix::remote::Direction::Push).map(ToOwned::to_owned)))
+}
+
+pub fn author() -> anyhow::Result<gix::actor::Signature> {
+    let stdout = Command::new(gix::path::env::exe_invocation())
+        .arg("var")
+        .arg("GIT_AUTHOR_IDENT")
+        .output()?
+        .stdout;
+    let author = parse_author(&stdout)?;
+    Ok(author.to_owned()?)
+}
+
+fn parse_author(stdout: &[u8]) -> anyhow::Result<gix::actor::SignatureRef<'_>> {
+    gix::actor::SignatureRef::from_bytes(stdout).map_err(|err| {
+        anyhow!(
+            "Could not parse author from GIT_AUTHOR_IDENT='{}': {err}",
+            stdout.as_bstr()
+        )
+    })
+}
+
+pub fn strip_tag_path(name: &FullNameRef) -> &BStr {
+    try_strip_tag_path(name).expect("prefix iteration works")
+}
+
+pub fn try_strip_tag_path(name: &FullNameRef) -> Option<&BStr> {
+    name.as_bstr().strip_prefix(b"refs/tags/").map(ByteSlice::as_bstr)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_author;
+    use gix::bstr::ByteSlice;
+
+    #[test]
+    fn author_parser_accepts_git_var_output() {
+        let author = parse_author(b"Jane Doe <jane@example.com> 1234567890 +0000\n").expect("valid author");
+        assert_eq!(author.name, b"Jane Doe".as_bstr());
+        assert_eq!(author.email, b"jane@example.com".as_bstr());
+        // `git var GIT_AUTHOR_IDENT` emits a trailing newline; ensure the time field
+        // is parsed without it, as this is the part most exposed to future
+        // gix-actor parsing changes (e.g. time-byte / trailing-whitespace handling).
+        assert_eq!(author.time, "1234567890 +0000");
+    }
+}
