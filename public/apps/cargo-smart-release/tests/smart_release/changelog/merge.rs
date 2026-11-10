@@ -1,0 +1,658 @@
+use cargo_smart_release::{
+    changelog,
+    changelog::{section, Section},
+    ChangeLog,
+};
+
+use crate::changelog::hex_to_id;
+
+#[test]
+fn sections() {
+    let parsed = ChangeLog {
+        sections: vec![
+            Section::Verbatim {
+                text: "preamble".into(),
+                generated: false,
+            },
+            Section::Release {
+                heading_level: 3,
+                version_prefix: "".into(),
+                removed_messages: vec![],
+                date: Some(
+                    jiff::civil::date(2021, 9, 14)
+                        .to_zoned(jiff::tz::TimeZone::UTC)
+                        .unwrap(),
+                ),
+                name: changelog::Version::Semantic("1.0.0".parse().unwrap()),
+                segments: Vec::new(),
+                unknown: "never changed".into(),
+            },
+            Section::Verbatim {
+                text: "something we couldn't parse".into(),
+                generated: false,
+            },
+            Section::Release {
+                heading_level: 3,
+                version_prefix: Section::DEFAULT_PREFIX.into(),
+                removed_messages: vec![],
+                date: None,
+                name: changelog::Version::Semantic("0.9.0".parse().unwrap()),
+                segments: Vec::new(),
+                unknown: String::new(),
+            },
+        ],
+    };
+    let generated = ChangeLog {
+        sections: vec![
+            Section::Verbatim {
+                text: "header".into(),
+                generated: true,
+            },
+            Section::Release {
+                date: None,
+                removed_messages: vec![],
+                name: changelog::Version::Unreleased,
+                version_prefix: Section::DEFAULT_PREFIX.into(),
+                heading_level: 2,
+                segments: vec![section::Segment::Clippy(section::Data::Generated(
+                    section::segment::ThanksClippy { count: 4 },
+                ))],
+                unknown: Default::default(),
+            },
+            Section::Release {
+                date: date_m_d(9, 15).into(), // generated has a date is 'correct'
+                name: changelog::Version::Semantic("1.0.0".parse().unwrap()),
+                removed_messages: vec![],
+                heading_level: 2,
+                version_prefix: Section::DEFAULT_PREFIX.into(),
+                segments: vec![section::Segment::Clippy(section::Data::Generated(
+                    section::segment::ThanksClippy { count: 3 },
+                ))],
+                unknown: Default::default(),
+            },
+            Section::Release {
+                date: date_m_d(7, 1).into(), // generated has a date
+                name: changelog::Version::Semantic("0.9.0".parse().unwrap()),
+                unknown: String::new(),
+                removed_messages: vec![],
+                heading_level: 2,
+                version_prefix: Section::DEFAULT_PREFIX.into(),
+                segments: vec![section::Segment::Clippy(section::Data::Generated(
+                    section::segment::ThanksClippy { count: 2 },
+                ))],
+            },
+            Section::Release {
+                date: date_m_d(6, 1).into(),
+                name: changelog::Version::Semantic("0.8.0".parse().unwrap()),
+                unknown: "undocumented".into(),
+                removed_messages: vec![],
+                heading_level: 2,
+                version_prefix: Section::DEFAULT_PREFIX.into(),
+                segments: Vec::new(),
+            },
+        ],
+    };
+
+    let merged = parsed.merge_generated(generated).expect("works");
+    assert_eq!(
+        merged,
+        ChangeLog {
+            sections: vec![
+                Section::Verbatim {
+                    text: "preamble".into(),
+                    generated: false,
+                },
+                Section::Release {
+                    date: None,
+                    name: changelog::Version::Unreleased,
+                    heading_level: 3,
+                    version_prefix: "".into(),
+                    removed_messages: vec![],
+                    segments: vec![section::Segment::Clippy(section::Data::Generated(
+                        section::segment::ThanksClippy { count: 4 }
+                    ))],
+                    unknown: Default::default(),
+                },
+                Section::Release {
+                    heading_level: 3,
+                    removed_messages: vec![],
+                    version_prefix: "".into(),
+                    date: Some(
+                        jiff::civil::date(2021, 9, 15)
+                            .to_zoned(jiff::tz::TimeZone::UTC)
+                            .unwrap(),
+                    ),
+                    name: changelog::Version::Semantic("1.0.0".parse().unwrap()),
+                    segments: vec![section::Segment::Clippy(section::Data::Generated(
+                        section::segment::ThanksClippy { count: 3 }
+                    ))],
+                    unknown: "never changed".into(),
+                },
+                Section::Verbatim {
+                    text: "something we couldn't parse".into(),
+                    generated: false,
+                },
+                Section::Release {
+                    date: date_m_d(7, 1).into(),
+                    name: changelog::Version::Semantic("0.9.0".parse().unwrap()),
+                    unknown: String::new(),
+                    heading_level: 3,
+                    version_prefix: Section::DEFAULT_PREFIX.into(),
+                    removed_messages: vec![],
+                    segments: vec![section::Segment::Clippy(section::Data::Generated(
+                        section::segment::ThanksClippy { count: 2 }
+                    ))],
+                },
+                // 0.8.0 (Jun 1) is inserted before 0.9.0 even though 0.9.0 was originally undated
+                // because dated sections must come before undated sections, and 0.9.0 now has a date
+                // from the merge. Since 0.8.0 is older than 0.9.0, it's inserted after it.
+                Section::Release {
+                    date: date_m_d(6, 1).into(),
+                    name: changelog::Version::Semantic("0.8.0".parse().unwrap()),
+                    unknown: "undocumented".into(),
+                    heading_level: 3,
+                    version_prefix: "".into(),
+                    removed_messages: vec![],
+                    segments: Vec::new(),
+                },
+            ]
+        },
+        "retain user content, integrate generated one, as losslessly as possible"
+    );
+}
+
+#[test]
+fn segments() {
+    let removed_message_id = hex_to_id("0000000000000000000000000000000000000001");
+    let changed_message_id = hex_to_id("0000000000000000000000000000000000000002");
+    let parsed = ChangeLog {
+        sections: vec![
+            Section::Verbatim {
+                text: "preamble".into(),
+                generated: false,
+            },
+            Section::Release {
+                date: date_m_d(1, 1).into(),
+                name: changelog::Version::Semantic("0.7.0".parse().unwrap()),
+                unknown: "".into(),
+                heading_level: 3,
+                version_prefix: Section::DEFAULT_PREFIX.into(),
+                removed_messages: vec![],
+                segments: vec![
+                    section::Segment::Conventional(section::segment::Conventional {
+                        kind: "feat",
+                        is_breaking: false,
+                        removed: vec![removed_message_id],
+                        messages: vec![
+                            section::segment::conventional::Message::User {
+                                markdown: "user text".into(),
+                            },
+                            section::segment::conventional::Message::Generated {
+                                id: changed_message_id,
+                                title: "content changed by user".to_string(),
+                                body: None,
+                            },
+                        ],
+                    }), // conventional is present and prevents new conventionals from showing up
+                    section::Segment::Clippy(section::Data::Parsed), // statistical items prevent others from showing up
+                ],
+            },
+            Section::Release {
+                date: None,
+                name: changelog::Version::Unreleased,
+                heading_level: 3,
+                version_prefix: Section::DEFAULT_PREFIX.into(),
+                removed_messages: vec![],
+                segments: vec![section::Segment::Clippy(section::Data::Parsed)], // only clippy still available
+                unknown: Default::default(),
+            },
+            Section::Release {
+                heading_level: 3,
+                version_prefix: Section::DEFAULT_PREFIX.into(),
+                removed_messages: vec![],
+                date: Some(
+                    jiff::civil::date(2021, 9, 15)
+                        .to_zoned(jiff::tz::TimeZone::UTC)
+                        .unwrap(),
+                ),
+                name: changelog::Version::Semantic("1.0.0".parse().unwrap()),
+                segments: vec![section::Segment::User {
+                    markdown: "user generated".into(),
+                }], // all segments removed, but user segment present
+                unknown: "".into(),
+            },
+            Section::Release {
+                date: date_m_d(6, 1).into(),
+                name: changelog::Version::Semantic("0.8.0".parse().unwrap()),
+                unknown: "".into(),
+                heading_level: 3,
+                version_prefix: Section::DEFAULT_PREFIX.into(),
+                removed_messages: vec![],
+                segments: vec![
+                    section::Segment::Details(section::Data::Parsed),
+                    section::Segment::Statistics(section::Data::Parsed),
+                ],
+            },
+        ],
+    };
+    let clippy = section::Segment::Clippy(section::Data::Generated(section::segment::ThanksClippy { count: 42 }));
+    let statistics = section::Segment::Statistics(section::Data::Generated(section::segment::CommitStatistics {
+        count: 1,
+        duration: None,
+        time_passed_since_last_release: None,
+        conventional_count: 2,
+        unique_issues: vec![],
+    }));
+    let details = section::Segment::Details(section::Data::Generated(section::segment::Details {
+        commits_by_category: Default::default(),
+    }));
+    let added_message_id = hex_to_id("0000000000000000000000000000000000000003");
+    let feat_conventional = section::Segment::Conventional(section::segment::Conventional {
+        kind: "feat",
+        is_breaking: false,
+        removed: vec![],
+        messages: vec![
+            section::segment::conventional::Message::Generated {
+                id: removed_message_id,
+                title: "something removed".to_string(),
+                body: None,
+            },
+            section::segment::conventional::Message::Generated {
+                id: changed_message_id,
+                title: "something added/changed".to_string(),
+                body: None,
+            },
+            section::segment::conventional::Message::Generated {
+                id: added_message_id,
+                title: "to be inserted after user message".to_string(),
+                body: None,
+            },
+        ],
+    });
+    let segments = vec![statistics.clone(), clippy.clone(), details.clone()];
+    let generated = ChangeLog {
+        sections: vec![
+            Section::Verbatim {
+                text: "custom header".into(),
+                generated: true,
+            },
+            Section::Release {
+                date: None,
+                name: changelog::Version::Unreleased,
+                heading_level: 3,
+                version_prefix: Section::DEFAULT_PREFIX.into(),
+                removed_messages: vec![],
+                segments: segments.clone(),
+                unknown: Default::default(),
+            },
+            Section::Release {
+                heading_level: 3,
+                version_prefix: Section::DEFAULT_PREFIX.into(),
+                removed_messages: vec![],
+                date: Some(
+                    jiff::civil::date(2021, 9, 15)
+                        .to_zoned(jiff::tz::TimeZone::UTC)
+                        .unwrap(),
+                ),
+                name: changelog::Version::Semantic("1.0.0".parse().unwrap()),
+                segments: segments.clone(),
+                unknown: "".into(),
+            },
+            Section::Release {
+                date: date_m_d(6, 1).into(),
+                name: changelog::Version::Semantic("0.8.0".parse().unwrap()),
+                unknown: "".into(),
+                heading_level: 3,
+                version_prefix: Section::DEFAULT_PREFIX.into(),
+                removed_messages: vec![],
+                segments: segments.clone(),
+            },
+            Section::Release {
+                date: date_m_d(1, 1).into(),
+                name: changelog::Version::Semantic("0.7.0".parse().unwrap()),
+                unknown: "".into(),
+                heading_level: 3,
+                version_prefix: Section::DEFAULT_PREFIX.into(),
+                removed_messages: vec![],
+                segments: {
+                    let mut v = segments.clone();
+                    v.push(feat_conventional);
+                    v
+                },
+            },
+        ],
+    };
+    let merged = parsed.merge_generated(generated).expect("works");
+    assert_eq!(
+        merged,
+        ChangeLog {
+            sections: vec![
+                Section::Verbatim {
+                    text: "preamble".into(),
+                    generated: false,
+                },
+                Section::Release {
+                    date: date_m_d(1, 1).into(),
+                    name: changelog::Version::Semantic("0.7.0".parse().unwrap()),
+                    unknown: "".into(),
+                    heading_level: 3,
+                    version_prefix: Section::DEFAULT_PREFIX.into(),
+                    removed_messages: vec![],
+                    segments: vec![
+                        section::Segment::Conventional(section::segment::Conventional {
+                            kind: "feat",
+                            is_breaking: false,
+                            removed: vec![removed_message_id],
+                            messages: vec![
+                                section::segment::conventional::Message::User {
+                                    markdown: "user text".into(),
+                                },
+                                section::segment::conventional::Message::Generated {
+                                    id: added_message_id,
+                                    title: "to be inserted after user message".to_string(),
+                                    body: None
+                                }, // new messages are inserted after user content
+                                section::segment::conventional::Message::Generated {
+                                    id: changed_message_id,
+                                    title: "content changed by user".to_string(),
+                                    body: None
+                                }, // changed user content is preserved, don't overwrite, ever
+                            ],
+                        }), // conventional is present and prevents new conventionals from showing up, they have messages merged though
+                        clippy.clone(), // statistical items prevent others from showing up
+                    ],
+                }, // merge does not change the order of sections
+                Section::Release {
+                    date: None,
+                    name: changelog::Version::Unreleased,
+                    heading_level: 3,
+                    version_prefix: Section::DEFAULT_PREFIX.into(),
+                    removed_messages: vec![],
+                    segments: vec![clippy],
+                    unknown: Default::default(),
+                },
+                Section::Release {
+                    heading_level: 3,
+                    version_prefix: Section::DEFAULT_PREFIX.into(),
+                    removed_messages: vec![],
+                    date: Some(
+                        jiff::civil::date(2021, 9, 15)
+                            .to_zoned(jiff::tz::TimeZone::UTC)
+                            .unwrap(),
+                    ),
+                    name: changelog::Version::Semantic("1.0.0".parse().unwrap()),
+                    segments: {
+                        let mut s = segments;
+                        s.insert(
+                            0,
+                            section::Segment::User {
+                                markdown: "user generated".into(),
+                            },
+                        );
+                        s
+                    },
+                    unknown: "".into(),
+                },
+                Section::Release {
+                    date: date_m_d(6, 1).into(),
+                    name: changelog::Version::Semantic("0.8.0".parse().unwrap()),
+                    unknown: "".into(),
+                    heading_level: 3,
+                    version_prefix: Section::DEFAULT_PREFIX.into(),
+                    removed_messages: vec![],
+                    segments: vec![details, statistics],
+                },
+            ],
+        }
+    )
+}
+
+fn date_m_d(month: i8, day: i8) -> jiff::Zoned {
+    jiff::civil::date(2021, month, day)
+        .to_zoned(jiff::tz::TimeZone::UTC)
+        .unwrap()
+}
+
+#[test]
+fn stale_generated_conventional_messages_are_removed() {
+    let stale_fix_id = hex_to_id("0000000000000000000000000000000000000001");
+    let stale_breaking_id = hex_to_id("0000000000000000000000000000000000000002");
+
+    let parsed = ChangeLog {
+        sections: vec![Section::Release {
+            date: None,
+            name: changelog::Version::Unreleased,
+            heading_level: 2,
+            version_prefix: Section::DEFAULT_PREFIX.into(),
+            removed_messages: vec![],
+            unknown: String::new(),
+            segments: vec![
+                section::Segment::Conventional(section::segment::Conventional {
+                    kind: "fix",
+                    is_breaking: false,
+                    removed: vec![],
+                    messages: vec![
+                        section::segment::conventional::Message::Generated {
+                            id: stale_fix_id,
+                            title: "old generated fix".into(),
+                            body: None,
+                        },
+                        section::segment::conventional::Message::User {
+                            markdown: " - keep this user-authored note".into(),
+                        },
+                    ],
+                }),
+                section::Segment::Conventional(section::segment::Conventional {
+                    kind: "feat",
+                    is_breaking: true,
+                    removed: vec![],
+                    messages: vec![section::segment::conventional::Message::Generated {
+                        id: stale_breaking_id,
+                        title: "old generated breaking feature".into(),
+                        body: None,
+                    }],
+                }),
+            ],
+        }],
+    };
+    let statistics = section::Segment::Statistics(section::Data::Generated(section::segment::CommitStatistics {
+        count: 1,
+        duration: None,
+        time_passed_since_last_release: Some(28),
+        conventional_count: 0,
+        unique_issues: vec![],
+    }));
+    let generated = ChangeLog {
+        sections: vec![Section::Release {
+            date: None,
+            name: changelog::Version::Unreleased,
+            heading_level: 2,
+            version_prefix: Section::DEFAULT_PREFIX.into(),
+            removed_messages: vec![],
+            unknown: String::new(),
+            segments: vec![statistics.clone()],
+        }],
+    };
+
+    let merged = parsed.merge_generated(generated).expect("works");
+
+    assert_eq!(
+        merged.sections,
+        vec![Section::Release {
+            date: None,
+            name: changelog::Version::Unreleased,
+            heading_level: 2,
+            version_prefix: Section::DEFAULT_PREFIX.into(),
+            removed_messages: vec![],
+            unknown: String::new(),
+            segments: vec![
+                section::Segment::Conventional(section::segment::Conventional {
+                    kind: "fix",
+                    is_breaking: false,
+                    removed: vec![],
+                    messages: vec![section::segment::conventional::Message::User {
+                        markdown: " - keep this user-authored note".into(),
+                    }],
+                }),
+                statistics,
+            ],
+        }]
+    );
+}
+
+#[test]
+fn generated_conventional_messages_survive_when_conventional_generation_is_disabled() {
+    let existing_id = hex_to_id("0000000000000000000000000000000000000001");
+    let parsed = ChangeLog {
+        sections: vec![Section::Release {
+            date: None,
+            name: changelog::Version::Unreleased,
+            heading_level: 2,
+            version_prefix: Section::DEFAULT_PREFIX.into(),
+            removed_messages: vec![],
+            unknown: String::new(),
+            segments: vec![section::Segment::Conventional(section::segment::Conventional {
+                kind: "fix",
+                is_breaking: false,
+                removed: vec![],
+                messages: vec![section::segment::conventional::Message::Generated {
+                    id: existing_id,
+                    title: "existing generated fix".into(),
+                    body: None,
+                }],
+            })],
+        }],
+    };
+    let statistics = section::Segment::Statistics(section::Data::Generated(section::segment::CommitStatistics {
+        count: 1,
+        duration: None,
+        time_passed_since_last_release: Some(28),
+        conventional_count: 0,
+        unique_issues: vec![],
+    }));
+    let generated = ChangeLog {
+        sections: vec![Section::Release {
+            date: None,
+            name: changelog::Version::Unreleased,
+            heading_level: 2,
+            version_prefix: Section::DEFAULT_PREFIX.into(),
+            removed_messages: vec![],
+            unknown: String::new(),
+            segments: vec![statistics.clone()],
+        }],
+    };
+
+    let merged = parsed
+        .merge_generated_with_conventional_pruning(generated, false)
+        .expect("works");
+
+    assert_eq!(
+        merged.sections,
+        vec![Section::Release {
+            date: None,
+            name: changelog::Version::Unreleased,
+            heading_level: 2,
+            version_prefix: Section::DEFAULT_PREFIX.into(),
+            removed_messages: vec![],
+            unknown: String::new(),
+            segments: vec![
+                section::Segment::Conventional(section::segment::Conventional {
+                    kind: "fix",
+                    is_breaking: false,
+                    removed: vec![],
+                    messages: vec![section::segment::conventional::Message::Generated {
+                        id: existing_id,
+                        title: "existing generated fix".into(),
+                        body: None,
+                    }],
+                }),
+                statistics,
+            ],
+        }]
+    );
+}
+
+#[test]
+fn dated_release_insertion_with_undated_sections() {
+    // Test that a dated release older than all existing dated releases
+    // is inserted before undated sections, not at the end
+    let parsed = ChangeLog {
+        sections: vec![
+            Section::Verbatim {
+                text: "preamble".into(),
+                generated: false,
+            },
+            Section::Release {
+                heading_level: 2,
+                version_prefix: "v".into(),
+                removed_messages: vec![],
+                date: Some(date_m_d(9, 15)), // Sep 15
+                name: changelog::Version::Semantic("1.0.0".parse().unwrap()),
+                segments: Vec::new(),
+                unknown: String::new(),
+            },
+            Section::Release {
+                heading_level: 2,
+                version_prefix: "v".into(),
+                removed_messages: vec![],
+                date: None, // Undated section
+                name: changelog::Version::Semantic("0.5.0".parse().unwrap()),
+                segments: Vec::new(),
+                unknown: String::new(),
+            },
+        ],
+    };
+
+    let generated = ChangeLog {
+        sections: vec![
+            Section::Verbatim {
+                text: "header".into(),
+                generated: true,
+            },
+            Section::Release {
+                date: Some(date_m_d(6, 1)), // Jun 1 - older than Sep 15
+                name: changelog::Version::Semantic("0.8.0".parse().unwrap()),
+                removed_messages: vec![],
+                heading_level: 2,
+                version_prefix: "v".into(),
+                segments: vec![section::Segment::Clippy(section::Data::Generated(
+                    section::segment::ThanksClippy { count: 1 },
+                ))],
+                unknown: String::new(),
+            },
+        ],
+    };
+
+    let merged = parsed.merge_generated(generated).expect("works");
+
+    // Verify that the dated release (0.8.0, Jun 1) is inserted BEFORE
+    // the undated release (0.5.0), not at the end
+    assert_eq!(merged.sections.len(), 4);
+
+    // First section should be the verbatim preamble
+    assert!(matches!(merged.sections[0], Section::Verbatim { .. }));
+
+    // Second should be 1.0.0 (Sep 15) - newest dated
+    if let Section::Release { name, date, .. } = &merged.sections[1] {
+        assert_eq!(*name, changelog::Version::Semantic("1.0.0".parse().unwrap()));
+        assert_eq!(*date, Some(date_m_d(9, 15)));
+    } else {
+        panic!("Expected Release section at index 1");
+    }
+
+    // Third should be 0.8.0 (Jun 1) - older dated, inserted before undated
+    if let Section::Release { name, date, .. } = &merged.sections[2] {
+        assert_eq!(*name, changelog::Version::Semantic("0.8.0".parse().unwrap()));
+        assert_eq!(*date, Some(date_m_d(6, 1)));
+    } else {
+        panic!("Expected Release section at index 2");
+    }
+
+    // Fourth should be 0.5.0 (undated) - comes after all dated sections
+    if let Section::Release { name, date, .. } = &merged.sections[3] {
+        assert_eq!(*name, changelog::Version::Semantic("0.5.0".parse().unwrap()));
+        assert_eq!(*date, None);
+    } else {
+        panic!("Expected Release section at index 3");
+    }
+}

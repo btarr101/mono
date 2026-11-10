@@ -1,0 +1,79 @@
+[package]
+name = "cargo-smart-release"
+version = "0.22.0"
+authors = ["Sebastian Thiel <sebastian.thiel@icloud.com>"]
+repository = "https://github.com/GitoxideLabs/cargo-smart-release"
+description = "Cargo subcommand for fearlessly releasing crates in workspaces."
+license = "MIT OR Apache-2.0"
+edition = "2021"
+categories = ["development-tools::cargo-plugins"]
+keywords = ["cargo"]
+include = ["src/**/*", "README.md", "CHANGELOG.md", "LICENSE-*"]
+
+[[bin]]
+name = "cargo-smart-release"
+path = "src/cli/main-smart-release.rs"
+test = false
+
+[[bin]]
+name = "cargo-changelog"
+path = "src/cli/main-changelog.rs"
+test = false
+
+[[bin]]
+name = "cargo-api-check"
+path = "src/cli/main-api-check.rs"
+test = false
+
+[features]
+cache-efficiency-debug = ["gix/cache-efficiency-debug"]
+allow-emoji = ["unicode-properties"]
+
+[dependencies]
+gix = { version = "0.90.0", default-features = false, features = [
+    "anyhow",
+    "command",
+    "max-performance",
+    "interrupt",
+    "index",
+    "sha1",
+    "status",
+] }
+anyhow = "1.0.103"
+clap = { version = "4.6.1", features = ["derive", "cargo"] }
+env_logger = { version = "0.11.11", default-features = false, features = [
+    "humantime",
+    "auto-color",
+] }
+cargo_metadata = "0.23.1"
+log = "0.4.33"
+toml_edit = "0.25"
+semver = "1.0.28"
+crates-index = { version = "4.0.0", default-features = false, features = [
+    "sparse",
+] }
+reqwest = { version = "0.13.4", default-features = false, features = [
+    "blocking",
+    "gzip",
+    "http2",
+    "native-tls",
+] }
+cargo_toml = "1.0.0"
+winnow = "1.0.4"
+git-conventional = "1.1.0"
+jiff = "0.2.32"
+serde_json = "1.0.150"
+cargo-smart-release-core = { version = "^0.1.0", path = "cargo-smart-release-core" }
+pulldown-cmark = { version = "0.13.6", default-features = false }
+bitflags = "2"
+unicode-properties = { version = "0.1.4", optional = true, features = [
+    "emoji",
+], default-features = false }
+
+[dev-dependencies]
+insta = "1.48.0"
+gix-testtools = "0.22.0"
+testing_logger = "0.1.1"
+
+[workspace]
+members = ["cargo-smart-release-core"]
