@@ -2,3 +2,7 @@
 	path = private
 	url = git@github.com:btarr101/mono-private.git
 	branch = main
+[submodule "public/apps/cargo-smart-release"]
+	path = public/apps/cargo-smart-release
+	url = https://github.com/btarr101/cargo-smart-release.git
+	branch = main

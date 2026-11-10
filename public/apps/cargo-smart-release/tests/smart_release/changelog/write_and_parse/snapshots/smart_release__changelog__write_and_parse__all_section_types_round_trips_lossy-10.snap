@@ -1,5 +1,0 @@
----
-source: tests/smart_release/changelog/write_and_parse/mod.rs
-expression: buf
----
-
