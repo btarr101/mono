@@ -1165,7 +1165,7 @@ checksum = "7360bd2cd76e0cd9032d42cf2922155cecea2685b0cfa4630c3246df030bcfd6"
 
 [[package]]
 name = "griddr"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "glam",
  "serde",
@@ -3024,7 +3024,7 @@ dependencies = [
 
 [[package]]
 name = "sparsr"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "spin"
@@ -3854,7 +3854,7 @@ dependencies = [
 
 [[package]]
 name = "tuply"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "pastey",
 ]
