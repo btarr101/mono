@@ -1,3 +1,4 @@
 [submodule "private"]
 	path = private
 	url = git@github.com:btarr101/mono-private.git
+	branch = main
