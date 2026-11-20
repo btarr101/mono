@@ -8,9 +8,8 @@
         name:
           - nginx
           - snapd
-        state: present
+        state: latest
         update_cache: true
-        cache_valid_time: 3600
 
     - name: Ensure snapd service is enabled and running
       ansible.builtin.service:
