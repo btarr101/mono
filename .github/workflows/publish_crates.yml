@@ -42,22 +42,15 @@ jobs:
                   # release tag.
                   fetch-depth: 0
 
-            - name: Checkout cargo-smart-release
-              # Only the tool is needed. `submodules: recursive` is avoided
-              # because the `private` submodule is private and not available
-              # with this token.
-              run: git -C .. submodule update --init public/apps/cargo-smart-release
-
             - name: Install Rust toolchain
               # The public crates use nightly features, and `cargo publish`
               # verifies by building the crate.
               uses: dtolnay/rust-toolchain@nightly
 
-            - name: Install cargo-smart-release
-              # Vendored build carrying the fix that resolves crate paths
-              # against the git repository root, so a workspace in `public/`
-              # works.
-              run: cargo install --path apps/cargo-smart-release --locked
+            - name: Setup cargo-smart-release
+              # Shared with mono-private; see
+              # .github/actions/setup-cargo-smart-release/action.yml.
+              uses: ./.github/actions/setup-cargo-smart-release
 
             - name: Configure git identity
               run: |
