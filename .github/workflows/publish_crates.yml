@@ -61,10 +61,21 @@ jobs:
               # Keyed on the pinned submodule commit: bumping the submodule
               # rebuilds, an unchanged tool restores in seconds instead of
               # compiling gix from scratch (~2.5 min on a cold runner).
+              id: csr-cache
               uses: actions/cache@v4
               with:
                   path: ~/.cargo/bin/cargo-smart-release
                   key: cargo-smart-release-${{ runner.os }}-${{ runner.arch }}-${{ steps.csr.outputs.sha }}
+
+            - name: Cache cargo-smart-release build
+              # Only runs on a cache miss, so the ~1s hit path stays untouched.
+              # The tool is its own workspace, so its artifacts land in its own
+              # `target/`, keeping the rebuild incremental after a submodule
+              # bump instead of recompiling gix from scratch.
+              if: steps.csr-cache.outputs.cache-hit != 'true'
+              uses: Swatinem/rust-cache@v2
+              with:
+                  workspaces: public/apps/cargo-smart-release -> target
 
             - name: Install cargo-smart-release
               # Vendored build carrying the fix that resolves crate paths
