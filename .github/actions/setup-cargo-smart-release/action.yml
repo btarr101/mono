@@ -9,6 +9,14 @@ description: |
 runs:
     using: composite
     steps:
+        - name: Checkout tool submodule
+          # Both callers check the public workspace out at the repository root.
+          # Only this submodule is needed: `submodules: recursive` would also
+          # try the private `private` submodule, which the token cannot reach.
+          shell: bash
+          working-directory: ${{ github.workspace }}
+          run: git submodule update --init public/apps/cargo-smart-release
+
         - name: Resolve revision
           id: csr
           shell: bash
